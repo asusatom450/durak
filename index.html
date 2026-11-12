@@ -89,6 +89,10 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 .res .box{background:linear-gradient(#0f5a40,#073323);border:1px solid var(--gold);border-radius:28px;padding:26px 32px;text-align:center;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
 .res h2{font:900 26px 'Playfair Display',serif;margin:6px 0 16px}
 .big{font-size:76px;animation:bob .9s ease-in-out infinite alternate}
+#bd{position:fixed;inset:0;z-index:39;background:#0007}
+#bd[hidden]{display:none}
+.sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
+.sh .ico{width:36px;height:36px;font-size:15px}
 @keyframes deal{from{transform:translateY(90px) rotate(-10deg) scale(.6);opacity:0}}
 @keyframes drop{from{transform:translateY(140px) scale(.8);opacity:0}}
 @keyframes slam{from{transform:translate(-26px,-70px) rotate(-14deg) scale(1.35);opacity:0}}
@@ -104,7 +108,9 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 <div id="net" hidden>Переподключение…</div>
 <div id="app"></div>
 <div id="react" hidden></div>
+<div id="bd" hidden onclick="toggleChat()"></div>
 <div class="sheet" id="sheet">
+  <div class="sh"><b>Чат</b><button class="ico" onclick="toggleChat()" aria-label="Закрыть чат">✕</button></div>
   <div id="log"></div>
   <div class="quick"><button onclick="say('Ваш ход!')">Ваш ход!</button><button onclick="say('Бито')">Бито</button><button onclick="say('Ну вы даёте')">Ну вы даёте</button><button onclick="say('gg')">gg</button></div>
   <div class="row" style="flex-wrap:nowrap"><input id="ci" maxlength="80" placeholder="Сообщение" onkeydown="if(event.key=='Enter')say()"><button class="btn" onclick="say()">➤</button></div>
@@ -185,11 +191,12 @@ function float(m){const el=$('#seat-'+m.from),r=el?el.getBoundingClientRect():{l
   const s=document.createElement('span');s.className='fl';s.textContent=m.e;s.style.left=r.left+r.width/2-18+'px';s.style.top=r.top+'px';document.body.appendChild(s);setTimeout(()=>s.remove(),1950)}
 $('#react').innerHTML=EMO.map(e=>`<button onclick="send({t:'react',e:'${e}'});toggleReact()">${e}</button>`).join('');
 function toggleReact(){const r=$('#react');r.hidden=!r.hidden}
-function toggleChat(){chatOpen=!chatOpen;$('#sheet').classList.toggle('open',chatOpen);if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
+function toggleChat(){chatOpen=!chatOpen;$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!chatOpen;if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
 function say(t){const i=$('#ci');const text=(t||i.value).trim();if(!text)return;send({t:'chat',text});i.value=''}
 function chatRender(){if(!st)return;const l=$('#log');
   l.innerHTML=st.log.map(m=>`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&chatOpen)toggleChat()});
 entry();
 </script>
 </body>
