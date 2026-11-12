@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Дурак</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:16px Georgia,serif;color:#f3efe2;background:radial-gradient(circle at 50% 30%,#14704a,#0a3d28)}
+#app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:12px;gap:10px}
+h2{margin:8px 0 0;font-weight:normal;font-size:26px}
+input,button{font:inherit;border-radius:10px;border:1px solid #d9c98a;padding:10px 14px}
+input{background:#0a3d28;color:#f3efe2;width:100%;margin:4px 0}
+button{background:#e8d9a0;color:#2a2410;cursor:pointer}
+button:disabled{opacity:.4}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pl{padding:6px 10px;border-radius:10px;border:1px solid #ffffff44;text-align:center;font-size:14px;min-width:70px}
+.pl.att{border-color:#e8d9a0;box-shadow:0 0 0 2px #e8d9a066}
+.pl.def{border-color:#7fb8ff;box-shadow:0 0 0 2px #7fb8ff66}
+.mid{flex:1;display:flex;flex-direction:column;gap:8px}
+.info{display:flex;align-items:center;gap:8px;justify-content:center;font-size:14px}
+.table{flex:1;display:flex;flex-wrap:wrap;gap:12px;align-content:center;justify-content:center}
+.pair{position:relative;width:62px;height:92px}
+.pair .c:nth-child(2){position:absolute;left:18px;top:14px}
+.c{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;width:58px;height:86px;border-radius:8px;background:#fbf8ee;color:#1b1b1b;font-size:22px;line-height:1.1;border:2px solid #fbf8ee;box-shadow:0 2px 4px #0006}
+.c.red{color:#c0392b}
+.c.t{border-color:#e0a82e}
+.c.sm{width:34px;height:48px;font-size:14px}
+.hand{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding-bottom:8px}
+.hand .c{cursor:pointer}
+.msg{text-align:center;min-height:22px}
+.btns{display:flex;gap:8px;justify-content:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const RK = ['6','7','8','9','10','В','Д','К','Т'], SU = ['♠','♥','♦','♣'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => '&#' + c.charCodeAt(0) + ';');
+let ws, st;
+const send = o => ws.send(JSON.stringify(o));
+const card = (c, small) => `<div class="c ${c.s==1||c.s==2?'red':''} ${st&&st.tc&&c.s==st.tc.s?'t':''} ${small?'sm':''}">${RK[c.r-6]}<br>${SU[c.s]}</div>`;
+
+function entry() {
+  const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  const code = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+  $('#app').innerHTML = `<h2>Дурак</h2>
+    <label>Ваше имя<input id="nm" maxlength="12" value="${esc(u ? u.first_name : '')}"></label>
+    <label>Код комнаты<input id="rm" maxlength="8" value="${esc(code)}" placeholder="например, STOL"></label>
+    <div class="row"><button onclick="go($('#rm').value)">Войти</button>
+    <button onclick="go(Math.random().toString(36).slice(2,6))">Создать комнату</button></div>`;
+}
+function go(room) {
+  const name = $('#nm').value.trim() || 'Игрок';
+  ws = new WebSocket((location.protocol == 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => send({ t: 'join', room, name });
+  ws.onmessage = e => { const m = JSON.parse(e.data); if (m.err) { alert(m.err); return; } st = m; draw(); };
+  ws.onclose = () => { if (st) alert('Соединение потеряно. Откройте игру заново.'); };
+}
+function draw() {
+  const a = $('#app');
+  if (!st.started) {
+    a.innerHTML = `<h2>Комната ${esc(st.room)}</h2>
+      <p>Пригласите друзей: пусть введут этот код.</p>
+      <p>Игроки (${st.players.length}/6): ${st.players.map(p => esc(p.name)).join(', ')}</p>` +
+      (st.host ? `<div class="row"><button onclick="send({t:'bot'})">Добавить бота</button>
+        <button ${st.players.length < 2 ? 'disabled' : ''} onclick="send({t:'start'})">Начать игру</button></div>`
+        : '<p>Ждем, пока хозяин комнаты начнет игру.</p>');
+    return;
+  }
+  const me = st.you, hasOpen = st.table.some(t => !t.d);
+  let msg = me == st.def ? 'Вы отбиваетесь: нажмите карту, чтобы побить' : me == st.att ? 'Ваш ход: выберите карту' : 'Можно подкинуть карту того же достоинства';
+  if (st.over) msg = st.loser < 0 ? 'Ничья' : (st.loser == me ? 'Вы остались дураком' : `Дурак: ${esc(st.players[st.loser].name)}`);
+  const btns = [];
+  if (!st.over && me == st.def && hasOpen) btns.push(`<button onclick="send({t:'take'})">Взять</button>`);
+  if (!st.over && me != st.def && st.table.length && !hasOpen) btns.push(`<button onclick="send({t:'done'})">Бито</button>`);
+  if (st.over && st.host) btns.push(`<button onclick="send({t:'again'})">Сыграть еще раз</button>`);
+  a.innerHTML = `<div class="top">${st.players.map((p, j) => j == me ? '' :
+      `<div class="pl ${j==st.att?'att':''} ${j==st.def?'def':''}">${esc(p.name)}${p.bot?' (бот)':''}<br>карт: ${p.n}</div>`).join('')}</div>
+    <div class="mid"><div class="info">Колода: ${st.deck} Козырь: ${card(st.tc, 1)}</div>
+    <div class="table">${st.table.map(t => `<div class="pair">${card(t.a)}${t.d ? card(t.d) : ''}</div>`).join('')}</div></div>
+    <div class="msg">${msg}</div><div class="btns">${btns.join('')}</div>
+    <div class="hand">${st.hand.map((c, k) => `<span onclick="send({t:'play',i:${k}})">${card(c)}</span>`).join('')}</div>`;
+}
+entry();
+</script>
+</body>
+</html>
