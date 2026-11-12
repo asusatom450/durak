@@ -1,7 +1,29 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 
+// ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
+const TOKEN = process.env.BOT_TOKEN, APP_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
+const tg = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b)
+}).catch(() => {});
+
 const srv = http.createServer((q, r) => {
+  if (TOKEN && q.method === 'POST' && q.url === '/tg/' + TOKEN) {
+    let s = ''; q.on('data', d => s += d);
+    q.on('end', () => {
+      r.end('ok');
+      try {
+        const m = JSON.parse(s).message;
+        if (m && m.text && m.text.startsWith('/start'))
+          tg('sendMessage', {
+            chat_id: m.chat.id,
+            text: 'Подкидной дурак на 2–6 игроков. Нажмите кнопку, чтобы играть.',
+            reply_markup: { inline_keyboard: [[{ text: 'Играть', web_app: { url: APP_URL } }]] }
+          });
+      } catch {}
+    });
+    return;
+  }
   r.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
   r.end(fs.readFileSync(path.join(__dirname, 'index.html')));
 });
@@ -130,4 +152,10 @@ wss.on('connection', ws => {
   });
 });
 
-srv.listen(process.env.PORT || 3000, () => console.log('Дурак запущен на порту', process.env.PORT || 3000));
+srv.listen(process.env.PORT || 3000, () => {
+  console.log('Дурак запущен на порту', process.env.PORT || 3000);
+  if (TOKEN && APP_URL) {
+    tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
+    tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
+  }
+});
