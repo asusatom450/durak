@@ -46,6 +46,16 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
+// Радиостанции (SomaFM, бесплатные потоки). Список меняется здесь, без правки приложения.
+const STATIONS = [
+  { id: 'salad', name: 'Groove Salad: чилл', url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
+  { id: 'fluid', name: 'Fluid: хип-хоп и трэп', url: 'https://ice1.somafm.com/fluid-128-mp3' },
+  { id: 'indie', name: 'Indie Pop Rocks: инди', url: 'https://ice1.somafm.com/indiepop-128-mp3' },
+  { id: 'lounge', name: 'Illinois Street Lounge: лаунж', url: 'https://ice1.somafm.com/illstreet-128-mp3' },
+  { id: 'u80s', name: 'Underground 80s: хиты 80-х', url: 'https://ice1.somafm.com/u80s-128-mp3' },
+  { id: 'space', name: 'Space Station: космос', url: 'https://ice1.somafm.com/spacestation-128-mp3' },
+  { id: 'defcon', name: 'DEF CON: электроника', url: 'https://ice1.somafm.com/defcon-128-mp3' }
+];
 const GRACE = +process.env.GRACE_MS || 60000;
 function sys(R, text) { R.log.push({ n: -1, name: '', text }); R.log = R.log.slice(-30); R.logN++; }
 const PHOTO = /^https:\/\/[\w.\/-]+$/;
@@ -170,7 +180,7 @@ function stateFor(R, i) {
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
     players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
-    result: R.result,
+    result: R.result, radio: R.radio || null,
     log: R.log.slice(-30), logN: R.logN,
     hand: R.players[i].hand
   };
@@ -185,6 +195,7 @@ function send(R) {
 const err = (ws, m) => ws.send(JSON.stringify({ err: m }));
 
 wss.on('connection', ws => {
+  ws.send(JSON.stringify({ ev: 'stations', list: STATIONS }));
   ws.on('message', async raw => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.t == 'join') {
@@ -209,6 +220,14 @@ wss.on('connection', ws => {
     }
     const R = ws.R; if (!R) return;
     const i = R.players.indexOf(ws.p); if (i < 0) return;
+    if (m.t == 'radio') {   // любой игрок включает/меняет/выключает радио для всей комнаты
+      const now = Date.now(); if (now - (ws.p.rt || 0) < 2000) return; ws.p.rt = now;
+      const stn = STATIONS.find(x => x.id == m.id);
+      if (m.id && !stn) return;
+      R.radio = stn ? { id: stn.id, by: R.players[i].name } : null;
+      sys(R, stn ? `🎵 Радио: ${stn.name} (запустил ${R.players[i].name})` : `🔇 Радио выключено (${R.players[i].name})`);
+      return send(R);
+    }
     if (m.t == 'chat') {
       const tx = String(m.text || '').trim().slice(0, 80);
       if (tx) { R.log.push({ n: i, name: R.players[i].name, text: tx }); R.log = R.log.slice(-30); R.logN++; }

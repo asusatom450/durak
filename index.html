@@ -94,6 +94,15 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 #app{position:relative}
 .sndb{position:absolute;top:10px;right:10px;width:38px;height:38px;font-size:18px;z-index:5}
 .tools .ico{width:38px;height:38px;font-size:18px}
+#radio{height:auto;max-height:68vh}
+.stb{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:1px solid #ffffff33;background:#ffffff12;color:inherit;border-radius:14px;padding:11px 13px;font:600 14px Manrope;cursor:pointer;text-align:left}
+.stb.on{border-color:var(--gold);background:#ecc96b22}
+#rlist{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+.rctl{display:flex;gap:10px;align-items:center}.rctl input{flex:1;padding:0}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px}.eq b{width:3px;background:var(--gold);animation:eq .8s infinite ease-in-out alternate}.eq b:nth-child(2){animation-delay:.25s}.eq b:nth-child(3){animation-delay:.5s}
+@keyframes eq{from{height:3px}to{height:14px}}
+.rbtn.on{box-shadow:0 0 0 2px var(--gold)}
+.top .ico{width:38px;height:38px;font-size:17px}
 #bd{position:fixed;inset:0;z-index:39;background:#0007}
 #bd[hidden]{display:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
@@ -126,7 +135,14 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 <div id="app"></div>
 <div id="react" hidden></div>
 <div id="pm" hidden onclick="this.hidden=true"></div>
-<div id="bd" hidden onclick="toggleChat()"></div>
+<div id="bd" hidden onclick="closeSheets()"></div>
+<div class="sheet" id="radio">
+  <div class="sh"><b>📻 Радио за столом</b><button class="ico" onclick="toggleRadio()" aria-label="Закрыть">✕</button></div>
+  <div id="rnow" style="font-size:13px;opacity:.85"></div>
+  <div id="rlist"></div>
+  <div class="rctl"><button class="btn ghost" id="rmute" onclick="rMute()"></button><input type="range" id="rvol" min="0" max="100" oninput="rVol(this.value)"></div>
+  <div id="rhint" style="font-size:12px;opacity:.65"></div>
+</div>
 <div class="sheet" id="sheet">
   <div class="sh"><b>Чат</b><button class="ico" onclick="toggleChat()" aria-label="Закрыть чат">✕</button></div>
   <div id="log"></div>
@@ -147,6 +163,33 @@ const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
 const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
+/*RADIO*/
+const RA=new Audio();RA.preload='none';
+let stations=[],curRadio=null,radioMuted=false,radioVol=.6,radioBlocked=false,radioErr=false,radioOpen=false;
+try{radioMuted=localStorage.rmute=='1';radioVol=+localStorage.rvol||.6}catch(e){}
+const volOK=(()=>{try{RA.volume=.5;return RA.volume==.5}catch(e){return false}})();RA.volume=radioVol;
+RA.onerror=()=>{if(curRadio){radioErr=true;renderRadio()}};
+function playRadio(){RA.play().then(()=>{radioBlocked=false;radioErr=false;renderRadio()}).catch(()=>{radioBlocked=true;renderRadio()})}
+// приводит локальный плеер в соответствие с тем, что включено в комнате
+function syncRadio(){const id=st&&st.radio?st.radio.id:null,want=id&&!radioMuted?id:null;
+  if(want==curRadio)return;curRadio=want;radioErr=false;
+  if(!want){RA.pause();RA.removeAttribute('src');RA.load();radioBlocked=false;return}   // поток остановлен: трафик не идет
+  const s=stations.find(x=>x.id==want);if(!s){curRadio=null;return}
+  RA.src=s.url;RA.volume=radioVol;playRadio()}
+['pointerdown','touchend','click'].forEach(e=>addEventListener(e,()=>{if(radioBlocked&&curRadio)playRadio()},{passive:true}));
+function pickStation(id){const s=stations.find(x=>x.id==id);
+  if(s&&!radioMuted){curRadio=id;radioErr=false;RA.src=s.url;RA.volume=radioVol;playRadio()}   // запуск по нажатию: браузер разрешит звук
+  send({t:'radio',id})}
+function rMute(){radioMuted=!radioMuted;try{localStorage.rmute=radioMuted?'1':'0'}catch(e){}syncRadio();renderRadio();if(st&&st.started)draw()}
+function rVol(v){radioVol=v/100;RA.volume=radioVol;try{localStorage.rvol=radioVol}catch(e){}}
+function toggleRadio(){radioOpen=!radioOpen;if(radioOpen&&chatOpen)toggleChat();$('#radio').classList.toggle('open',radioOpen);$('#bd').hidden=!(radioOpen||chatOpen);renderRadio()}
+function closeSheets(){if(chatOpen)toggleChat();if(radioOpen)toggleRadio()}
+function renderRadio(){const r=st&&st.radio,cur=r&&stations.find(x=>x.id==r.id);
+  $('#rnow').innerHTML=cur?`🎵 Играет: <b>${esc(cur.name)}</b><br>Запустил: ${esc(r.by)}`:'Радио выключено. Любой игрок может включить станцию, слышат все.';
+  $('#rlist').innerHTML=stations.map(s=>`<button class="stb ${r&&r.id==s.id?'on':''}" onclick="pickStation('${s.id}')"><span>${esc(s.name)}</span>${r&&r.id==s.id?'<i class="eq"><b></b><b></b><b></b></i>':''}</button>`).join('')+(r?`<button class="stb" onclick="send({t:'radio',id:null})">⏹ Выключить для всех</button>`:'');
+  $('#rmute').textContent=radioMuted?'🔇 Не слушаю':'🔊 Слушаю';
+  $('#rvol').style.display=volOK?'':'none';$('#rvol').value=Math.round(radioVol*100);
+  $('#rhint').textContent=radioMuted?'Радио выключено только у вас, поток не загружается.':radioErr?'Станция не отвечает, попробуйте другую.':radioBlocked?'Нажмите в любом месте экрана, чтобы включить звук.':'Кнопка слева выключает радио только у вас: другие продолжают слушать.'}
 /*SND*/
 let muted=false;try{muted=localStorage.mute=='1'}catch(e){}
 let AC,nb,prevSt=null,prevLogN=null;
@@ -224,15 +267,15 @@ function conn(){
   ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,uid,initData:(tg&&tg.initData)||''})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();return}
-    if(m.ev=='react')return float(m);
-    selT=null;st=m;draw();chatRender()};
+    if(m.ev=='stations'){stations=m.list;return}if(m.ev=='react')return float(m);
+    selT=null;st=m;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
   a.innerHTML=`${sndBtn()}<h1 style="font-size:40px;margin-top:20px">Комната ${esc(st.room)}</h1><p class="sub">Позовите друзей: пустые места займут боты.</p>
   <div class="lob">${st.players.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s ${j*.07}s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
   <div style="flex:1"></div>
-  <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
+  <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
 }
 function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITE+'?startapp='+st.room)+'&text='+encodeURIComponent('Сыграем в дурака? Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
 function play(k){if(st.over)return;send({t:'play',i:k,to:selT});selT=null;hap('light')}
@@ -252,11 +295,11 @@ function draw(){
   if(!st.over&&me!=st.def&&st.table.length&&!hasOpen)b.push(`<button class="btn" onclick="send({t:'done'})">Бито</button>`);
   const unread=chatOpen?0:st.logN-logSeen;
   const win=st.loser!=me,txt=st.loser<0?'Ничья':st.loser==me?'Вы остались дураком':'Дурак: '+esc(st.players[st.loser].name);
-  a.innerHTML=`<div class="top"><div class="chip">Комната <b>${esc(st.room)}</b></div><div class="deckbox"><span class="n">Колода ${st.deck}</span>${card(st.tc,'sm','trump')}</div></div>
+  a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div><div class="deckbox"><span class="n">Колода ${st.deck}</span>${card(st.tc,'sm','trump')}</div></div>
   <div class="seats">${st.players.map((p,j)=>j==me?'':seat(p,j)).join('')}</div>
   <div class="felt">${st.table.length?st.table.map((t,j)=>`<div class="pair">${card(t.a,'a'+(selT===j?' sel':''),'a'+key(t.a),me==st.def&&!t.d?`onclick="selT=${j};draw()"`:'')}${t.d?card(t.d,'d','d'+key(t.d)):''}</div>`).join(''):'<div class="empty">Стол пуст</div>'}</div>
   <div class="msg">${msg}</div>
-  <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
+  <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
   <div class="hand" style="--n:${Math.max(st.hand.length,2)}">${st.hand.map((c,k)=>card(c,'h'+(can(c)?'':' dim'),'h'+key(c),`style="--i:${k}" onclick="play(${k})"`)).join('')}</div>
   ${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
   sfx(seen,next,me,win);seen=next;prevSt=st;
@@ -266,13 +309,13 @@ function float(m){snd('pop');const el=$('#seat-'+m.from),r=el?el.getBoundingClie
   const s=document.createElement('span');s.className='fl';s.textContent=m.e;s.style.left=r.left+r.width/2-18+'px';s.style.top=r.top+'px';document.body.appendChild(s);setTimeout(()=>s.remove(),1950)}
 $('#react').innerHTML=EMO.map(e=>`<button onclick="send({t:'react',e:'${e}'});toggleReact()">${e}</button>`).join('');
 function toggleReact(){const r=$('#react');r.hidden=!r.hidden}
-function toggleChat(){chatOpen=!chatOpen;$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!chatOpen;if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
+function toggleChat(){chatOpen=!chatOpen;if(chatOpen&&radioOpen)toggleRadio();$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!(chatOpen||radioOpen);if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
 function say(t){const i=$('#ci');const text=(t||i.value).trim();if(!text)return;send({t:'chat',text});i.value=''}
 function chatRender(){if(!st)return;const l=$('#log');
   if(prevLogN!==null&&st.logN>prevLogN){const lm=st.log[st.log.length-1];if(lm&&lm.n>=0&&lm.n!=st.you)snd('msg')}prevLogN=st.logN;
   l.innerHTML=st.log.map(m=>m.n<0?`<div class="m sys">${esc(m.text)}</div>`:`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
-document.addEventListener('keydown',e=>{if(e.key=='Escape'&&chatOpen)toggleChat()});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')closeSheets()});
 setInterval(()=>document.querySelectorAll('.offt').forEach(e=>e.textContent=Math.max(0,Math.ceil((+e.dataset.e-Date.now())/1000))),500);
 entry();
 </script>
