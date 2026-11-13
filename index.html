@@ -89,6 +89,8 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 .res .box{background:linear-gradient(#0f5a40,#073323);border:1px solid var(--gold);border-radius:28px;padding:26px 32px;text-align:center;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
 .res h2{font:900 26px 'Playfair Display',serif;margin:6px 0 16px}
 .big{font-size:76px;animation:bob .9s ease-in-out infinite alternate}
+.seat.gone{opacity:.7}.seat.gone .av,.seat.left .av{filter:grayscale(1)}.seat.left{opacity:.45}
+.m.sys{align-self:center;background:none;opacity:.65;font-size:12px}
 #bd{position:fixed;inset:0;z-index:39;background:#0007}
 #bd[hidden]{display:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
@@ -165,7 +167,7 @@ function resHTML(me){const r=(st.result||[]).find(x=>x.i==me);
 const face=(c,cls,attrs,tr)=>`<div class="card ${c.s==1||c.s==2?'red':''} ${tr?'t':''} ${cls}" ${attrs||''}><i>${RK[c.r-6]}<br>${SU[c.s]}</i><b>${SU[c.s]}</b><i class="br">${RK[c.r-6]}<br>${SU[c.s]}</i></div>`;
 function card(c,cls,id,attrs){const nw=!seen.has(id);next.add(id);return face(c,cls+(nw?' in':''),attrs,st.tc&&c.s==st.tc.s)}
 const av=p=>`<div class="av" style="background-color:hsl(${hue(p.name)} 45% 36%);${p.photo?`background-image:url('${esc(p.photo)}')`:''}">${p.photo?'':esc([...p.name][0]||'?').toUpperCase()}${p.n===''?'':`<span class="cnt">${p.n}</span>`}${p.prof?`<span class="bg">${badge(p.prof.rating,22)}</span>`:''}</div>`;
-const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}" onclick="showProf(${j})">${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.n==0&&!st.deck?'✅ вышел':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}</div></div>`;
+const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}" onclick="showProf(${j})">${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.left?'🚪 покинул игру':p.off?`📵 нет связи <span class="offt" data-e="${Date.now()+p.offIn}">${Math.ceil(p.offIn/1000)}</span> с`:p.n==0&&!st.deck?'✅ без карт':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}</div></div>`;
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
@@ -205,6 +207,7 @@ function draw(){
     if(!st.table.length)return me==st.att;
     return st.table.length<6&&unb<defN&&ranks.has(c.r)};
   let msg=me==st.def?(hasOpen?'Отбейте карту или возьмите':'Всё отбито, ждем «Бито»'):me==st.att?(st.table.length?(hasOpen?'Соперник отбивается…':'Подкиньте карту или нажмите «Бито»'):'Ваш ход'):'Можно подкинуть карту того же достоинства';
+  const offs=st.players.filter(p=>p.off&&!p.left);if(offs.length&&!st.over)msg='⏳ Ждем игрока: '+offs.map(p=>esc(p.name)).join(', ');
   const b=[];
   if(!st.over&&me==st.def&&hasOpen)b.push(`<button class="btn" onclick="send({t:'take'})">Взять</button>`);
   if(!st.over&&me!=st.def&&st.table.length&&!hasOpen)b.push(`<button class="btn" onclick="send({t:'done'})">Бито</button>`);
@@ -227,9 +230,10 @@ function toggleReact(){const r=$('#react');r.hidden=!r.hidden}
 function toggleChat(){chatOpen=!chatOpen;$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!chatOpen;if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
 function say(t){const i=$('#ci');const text=(t||i.value).trim();if(!text)return;send({t:'chat',text});i.value=''}
 function chatRender(){if(!st)return;const l=$('#log');
-  l.innerHTML=st.log.map(m=>`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
+  l.innerHTML=st.log.map(m=>m.n<0?`<div class="m sys">${esc(m.text)}</div>`:`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
 document.addEventListener('keydown',e=>{if(e.key=='Escape'&&chatOpen)toggleChat()});
+setInterval(()=>document.querySelectorAll('.offt').forEach(e=>e.textContent=Math.max(0,Math.ceil((+e.dataset.e-Date.now())/1000))),500);
 entry();
 </script>
 </body>

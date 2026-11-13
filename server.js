@@ -46,6 +46,8 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
+const GRACE = +process.env.GRACE_MS || 60000;
+function sys(R, text) { R.log.push({ n: -1, name: '', text }); R.log = R.log.slice(-30); R.logN++; }
 const PHOTO = /^https:\/\/[\w.\/-]+$/;
 // Кто это: проверенный аккаунт Telegram (рейтинг ведется), иначе гость (без рейтинга)
 async function auth(m) {
@@ -67,7 +69,7 @@ function settle(R) {
   const multi = R.players.filter(p => p.prof).length >= 2;
   R.players.forEach((p, i) => {
     if (!p.prof) return;
-    const pr = p.prof, lost = i == R.loser;
+    const pr = p.prof, lost = i == R.loser || !!p.left;
     let d = multi ? (lost ? -24 : 18) : (lost ? -8 : 6);
     if (!lost && pr.streak >= 2) d += 3;
     const before = pr.rating; pr.rating = Math.max(100, pr.rating + d);
@@ -103,6 +105,9 @@ function canAtk(R, i, c) {
     R.table.some(t => t.a.r == c.r || (t.d && t.d.r == c.r));
 }
 function start(R) {
+  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
+  R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
+  if (R.players.length < 2) { R.started = false; R.over = false; return; }
   R.deck = newDeck(); R.tc = R.deck[R.deck.length - 1]; R.trump = R.tc.s;
   R.table = []; R.over = false; R.loser = -1; R.result = null;
   for (const p of R.players) p.hand = R.deck.splice(0, 6);
@@ -117,7 +122,7 @@ function endRound(R, took) {
   const ord = [];
   for (let k = 0; k < n; k++) { const j = (R.att + k) % n; if (j != R.def) ord.push(j); }
   ord.push(R.def);
-  for (const j of ord) { const p = R.players[j]; while (p.hand.length < 6 && R.deck.length) p.hand.push(R.deck.shift()); }
+  for (const j of ord) { const p = R.players[j]; if (p.left) continue; while (p.hand.length < 6 && R.deck.length) p.hand.push(R.deck.shift()); }
   const alive = R.players.filter(p => p.hand.length);
   if (alive.length <= 1) { R.over = true; R.loser = alive[0] ? R.players.indexOf(alive[0]) : -1; settle(R); return; }
   const a = took ? nxt(R, R.def) : (d.hand.length ? R.def : nxt(R, R.def));
@@ -127,6 +132,17 @@ const fin = R => { if (!open(R) && !R.players[R.def].hand.length) endRound(R, fa
 function attack(R, i, k) { const c = R.players[i].hand.splice(k, 1)[0]; R.table.push({ a: c }); fin(R); }
 function defend(R, i, k, oi) { const c = R.players[i].hand.splice(k, 1)[0]; R.table[oi].d = c; fin(R); }
 const take = (R, i) => endRound(R, true);
+
+function drop(R, p) {
+  const i = R.players.indexOf(p); if (i < 0 || p.left) return;
+  p.left = true; p.off = false; p.hand = [];
+  sys(R, p.name + ' покинул игру');
+  if (!R.started || R.over) return;
+  const alive = R.players.filter(q => q.hand.length);
+  if (alive.length <= 1) { R.over = true; R.loser = i; settle(R); return; }
+  if (i == R.def || (i == R.att && R.table.length)) endRound(R, false);   // карты со стола уходят в отбой
+  else if (i == R.att) { R.att = nxt(R, i); R.def = nxt(R, R.att); }
+}
 
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
@@ -152,7 +168,7 @@ function stateFor(R, i) {
   return {
     room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
-    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '',
+    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
     result: R.result,
     log: R.log.slice(-30), logN: R.logN,
@@ -177,7 +193,13 @@ wss.on('connection', ws => {
       const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0 });
       const A = await auth(m), uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
-      if (old) { const o = old.ws; old.ws = ws; old.bot = false; ws.p = old; ws.R = R; if (o && o !== ws) o.close(); return send(R); }
+      if (old) {
+        if (old.left) return err(ws, 'Вы покинули эту партию. Дождитесь ее окончания.');
+        const o = old.ws; old.ws = ws; ws.p = old; ws.R = R; clearTimeout(R.gc);
+        if (old.off) { clearTimeout(old.tm); old.off = false; sys(R, old.name + ' вернулся'); }
+        if (o && o !== ws) o.close();
+        return send(R);
+      }
       if (R.started) return err(ws, 'Игра уже идет');
       if (R.players.length >= 6) return err(ws, 'Комната заполнена (максимум 6)');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
@@ -210,13 +232,19 @@ wss.on('connection', ws => {
     send(R);
   });
   ws.on('close', () => {
-    const R = ws.R; if (!R) return;
-    const i = R.players.indexOf(ws.p); if (i < 0) return;
-    if (ws.p.ws !== ws) return;
-    if (R.started) { ws.p.bot = true; ws.p.ws = null; }
-    else R.players.splice(i, 1);
-    if (!R.players.some(p => p.ws)) { clearTimeout(R.tm); delete rooms[R.code]; }
-    else send(R);
+    const R = ws.R, p = ws.p; if (!R || !p || p.ws !== ws) return;
+    const i = R.players.indexOf(p); if (i < 0) return;
+    p.ws = null;
+    if (!R.started) R.players.splice(i, 1);
+    else if (!R.over && !p.left) {
+      p.off = true; p.offUntil = Date.now() + GRACE; sys(R, p.name + ' потерял связь');
+      p.tm = setTimeout(() => { if (p.off && !p.ws) { drop(R, p); send(R); } }, GRACE);
+    }
+    if (!R.players.some(q => q.ws)) {
+      clearTimeout(R.tm);
+      if (!R.started || R.over) delete rooms[R.code];
+      else R.gc = setTimeout(() => { if (!R.players.some(q => q.ws)) { clearTimeout(R.tm); delete rooms[R.code]; } }, GRACE + 30000);
+    } else send(R);
   });
 });
 
