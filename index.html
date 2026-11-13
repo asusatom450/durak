@@ -91,6 +91,9 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 .big{font-size:76px;animation:bob .9s ease-in-out infinite alternate}
 .seat.gone{opacity:.7}.seat.gone .av,.seat.left .av{filter:grayscale(1)}.seat.left{opacity:.45}
 .m.sys{align-self:center;background:none;opacity:.65;font-size:12px}
+#app{position:relative}
+.sndb{position:absolute;top:10px;right:10px;width:38px;height:38px;font-size:18px;z-index:5}
+.tools .ico{width:38px;height:38px;font-size:18px}
 #bd{position:fixed;inset:0;z-index:39;background:#0007}
 #bd[hidden]{display:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
@@ -144,6 +147,42 @@ const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
 const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
+/*SND*/
+let muted=false;try{muted=localStorage.mute=='1'}catch(e){}
+let AC,nb,prevSt=null,prevLogN=null;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state=='suspended')AC.resume();return AC}
+['pointerdown','touchend','click'].forEach(e=>addEventListener(e,()=>{if(!muted)ac()},{passive:true}));
+function nz(t,d,f0,f1,q,g,type){const c=AC;if(!nb){nb=c.createBuffer(1,c.sampleRate,c.sampleRate);const a=nb.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1}
+  const s=c.createBufferSource();s.buffer=nb;const f=c.createBiquadFilter();f.type=type||'bandpass';f.Q.value=q;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+d);
+  const v=c.createGain();v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(g,t+.006);v.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(f);f.connect(v);v.connect(c.destination);s.start(t,Math.random()*.6,d+.05)}
+function tn(t,f0,d,g,f1,type){const c=AC,o=c.createOscillator(),v=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t+d);
+  v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(g,t+.01);v.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(v);v.connect(c.destination);o.start(t);o.stop(t+d+.05)}
+const S={
+  swish:(t,v)=>nz(t,.14,1500,5200,.9,.22*v),
+  place:(t,v)=>{tn(t,190,.09,.28*v,70);nz(t,.07,2600,1100,1.2,.4*v)},
+  slam:(t,v)=>{tn(t,150,.14,.4*v,55);nz(t,.09,2200,900,1,.55*v)},
+  sweep:(t,v)=>nz(t,.38,4200,600,.7,.3*v,'lowpass'),
+  take:(t,v)=>[0,.07,.14].forEach(d=>S.swish(t+d,v)),
+  turn:(t,v)=>{tn(t,660,.14,.1*v,0,'triangle');tn(t+.12,880,.2,.1*v,0,'triangle')},
+  win:(t,v)=>[523,659,784,1047].forEach((f,i)=>tn(t+i*.11,f,.3,.12*v,0,'triangle')),
+  lose:(t,v)=>[392,330,262].forEach((f,i)=>tn(t+i*.18,f,.4,.12*v,f*.96,'sine')),
+  msg:(t,v)=>tn(t,880,.09,.08*v),
+  pop:(t,v)=>tn(t,500,.1,.09*v,900)};
+function snd(n,d=0,v=1){if(muted)return;try{const c=ac();if(!c)return;S[n](c.currentTime+d+.01,v)}catch(e){}}
+function toggleSound(){muted=!muted;try{localStorage.mute=muted?'1':'0'}catch(e){}document.querySelectorAll('.snd').forEach(b=>b.textContent=muted?'🔇':'🔊');if(!muted)snd('pop')}
+const sndBtn=()=>`<button class="ico snd sndb" onclick="toggleSound()">${muted?'🔇':'🔊'}</button>`;
+// звуки по изменению состояния: карта на стол, раздача/добор, «взять», «бито», ваш ход, итог
+function sfx(pn,nx,me,win){const pst=prevSt;
+  const nw=[...nx].filter(k=>!pn.has(k)),nh=nw.filter(k=>k[0]=='h').length;
+  if(nw.some(k=>k[0]=='d'))snd('slam');else if(nw.some(k=>k[0]=='a'))snd('place');
+  const cleared=pst&&pst.started&&pst.table.length&&!st.table.length;let iTook=false;
+  if(cleared){const took=st.att!=pst.def&&st.players[pst.def].n>0;snd(took?'take':'sweep');iTook=took&&pst.def==me}
+  if(nh&&!iTook)for(let i=0;i<Math.min(nh,6);i++)snd('swish',(cleared?.3:0)+i*.06);
+  else if(!nh&&pst&&pst.started&&pst.deck>st.deck)snd('swish',0,.5);
+  if(st.over&&!(pst&&pst.over))snd(win?'win':'lose',.3);
+  else if(!st.over&&st.att==me&&!st.table.length&&!(pst&&pst.started&&pst.att==me&&!pst.table.length))snd('turn',nh?.5:.1)}
+/*END*/
 const RANKS=[{n:'Новичок',min:0,c:['#a9b3ae','#5b6663'],g:'6'},{n:'Игрок',min:1000,c:['#eab27a','#8a4f27'],g:'♣'},{n:'Знаток',min:1150,c:['#eef3f7','#8794a0'],g:'♦'},{n:'Мастер',min:1300,c:['#ffe38f','#c98a12'],g:'♥'},{n:'Шулер',min:1500,c:['#9ff5e4','#168a80'],g:'♠'},{n:'Легенда',min:1800,c:['#ff9f90','#a81c28'],g:'♛'}];
 const rankIdx=r=>RANKS.reduce((a,x,i)=>r>=x.min?i:a,0),rankOf=r=>RANKS[rankIdx(r)];
 function badge(rt,s){const k=rankIdx(rt),R=RANKS[k],id='g'+k;
@@ -171,7 +210,7 @@ const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
-  $('#app').innerHTML=`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>
+  $('#app').innerHTML=`${sndBtn()}<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>
   <h1>Дурак</h1><p class="sub">Подкидной онлайн на 2–6 игроков</p><div id="me"></div>
   <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
   <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">
@@ -190,7 +229,7 @@ function conn(){
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
-  a.innerHTML=`<h1 style="font-size:40px;margin-top:20px">Комната ${esc(st.room)}</h1><p class="sub">Позовите друзей: пустые места займут боты.</p>
+  a.innerHTML=`${sndBtn()}<h1 style="font-size:40px;margin-top:20px">Комната ${esc(st.room)}</h1><p class="sub">Позовите друзей: пустые места займут боты.</p>
   <div class="lob">${st.players.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s ${j*.07}s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
   <div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
@@ -199,7 +238,7 @@ function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITE
 function play(k){if(st.over)return;send({t:'play',i:k,to:selT});selT=null;hap('light')}
 function draw(){
   const a=$('#app');next=new Set();
-  if(!st.started){lobby(a);seen=next;return}
+  if(!st.started){lobby(a);seen=next;prevSt=st;return}
   const me=st.you,T=st.tc.s,hasOpen=st.table.some(t=>!t.d),defN=st.players[st.def].n,unb=st.table.filter(t=>!t.d).length;
   const ranks=new Set(st.table.flatMap(t=>[t.a.r,t.d&&t.d.r].filter(Boolean)));
   const can=c=>{if(st.over)return true;
@@ -217,19 +256,20 @@ function draw(){
   <div class="seats">${st.players.map((p,j)=>j==me?'':seat(p,j)).join('')}</div>
   <div class="felt">${st.table.length?st.table.map((t,j)=>`<div class="pair">${card(t.a,'a'+(selT===j?' sel':''),'a'+key(t.a),me==st.def&&!t.d?`onclick="selT=${j};draw()"`:'')}${t.d?card(t.d,'d','d'+key(t.d)):''}</div>`).join(''):'<div class="empty">Стол пуст</div>'}</div>
   <div class="msg">${msg}</div>
-  <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
+  <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
   <div class="hand" style="--n:${Math.max(st.hand.length,2)}">${st.hand.map((c,k)=>card(c,'h'+(can(c)?'':' dim'),'h'+key(c),`style="--i:${k}" onclick="play(${k})"`)).join('')}</div>
   ${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
-  seen=next;
+  sfx(seen,next,me,win);seen=next;prevSt=st;
   if(st.over)try{tg.HapticFeedback.notificationOccurred(win?'success':'error')}catch(e){}
 }
-function float(m){const el=$('#seat-'+m.from),r=el?el.getBoundingClientRect():{left:innerWidth/2-20,top:innerHeight-170,width:40};
+function float(m){snd('pop');const el=$('#seat-'+m.from),r=el?el.getBoundingClientRect():{left:innerWidth/2-20,top:innerHeight-170,width:40};
   const s=document.createElement('span');s.className='fl';s.textContent=m.e;s.style.left=r.left+r.width/2-18+'px';s.style.top=r.top+'px';document.body.appendChild(s);setTimeout(()=>s.remove(),1950)}
 $('#react').innerHTML=EMO.map(e=>`<button onclick="send({t:'react',e:'${e}'});toggleReact()">${e}</button>`).join('');
 function toggleReact(){const r=$('#react');r.hidden=!r.hidden}
 function toggleChat(){chatOpen=!chatOpen;$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!chatOpen;if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
 function say(t){const i=$('#ci');const text=(t||i.value).trim();if(!text)return;send({t:'chat',text});i.value=''}
 function chatRender(){if(!st)return;const l=$('#log');
+  if(prevLogN!==null&&st.logN>prevLogN){const lm=st.log[st.log.length-1];if(lm&&lm.n>=0&&lm.n!=st.you)snd('msg')}prevLogN=st.logN;
   l.innerHTML=st.log.map(m=>m.n<0?`<div class="m sys">${esc(m.text)}</div>`:`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
 document.addEventListener('keydown',e=>{if(e.key=='Escape'&&chatOpen)toggleChat()});
