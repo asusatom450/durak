@@ -1,5 +1,6 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
+const db = require('./db');
 
 // ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
 const TOKEN = process.env.BOT_TOKEN, APP_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
@@ -11,6 +12,18 @@ const PLAY = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть', web_app
 const HELLO = '♠️ <b>Подкидной дурак</b> ♥️\n\nПартии онлайн на 2–6 игроков прямо в Telegram.\n\n🃏 создайте комнату и отправьте код друзьям\n🤖 пустые места займут боты\n💬 чат и реакции за столом\n\nНажмите «Играть» 👇';
 const RULES = '📖 <b>Правила</b>\n\n• Колода 36 карт, каждому по 6. Последняя карта колоды задает козырь.\n• Первым ходит владелец младшего козыря.\n• Атакующий кладет карту, защитник бьет её старшей картой той же масти или любым козырем.\n• Подкидывать можно карты тех достоинств, что уже на столе (не больше 6 и не больше, чем карт у защитника).\n• Побили всё: нажмите «Бито», ходит защитник. Не смогли: «Взять».\n• После хода все добирают до 6 карт.\n• Кто остался с картами последним, тот дурак.';
 const srv = http.createServer((q, r) => {
+  if (q.url.startsWith('/api/')) {
+    const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
+    (async () => {
+      if (q.url.startsWith('/api/top')) return json((await db.top(10)).map(u => ({ name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins })));
+      if (q.url.startsWith('/api/me')) {
+        const d = new URL(q.url, 'http://x').searchParams.get('d'), u = TOKEN && d && db.verify(d, TOKEN);
+        return json(u ? await db.getUser('tg' + u.id, String(u.first_name || 'Игрок').slice(0, 24), PHOTO.test(u.photo_url || '') ? u.photo_url : '') : null);
+      }
+      json(null);
+    })().catch(() => { r.writeHead(500); r.end('null'); });
+    return;
+  }
   if (TOKEN && q.method === 'POST' && q.url === '/tg/' + TOKEN) {
     let s = ''; q.on('data', d => s += d);
     q.on('end', () => {
@@ -33,6 +46,36 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
+const PHOTO = /^https:\/\/[\w.\/-]+$/;
+// Кто это: проверенный аккаунт Telegram (рейтинг ведется), иначе гость (без рейтинга)
+async function auth(m) {
+  if (TOKEN) {
+    const u = m.initData && db.verify(m.initData, TOKEN);
+    if (u) {
+      const prof = await db.getUser('tg' + u.id, String(u.first_name || 'Игрок').slice(0, 24), PHOTO.test(u.photo_url || '') ? u.photo_url.slice(0, 300) : '');
+      return { uid: prof.uid, prof };
+    }
+    return { uid: 'g' + String(m.uid || '').slice(0, 30), prof: null };
+  }
+  const uid = 'dev' + String(m.uid || '').slice(0, 30);   // локальная проверка без токена
+  return { uid, prof: await db.getUser(uid, String(m.name || 'Игрок').slice(0, 24), '') };
+}
+// Рейтинг: с живыми соперниками ±18/−24, против одних ботов ±6/−8, серия побед +3
+function settle(R) {
+  R.result = [];
+  if (R.loser < 0) return;
+  const multi = R.players.filter(p => p.prof).length >= 2;
+  R.players.forEach((p, i) => {
+    if (!p.prof) return;
+    const pr = p.prof, lost = i == R.loser;
+    let d = multi ? (lost ? -24 : 18) : (lost ? -8 : 6);
+    if (!lost && pr.streak >= 2) d += 3;
+    const before = pr.rating; pr.rating = Math.max(100, pr.rating + d);
+    pr.games++; if (lost) { pr.losses++; pr.streak = 0; } else { pr.wins++; pr.streak++; }
+    db.saveUser(pr);
+    R.result.push({ i, d: pr.rating - before, before, after: pr.rating });
+  });
+}
 const BOTN = ['Шулер', 'Профессор', 'Гусар', 'Барон', 'Лиса', 'Граф'];
 const EMO = ['👍', '😂', '😮', '😡', '🔥', '👏', '😎', '🤝'];
 function bcast(R, o) { R.players.forEach(p => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(o)); }); }
@@ -61,7 +104,7 @@ function canAtk(R, i, c) {
 }
 function start(R) {
   R.deck = newDeck(); R.tc = R.deck[R.deck.length - 1]; R.trump = R.tc.s;
-  R.table = []; R.over = false; R.loser = -1;
+  R.table = []; R.over = false; R.loser = -1; R.result = null;
   for (const p of R.players) p.hand = R.deck.splice(0, 6);
   let best = 0, bw = 99;
   R.players.forEach((p, i) => p.hand.forEach(c => { if (c.s == R.trump && c.r < bw) { bw = c.r; best = i; } }));
@@ -76,7 +119,7 @@ function endRound(R, took) {
   ord.push(R.def);
   for (const j of ord) { const p = R.players[j]; while (p.hand.length < 6 && R.deck.length) p.hand.push(R.deck.shift()); }
   const alive = R.players.filter(p => p.hand.length);
-  if (alive.length <= 1) { R.over = true; R.loser = alive[0] ? R.players.indexOf(alive[0]) : -1; return; }
+  if (alive.length <= 1) { R.over = true; R.loser = alive[0] ? R.players.indexOf(alive[0]) : -1; settle(R); return; }
   const a = took ? nxt(R, R.def) : (d.hand.length ? R.def : nxt(R, R.def));
   R.att = a; R.def = nxt(R, a);
 }
@@ -109,7 +152,9 @@ function stateFor(R, i) {
   return {
     room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
-    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '' })),
+    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '',
+      prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
+    result: R.result,
     log: R.log.slice(-30), logN: R.logN,
     hand: R.players[i].hand
   };
@@ -124,19 +169,19 @@ function send(R) {
 const err = (ws, m) => ws.send(JSON.stringify({ err: m }));
 
 wss.on('connection', ws => {
-  ws.on('message', raw => {
+  ws.on('message', async raw => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.t == 'join') {
       const code = String(m.room || '').toUpperCase().slice(0, 8);
       if (!code) return err(ws, 'Введите код комнаты');
       const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0 });
-      const uid = String(m.uid || '').slice(0, 40);
+      const A = await auth(m), uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) { const o = old.ws; old.ws = ws; old.bot = false; ws.p = old; ws.R = R; if (o && o !== ws) o.close(); return send(R); }
       if (R.started) return err(ws, 'Игра уже идет');
       if (R.players.length >= 6) return err(ws, 'Комната заполнена (максимум 6)');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
-      ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo, hand: [], bot: false, ws };
+      ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
       ws.R = R; R.players.push(ws.p);
       return send(R);
     }

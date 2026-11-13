@@ -25,7 +25,7 @@ input:focus{border-color:var(--gold)}
 .btn:disabled{opacity:.4}
 .btn.ghost{background:#ffffff18;color:#f6efd9;box-shadow:none;border:1px solid #ffffff33}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.hero{display:flex;justify-content:center;height:150px;margin:26px 0 4px;--cw:84px}
+.hero{display:flex;justify-content:center;height:118px;margin:8px 0 0;--cw:76px}
 .hero .card{margin:0 -18px;transform-origin:50% 120%;animation:fan 1s cubic-bezier(.2,1.2,.3,1) backwards}
 .hero .card:nth-child(1){transform:rotate(-16deg);animation-delay:.05s}.hero .card:nth-child(2){transform:translateY(-10px)}.hero .card:nth-child(3){transform:rotate(16deg);animation-delay:.15s}
 form{display:flex;flex-direction:column;gap:10px;margin-top:8px}
@@ -93,6 +93,18 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 #bd[hidden]{display:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
 .sh .ico{width:36px;height:36px;font-size:15px}
+#pm{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:55;animation:fade .2s}
+#pm[hidden]{display:none}
+.pc{width:min(340px,92vw);background:linear-gradient(#0f5a40,#073323);border:1px solid var(--gold);border-radius:26px;padding:22px;text-align:center;animation:pop .35s cubic-bezier(.2,1.3,.4,1)}
+.pc h3{font:900 26px 'Playfair Display',serif;margin:8px 0 2px}
+.bar2{height:8px;border-radius:5px;background:#0007;overflow:hidden;margin:10px 0 4px}.bar2 i{display:block;height:100%;background:linear-gradient(90deg,#ecc96b,#f7e6a8)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.grid div{background:#0004;border-radius:12px;padding:8px 4px;font-size:12px}.grid b{display:block;font:800 18px Manrope;color:var(--gold)}
+.top10{text-align:left;display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:55vh;overflow:auto}
+.top10 .r{display:flex;align-items:center;gap:10px;background:#0004;border-radius:14px;padding:6px 10px}.top10 .r span{flex:1}.pos{width:20px;color:var(--gold)}
+.bg{position:absolute;left:-9px;top:-7px;line-height:0;filter:drop-shadow(0 2px 3px #000a)}
+.rt{font-size:10.5px;color:var(--gold);white-space:nowrap}
+.dl{font:900 36px 'Playfair Display',serif;animation:pop .6s .2s backwards}.dl.up{color:#8ff3a8}.dl.dn{color:#ff9a8b}
+.badge-big{filter:drop-shadow(0 6px 14px #000a);line-height:0;animation:pop .5s}
 @keyframes deal{from{transform:translateY(90px) rotate(-10deg) scale(.6);opacity:0}}
 @keyframes drop{from{transform:translateY(140px) scale(.8);opacity:0}}
 @keyframes slam{from{transform:translate(-26px,-70px) rotate(-14deg) scale(1.35);opacity:0}}
@@ -108,6 +120,7 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 <div id="net" hidden>Переподключение…</div>
 <div id="app"></div>
 <div id="react" hidden></div>
+<div id="pm" hidden onclick="this.hidden=true"></div>
 <div id="bd" hidden onclick="toggleChat()"></div>
 <div class="sheet" id="sheet">
   <div class="sh"><b>Чат</b><button class="ico" onclick="toggleChat()" aria-label="Закрыть чат">✕</button></div>
@@ -129,25 +142,45 @@ const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
 const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
+const RANKS=[{n:'Новичок',min:0,c:['#a9b3ae','#5b6663'],g:'6'},{n:'Игрок',min:1000,c:['#eab27a','#8a4f27'],g:'♣'},{n:'Знаток',min:1150,c:['#eef3f7','#8794a0'],g:'♦'},{n:'Мастер',min:1300,c:['#ffe38f','#c98a12'],g:'♥'},{n:'Шулер',min:1500,c:['#9ff5e4','#168a80'],g:'♠'},{n:'Легенда',min:1800,c:['#ff9f90','#a81c28'],g:'♛'}];
+const rankIdx=r=>RANKS.reduce((a,x,i)=>r>=x.min?i:a,0),rankOf=r=>RANKS[rankIdx(r)];
+function badge(rt,s){const k=rankIdx(rt),R=RANKS[k],id='g'+k;
+  return `<svg width="${s}" height="${Math.round(s*1.17)}" viewBox="0 0 48 56"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${R.c[0]}"/><stop offset="1" stop-color="${R.c[1]}"/></linearGradient></defs><path d="M24 2 44 10v18c0 14-10 23-20 27C14 51 4 42 4 28V10z" fill="url(#${id})" stroke="#fff" stroke-opacity=".75" stroke-width="2"/><path d="M24 7 39 13v15c0 10-7 17-15 21" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><text x="24" y="33" text-anchor="middle" font-size="22" font-weight="900" font-family="Playfair Display,Georgia,serif" fill="${k==5?'#fff':'#1a1712'}" fill-opacity=".88">${R.g}</text>${[...Array(k)].map((_,i)=>`<circle cx="${24-(k-1)*4+i*8}" cy="45" r="2" fill="#fff" fill-opacity=".9"/>`).join('')}</svg>`}
+function profCard(name,pr){const k=rankIdx(pr.rating),R=RANKS[k],nx=RANKS[k+1];
+  const pct=nx?Math.round((pr.rating-R.min)/(nx.min-R.min)*100):100,wr=pr.games?Math.round(pr.wins/pr.games*100):0,days=Math.max(1,Math.ceil((Date.now()-pr.since)/864e5));
+  return `<div class="pc"><div class="badge-big">${badge(pr.rating,86)}</div><h3>${esc(name)}</h3><div style="opacity:.9">${R.n} · ${pr.rating}</div><div class="bar2"><i style="width:${pct}%"></i></div><div style="font-size:12px;opacity:.7">${nx?`До ранга «${nx.n}»: ${nx.min-pr.rating}`:'Высший ранг'}</div><div class="grid"><div><b>${pr.games}</b>партий</div><div><b>${wr}%</b>побед</div><div><b>${pr.streak}</b>серия</div></div><p style="font-size:12px;opacity:.7;margin:12px 0 0">Играет с ${new Date(pr.since).toLocaleDateString('ru',{month:'long',year:'numeric'})} (${days} дн.)</p></div>`}
+function showProf(j){const p=st.players[j],pm=$('#pm');
+  pm.innerHTML=p.prof?profCard(p.name,p.prof):`<div class="pc"><h3>${esc(p.name)}</h3><p style="opacity:.8">${p.bot?'У ботов нет рейтинга':'Гость: рейтинг ведется для игроков из Telegram'}</p></div>`;pm.hidden=false}
+let me0;
+async function loadMe(){try{const d=tg&&tg.initData;if(!d)return;const p=await (await fetch('/api/me?d='+encodeURIComponent(d))).json();if(!p||!$('#me'))return;me0=p;
+  $('#me').innerHTML=`<div class="seat me" onclick="meCard()" style="margin:6px auto;width:max-content">${av({name:p.name,photo:p.photo,n:'',prof:p})}<div><div class="nm">${esc(p.name)}</div><div class="rt">${rankOf(p.rating).n} · ${p.rating}</div></div></div>`}catch(e){}}
+function meCard(){$('#pm').innerHTML=profCard(me0.name,me0);$('#pm').hidden=false}
+async function showTop(){let l=[];try{l=await (await fetch('/api/top')).json()}catch(e){}
+  $('#pm').innerHTML=`<div class="pc"><h3>Лучшие игроки</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
+function resHTML(me){const r=(st.result||[]).find(x=>x.i==me);
+  if(!r)return st.players[me].prof?'':'<p style="opacity:.7;font-size:13px;margin:0 0 14px">Рейтинг ведется для игроков из Telegram</p>';
+  const a=rankIdx(r.before),b=rankIdx(r.after);
+  return `<div class="dl ${r.d>=0?'up':'dn'}">${r.d>=0?'+':''}${r.d}</div><div style="margin:4px 0 16px;opacity:.92">Рейтинг ${r.after} · ${RANKS[b].n}${b>a?'<br>🎉 Новый ранг!':b<a?'<br>Ранг понижен':''}</div>`}
 
 const face=(c,cls,attrs,tr)=>`<div class="card ${c.s==1||c.s==2?'red':''} ${tr?'t':''} ${cls}" ${attrs||''}><i>${RK[c.r-6]}<br>${SU[c.s]}</i><b>${SU[c.s]}</b><i class="br">${RK[c.r-6]}<br>${SU[c.s]}</i></div>`;
 function card(c,cls,id,attrs){const nw=!seen.has(id);next.add(id);return face(c,cls+(nw?' in':''),attrs,st.tc&&c.s==st.tc.s)}
-const av=p=>`<div class="av" style="background-color:hsl(${hue(p.name)} 45% 36%);${p.photo?`background-image:url('${esc(p.photo)}')`:''}">${p.photo?'':esc([...p.name][0]||'?').toUpperCase()}${p.n===''?'':`<span class="cnt">${p.n}</span>`}</div>`;
-const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}">${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.n==0&&!st.deck?'✅ вышел':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div></div></div>`;
+const av=p=>`<div class="av" style="background-color:hsl(${hue(p.name)} 45% 36%);${p.photo?`background-image:url('${esc(p.photo)}')`:''}">${p.photo?'':esc([...p.name][0]||'?').toUpperCase()}${p.n===''?'':`<span class="cnt">${p.n}</span>`}${p.prof?`<span class="bg">${badge(p.prof.rating,22)}</span>`:''}</div>`;
+const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}" onclick="showProf(${j})">${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.n==0&&!st.deck?'✅ вышел':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}</div></div>`;
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
   $('#app').innerHTML=`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>
-  <h1>Дурак</h1><p class="sub">Подкидной онлайн на 2–6 игроков</p>
+  <h1>Дурак</h1><p class="sub">Подкидной онлайн на 2–6 игроков</p><div id="me"></div>
   <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
   <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">
-  <div class="row"><button class="btn" type="submit">Войти</button><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">Новая комната</button></div></form>`;
+  <div class="row"><button class="btn" type="submit">Войти</button><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">Новая комната</button></div></form><div class="row" style="margin-top:6px"><button class="btn ghost" onclick="showTop()">🏆 Лучшие игроки</button></div>`;
+  loadMe();
 }
 function go(e){if(e)e.preventDefault();const room=$('#rm').value.trim();if(!room){alert('Введите код комнаты');return false}
   cur={room,name:$('#nm').value.trim()||'Игрок'};conn();return false}
 function conn(){
   ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
-  ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,uid,photo:(U&&U.photo_url)||''})};
+  ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,uid,initData:(tg&&tg.initData)||''})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();return}
     if(m.ev=='react')return float(m);
@@ -156,7 +189,7 @@ function conn(){
 }
 function lobby(a){
   a.innerHTML=`<h1 style="font-size:40px;margin-top:20px">Комната ${esc(st.room)}</h1><p class="sub">Позовите друзей: пустые места займут боты.</p>
-  <div class="lob">${st.players.map((p,j)=>`<div class="seat" style="animation:pop .4s ${j*.07}s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div><div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div></div>`).join('')}</div>
+  <div class="lob">${st.players.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s ${j*.07}s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
   <div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
 }
@@ -183,7 +216,7 @@ function draw(){
   <div class="msg">${msg}</div>
   <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
   <div class="hand" style="--n:${Math.max(st.hand.length,2)}">${st.hand.map((c,k)=>card(c,'h'+(can(c)?'':' dim'),'h'+key(c),`style="--i:${k}" onclick="play(${k})"`)).join('')}</div>
-  ${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2><button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
+  ${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
   seen=next;
   if(st.over)try{tg.HapticFeedback.notificationOccurred(win?'success':'error')}catch(e){}
 }
