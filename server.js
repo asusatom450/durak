@@ -46,15 +46,17 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
-// Радиостанции (SomaFM, бесплатные потоки). Список меняется здесь, без правки приложения.
+// Радио. Станции с url играют потоком из интернета (каждый телефон качает его сам, через сервер трафик не идет).
+// Станции без url: музыка создается прямо на устройстве игрока. Список можно менять здесь, без правки приложения.
 const STATIONS = [
-  { id: 'salad', name: 'Groove Salad: чилл', url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
-  { id: 'fluid', name: 'Fluid: хип-хоп и трэп', url: 'https://ice1.somafm.com/fluid-128-mp3' },
-  { id: 'indie', name: 'Indie Pop Rocks: инди', url: 'https://ice1.somafm.com/indiepop-128-mp3' },
-  { id: 'lounge', name: 'Illinois Street Lounge: лаунж', url: 'https://ice1.somafm.com/illstreet-128-mp3' },
-  { id: 'u80s', name: 'Underground 80s: хиты 80-х', url: 'https://ice1.somafm.com/u80s-128-mp3' },
-  { id: 'space', name: 'Space Station: космос', url: 'https://ice1.somafm.com/spacestation-128-mp3' },
-  { id: 'defcon', name: 'DEF CON: электроника', url: 'https://ice1.somafm.com/defcon-128-mp3' }
+  { id: 'hit', name: 'Hit FM', url: 'https://online.hitfm.ua/HitFM_HD' },
+  { id: 'kiss', name: 'KISS FM', url: 'https://online.kissfm.ua/KissFM' },
+  { id: 'nrj', name: 'NRJ (320 кбит/с)', url: 'https://cast.mediaonline.net.ua/nrj320' },
+  { id: 'relax', name: 'Radio Relax', url: 'https://online.radiorelax.ua/RadioRelax_HD' },
+  { id: 'lux', name: 'Lux FM', url: 'https://lux.radio.tvstitch.com/kyiv/lux_adv_sd' },
+  { id: 'lofi', name: 'Lo-fi: спокойный бит' },
+  { id: 'amb', name: 'Ambient: тихие пэды' },
+  { id: 'synth', name: 'Synthwave: ретро-драйв' }
 ];
 const GRACE = +process.env.GRACE_MS || 60000;
 function sys(R, text) { R.log.push({ n: -1, name: '', text }); R.log = R.log.slice(-30); R.logN++; }
@@ -180,7 +182,7 @@ function stateFor(R, i) {
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
     players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
-    result: R.result, radio: R.radio || null,
+    result: R.result, radio: R.radio || null, now: Date.now(),
     log: R.log.slice(-30), logN: R.logN,
     hand: R.players[i].hand
   };
@@ -224,7 +226,7 @@ wss.on('connection', ws => {
       const now = Date.now(); if (now - (ws.p.rt || 0) < 2000) return; ws.p.rt = now;
       const stn = STATIONS.find(x => x.id == m.id);
       if (m.id && !stn) return;
-      R.radio = stn ? { id: stn.id, by: R.players[i].name } : null;
+      R.radio = stn ? { id: stn.id, by: R.players[i].name, t0: Date.now() } : null;
       sys(R, stn ? `🎵 Радио: ${stn.name} (запустил ${R.players[i].name})` : `🔇 Радио выключено (${R.players[i].name})`);
       return send(R);
     }
