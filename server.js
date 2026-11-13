@@ -46,18 +46,17 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
-// Радио. Станции с url играют потоком из интернета (каждый телефон качает его сам, через сервер трафик не идет).
-// Станции без url: музыка создается прямо на устройстве игрока. Список можно менять здесь, без правки приложения.
+// Радио: каждый телефон качает поток сам, через сервер трафик не идет. Список можно менять здесь, без правки приложения.
 const STATIONS = [
   { id: 'hit', name: 'Hit FM', url: 'https://online.hitfm.ua/HitFM_HD' },
   { id: 'kiss', name: 'KISS FM', url: 'https://online.kissfm.ua/KissFM' },
   { id: 'nrj', name: 'NRJ (320 кбит/с)', url: 'https://cast.mediaonline.net.ua/nrj320' },
   { id: 'relax', name: 'Radio Relax', url: 'https://online.radiorelax.ua/RadioRelax_HD' },
-  { id: 'lux', name: 'Lux FM', url: 'https://lux.radio.tvstitch.com/kyiv/lux_adv_sd' },
-  { id: 'lofi', name: 'Lo-fi: спокойный бит' },
-  { id: 'amb', name: 'Ambient: тихие пэды' },
-  { id: 'synth', name: 'Synthwave: ретро-драйв' }
+  { id: 'lux', name: 'Lux FM', url: 'https://lux.radio.tvstitch.com/kyiv/lux_adv_sd' }
 ];
+// Бездействие в свой ход: предупреждение, штраф рейтинга, исключение
+const AFK_WARN = +process.env.AFK_WARN_MS || 50000, AFK_FINE = +process.env.AFK_FINE_MS || 80000,
+  AFK_KICK = +process.env.AFK_KICK_MS || 180000, AFK_PEN = 10;
 const GRACE = +process.env.GRACE_MS || 60000;
 function sys(R, text) { R.log.push({ n: -1, name: '', text }); R.log = R.log.slice(-30); R.logN++; }
 const PHOTO = /^https:\/\/[\w.\/-]+$/;
@@ -116,7 +115,7 @@ function canAtk(R, i, c) {
   return R.table.length < 6 && unb < R.players[R.def].hand.length &&
     R.table.some(t => t.a.r == c.r || (t.d && t.d.r == c.r));
 }
-function start(R) {
+function start(R) { R.mv++;
   R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
   R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
   if (R.players.length < 2) { R.started = false; R.over = false; return; }
@@ -127,7 +126,7 @@ function start(R) {
   R.players.forEach((p, i) => p.hand.forEach(c => { if (c.s == R.trump && c.r < bw) { bw = c.r; best = i; } }));
   R.att = best; R.def = (best + 1) % R.players.length; R.started = true;
 }
-function endRound(R, took) {
+function endRound(R, took) { R.mv++;
   const n = R.players.length, d = R.players[R.def];
   if (took) for (const t of R.table) { d.hand.push(t.a); if (t.d) d.hand.push(t.d); }
   R.table = [];
@@ -141,11 +140,11 @@ function endRound(R, took) {
   R.att = a; R.def = nxt(R, a);
 }
 const fin = R => { if (!open(R) && !R.players[R.def].hand.length) endRound(R, false); };
-function attack(R, i, k) { const c = R.players[i].hand.splice(k, 1)[0]; R.table.push({ a: c }); fin(R); }
-function defend(R, i, k, oi) { const c = R.players[i].hand.splice(k, 1)[0]; R.table[oi].d = c; fin(R); }
+function attack(R, i, k) { R.mv++; const c = R.players[i].hand.splice(k, 1)[0]; R.table.push({ a: c }); fin(R); }
+function defend(R, i, k, oi) { R.mv++; const c = R.players[i].hand.splice(k, 1)[0]; R.table[oi].d = c; fin(R); }
 const take = (R, i) => endRound(R, true);
 
-function drop(R, p) {
+function drop(R, p) { R.mv++;
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -154,6 +153,28 @@ function drop(R, p) {
   if (alive.length <= 1) { R.over = true; R.loser = i; settle(R); return; }
   if (i == R.def || (i == R.att && R.table.length)) endRound(R, false);   // карты со стола уходят в отбой
   else if (i == R.att) { R.att = nxt(R, i); R.def = nxt(R, R.att); }
+}
+
+// кто сейчас должен ходить: без него партия стоит
+const actor = R => !R.table.length ? R.att : (open(R) ? R.def : R.att);
+const notify = (p, o) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(o)); };
+function afkTick(R) {
+  if (!R.started || R.over) { R.idleKey = null; return; }
+  const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
+  if (R.idleKey !== key) { R.idleKey = key; R.idleSince = Date.now(); R.warned = R.fined = false; return; }
+  if (!p || p.bot || p.left || p.off) return;   // боты ходят сами, у отключившегося свои правила
+  const el = Date.now() - R.idleSince;
+  if (el >= AFK_KICK) {
+    sys(R, `🚪 ${p.name} исключен за бездействие`); notify(p, { ev: 'afk', stage: 'kick' }); drop(R, p); send(R);
+  } else if (el >= AFK_FINE && !R.fined) {
+    R.fined = true;
+    let d = 0;
+    if (p.prof && (p.fines || 0) < 2) { p.fines = (p.fines || 0) + 1; const b = p.prof.rating; p.prof.rating = Math.max(100, b - AFK_PEN); d = p.prof.rating - b; db.saveUser(p.prof); }
+    sys(R, d ? `⚠️ ${p.name}: ${d} к рейтингу за бездействие` : `⚠️ ${p.name} все еще не ходит`);
+    notify(p, { ev: 'afk', stage: 'fine', d }); send(R);
+  } else if (el >= AFK_WARN && !R.warned) {
+    R.warned = true; sys(R, `⏳ ${p.name} долго думает`); notify(p, { ev: 'afk', stage: 'warn' }); send(R);
+  }
 }
 
 // ---------- бот (обычный алгоритм) ----------
@@ -183,6 +204,7 @@ function stateFor(R, i) {
     players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
     result: R.result, radio: R.radio || null, now: Date.now(),
+    idle: R.started && !R.over && R.idleKey === R.mv + ':' + actor(R) ? { i: actor(R), ms: Date.now() - R.idleSince, warn: AFK_WARN, fine: AFK_FINE, kick: AFK_KICK } : null,
     log: R.log.slice(-30), logN: R.logN,
     hand: R.players[i].hand
   };
@@ -203,12 +225,12 @@ wss.on('connection', ws => {
     if (m.t == 'join') {
       const code = String(m.room || '').toUpperCase().slice(0, 8);
       if (!code) return err(ws, 'Введите код комнаты');
-      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0 });
+      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0 });
       const A = await auth(m), uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) {
         if (old.left) return err(ws, 'Вы покинули эту партию. Дождитесь ее окончания.');
-        const o = old.ws; old.ws = ws; ws.p = old; ws.R = R; clearTimeout(R.gc);
+        const o = old.ws; old.ws = ws; ws.p = old; ws.R = R; clearTimeout(R.gc); R.idleKey = null;
         if (old.off) { clearTimeout(old.tm); old.off = false; sys(R, old.name + ' вернулся'); }
         if (o && o !== ws) o.close();
         return send(R);
@@ -269,6 +291,7 @@ wss.on('connection', ws => {
   });
 });
 
+setInterval(() => Object.values(rooms).forEach(afkTick), 1000);
 srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {

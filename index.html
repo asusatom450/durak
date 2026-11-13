@@ -85,6 +85,8 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 .quick button{border:1px solid #ffffff33;background:#ffffff14;color:inherit;border-radius:14px;padding:5px 10px;font:600 13px Manrope;cursor:pointer}
 #net{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#000d;padding:6px 14px;border-radius:20px;z-index:60;font-size:13px}
 #net[hidden]{display:none}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#000e;border:1px solid var(--gold);padding:10px 16px;border-radius:16px;z-index:70;max-width:90vw;text-align:center;animation:pop .3s}
+#toast[hidden]{display:none}
 .res{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:45;animation:fade .3s}
 .res .box{background:linear-gradient(#0f5a40,#073323);border:1px solid var(--gold);border-radius:28px;padding:26px 32px;text-align:center;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
 .res h2{font:900 26px 'Playfair Display',serif;margin:6px 0 16px}
@@ -131,6 +133,7 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 </style>
 </head>
 <body>
+<div id="toast" hidden></div>
 <div id="net" hidden>Переподключение…</div>
 <div id="app"></div>
 <div id="react" hidden></div>
@@ -140,7 +143,7 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
   <div class="sh"><b>📻 Радио за столом</b><button class="ico" onclick="toggleRadio()" aria-label="Закрыть">✕</button></div>
   <div id="rnow" style="font-size:13px;opacity:.85"></div>
   <div id="rlist"></div>
-  <div class="rctl"><button class="btn ghost" id="rmute" onclick="rMute()"></button><input type="range" id="rvol" min="0" max="100" oninput="rVol(this.value)"></div>
+  <div class="rctl"><button class="btn ghost" id="rmute" onclick="rMute()"></button><input type="range" id="rvol" min="0" max="100" oninput="rVol(this.value)"><span id="rvl" style="min-width:38px;text-align:right;font-size:13px"></span></div>
   <div id="rhint" style="font-size:12px;opacity:.65"></div>
 </div>
 <div class="sheet" id="sheet">
@@ -158,87 +161,44 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const U=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
 let uid;try{uid=U?'tg'+U.id:(localStorage.uid=localStorage.uid||Math.random().toString(36).slice(2))}catch(e){uid=Math.random().toString(36).slice(2)}
-let ws,st,cur,selT=null,seen=new Set(),next,logSeen=0,chatOpen=false;
+let ws,st,cur,selT=null,seen=new Set(),next,logSeen=0,chatOpen=false,idleAt=0;
 const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
 const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
 /*RADIO*/
-// Генеративное радио: каждый телефон сам играет одну и ту же музыку по общему времени сервера. Трафик не тратится.
+// Радио: каждый телефон качает поток сам. Громкость по умолчанию 7% (тихий фон).
 const RA=new Audio();RA.preload='none';
-let radioErr=false,curRadio=null,radioMuted=false,radioVol=.6,radioBlocked=false,radioOpen=false,stations=[],srvOff=null,rbus=null,rtimer=null,rgen=null,rstep=0,rt0=0;
-try{radioMuted=localStorage.rmute=='1';radioVol=+localStorage.rvol||.6}catch(e){}
-const volOK=(()=>{try{RA.volume=.5;return RA.volume==.5}catch(e){return false}})();
+let radioErr=false,curRadio=null,radioMuted=false,radioVol=.07,radioBlocked=false,radioOpen=false,stations=[];
+try{radioMuted=localStorage.rmute=='1';const v=parseFloat(localStorage.rvol2);if(v>=0&&v<=1)radioVol=v}catch(e){}
+const volOK=(()=>{try{RA.volume=.5;return RA.volume==.5}catch(e){return false}})();RA.volume=radioVol;
 RA.onerror=()=>{if(RA.getAttribute('src')){radioErr=true;renderRadio()}};
-const sNow=()=>Date.now()+(srvOff||0),mf=n=>440*Math.pow(2,(n-69)/12);
-const rng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
-function ep(t,f,d,g){const c=AC,o=c.createOscillator(),o2=c.createOscillator(),m=c.createGain(),lp=c.createBiquadFilter(),v=c.createGain();
-  o.type='sine';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*2.003;m.gain.value=.25;lp.type='lowpass';lp.frequency.value=1500;
-  v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(g,t+.012);v.gain.exponentialRampToValueAtTime(.0001,t+d);
-  o.connect(lp);o2.connect(m);m.connect(lp);lp.connect(v);v.connect(rbus);o.start(t);o2.start(t);o.stop(t+d+.05);o2.stop(t+d+.05)}
-function pad(t,f,d,g,cut){const c=AC,v=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=cut||600;
-  v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(g,t+d*.35);v.gain.exponentialRampToValueAtTime(.0001,t+d);
-  lp.connect(v);v.connect(rbus);[-6,6].forEach(dt=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(lp);o.start(t);o.stop(t+d+.05)})}
-const kick=(t,g)=>tn(t,130,.18,g,42,'sine',rbus),snr=(t,g)=>nz(t,.16,1900,1500,.8,g,'bandpass',rbus),hat=(t,g)=>nz(t,.05,7000,9000,.7,g,'highpass',rbus);
-const LOFI=[[57,[0,3,7,10]],[50,[0,3,7,10]],[55,[0,4,7,10]],[48,[0,4,7,11]]],
- AMB=[[53,[0,4,7,11]],[50,[0,3,7,10,14]],[46,[0,4,7,11]],[48,[0,4,7,9]]],
- SYN=[[45,[0,3,7]],[41,[0,4,7]],[48,[0,4,7]],[43,[0,4,7]]];
-const STY={
- lofi:{ms:60000/76/4,step(k,t){const s=k%16,bar=Math.floor(k/16),[root,iv]=LOFI[Math.floor(bar/2)%4],r=rng(k*7919+11),sd=this.ms/1000;
-   const cho=(d,g)=>iv.forEach(i=>ep(t,mf(root+i),d,g));
-   if(s==0)cho(2.4,.05);else if(s==10&&r()<.6)cho(1.1,.04);
-   if(s==0||(s==8&&r()<.7))tn(t,mf(root-12),.5,.16,0,'sine',rbus);
-   if(s==0||s==10)kick(t,.3);if(s==4||s==12)snr(t,.12);
-   if(s%2==0)hat(t+(s%4==2?sd*.3:0),.04+r()*.03);
-   if(r()<.16)ep(t,mf(root+24+[0,3,5,7,10][r()*5|0]),.9,.035);
-   if(r()<.07)nz(t,.02,5000,5000,.5,.03,'highpass',rbus)}},
- amb:{ms:250,step(k,t){const s=k%16,bar=Math.floor(k/16),[root,iv]=AMB[Math.floor(bar/2)%4],r=rng(k*104729+5);
-   if(s==0&&bar%2==0){const d=8;iv.forEach(i=>pad(t,mf(root+i),d,.05,700));pad(t,mf(root-12),d,.07,300)}
-   if(s%4==0&&r()<.28)ep(t,mf(root+24+[0,2,4,7,9][r()*5|0]),3.5,.03)}},
- synth:{ms:150,step(k,t){const s=k%16,bar=Math.floor(k/16),[root,iv]=SYN[bar%4],r=rng(k*13+9);
-   if(s==0)iv.forEach(i=>pad(t,mf(root+12+i),2.4,.045,900));
-   if(s%2==0)tn(t,mf(root),.22,.14,0,'triangle',rbus);
-   if(r()<.8)tn(t,mf(root+iv[(s*3+bar)%iv.length]+12*(1+(s%4==3?1:0))),.13,.04,0,'square',rbus);
-   if(s%4==0)kick(t,.34);if(s==4||s==12)snr(t,.14);if(s%4==2)hat(t,.05);else if(s%2==1)hat(t,.02)}}};
-function stopGen(){clearInterval(rtimer);rtimer=null;rgen=null;if(rbus&&AC){const b=rbus;try{b.gain.setTargetAtTime(0,AC.currentTime,.05)}catch(e){}setTimeout(()=>{try{b.disconnect()}catch(e){}},600)}rbus=null}
-function startGen(id,t0){stopGen();const c=ac();if(!c)return;
-  rbus=c.createGain();rbus.gain.value=radioVol*.9;
-  const cp=c.createDynamicsCompressor(),dl=c.createDelay(1),fb=c.createGain(),wet=c.createGain();
-  dl.delayTime.value=.34;fb.gain.value=.32;wet.gain.value=.22;
-  rbus.connect(cp);rbus.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(cp);cp.connect(c.destination);
-  rgen=STY[id];rt0=t0;rstep=Math.max(0,Math.ceil((sNow()-t0)/rgen.ms));rtimer=setInterval(tickGen,250);tickGen()}
-function tickGen(){const g=rgen;if(!g||!AC)return;const now=sNow();
-  if(AC.state!='running'){if(!radioBlocked){radioBlocked=true;renderRadio()}rstep=Math.max(rstep,Math.ceil((now-rt0)/g.ms));return}
-  if(radioBlocked){radioBlocked=false;renderRadio()}
-  const acN=AC.currentTime;
-  while(rt0+rstep*g.ms<now+1500){const t=acN+(rt0+rstep*g.ms-now)/1000;if(t>acN-.05)g.step(rstep,Math.max(t,acN+.01));rstep++}}
-function stopAll(){stopGen();RA.pause();RA.removeAttribute('src');RA.load()}   // поток остановлен: трафик не идет
+function stopAll(){RA.pause();RA.removeAttribute('src');RA.load()}   // поток остановлен: трафик не идет
 function startStream(url){radioBlocked=false;radioErr=false;if(RA.getAttribute('src')==url&&!RA.paused)return;
   RA.src=url;RA.volume=radioVol;
   RA.play().then(()=>{radioBlocked=false;radioErr=false;renderRadio()}).catch(e=>{if(e&&e.name=='NotAllowedError')radioBlocked=true;else radioErr=true;renderRadio()})}
 ['pointerdown','touchend','click'].forEach(e=>addEventListener(e,()=>{if(radioBlocked&&curRadio&&RA.getAttribute('src'))startStream(RA.getAttribute('src'))},{passive:true}));
 // приводит локальный плеер в соответствие с тем, что включено в комнате
-function syncRadio(){const r=st&&st.radio,s=r&&stations.find(x=>x.id==r.id),id=r&&!radioMuted&&(STY[r.id]||(s&&s.url))?r.id+'@'+r.t0:null;
-  if(id==curRadio)return;curRadio=id;radioErr=false;
-  if(id&&!STY[r.id]){stopGen();startStream(s.url);return}   // поток: если он уже играет по нажатию, не перезапускаем
-  stopAll();if(!id){radioBlocked=false;return}startGen(r.id,r.t0)}
-function pickStation(id){ac();const s=stations.find(x=>x.id==id);
+function syncRadio(){const r=st&&st.radio,s=r&&stations.find(x=>x.id==r.id),id=r&&!radioMuted&&s&&s.url?r.id+'@'+r.t0:null;
+  if(id==curRadio)return;curRadio=id;radioErr=false;if(!id){radioBlocked=false;stopAll();return}startStream(s.url)}
+function pickStation(id){const s=stations.find(x=>x.id==id);
   if(s&&s.url&&!radioMuted){RA.src=s.url;RA.volume=radioVol;RA.play().catch(()=>{})}   // запуск по нажатию: браузер разрешит звук
-  send({t:'radio',id})}   // ac(): разблокирует звук по нажатию
+  send({t:'radio',id})}
 function rMute(){radioMuted=!radioMuted;try{localStorage.rmute=radioMuted?'1':'0'}catch(e){}syncRadio();renderRadio();if(st&&st.started)draw()}
-function rVol(v){radioVol=v/100;try{localStorage.rvol=radioVol}catch(e){}RA.volume=radioVol;if(rbus)rbus.gain.value=radioVol*.9}
+function rVol(v){radioVol=v/100;try{localStorage.rvol2=radioVol}catch(e){}RA.volume=radioVol;$('#rvl').textContent=Math.round(radioVol*100)+'%'}
 function toggleRadio(){radioOpen=!radioOpen;if(radioOpen&&chatOpen)toggleChat();$('#radio').classList.toggle('open',radioOpen);$('#bd').hidden=!(radioOpen||chatOpen);renderRadio()}
 function closeSheets(){if(chatOpen)toggleChat();if(radioOpen)toggleRadio()}
 function renderRadio(){const r=st&&st.radio,cur=r&&stations.find(x=>x.id==r.id);
   $('#rnow').innerHTML=cur?`🎵 Играет: <b>${esc(cur.name)}</b><br>Запустил: ${esc(r.by)}`:'Радио выключено. Любой игрок может включить станцию, слышат все.';
-  $('#rlist').innerHTML=stations.map(s=>`<button class="stb ${r&&r.id==s.id?'on':''}" onclick="pickStation('${s.id}')"><span>${s.url?'🌐':'🎹'} ${esc(s.name)}</span>${r&&r.id==s.id?'<i class="eq"><b></b><b></b><b></b></i>':''}</button>`).join('')+(r?`<button class="stb" onclick="send({t:'radio',id:null})">⏹ Выключить для всех</button>`:'');
-  $('#rmute').textContent=radioMuted?'🔇 Не слушаю':'🔊 Слушаю';$('#rvol').style.display='';$('#rvol').value=Math.round(radioVol*100);
-  $('#rhint').textContent=radioMuted?'Радио выключено только у вас, поток не загружается.':radioErr?'Станция не отвечает, выберите другую.':radioBlocked?'Нажмите в любом месте экрана, чтобы включить звук.':cur&&cur.url?'🌐 Идет через интернет и расходует трафик'+(volOK?'.':' (громкость на iPhone: кнопками телефона).'):'🎹 Музыка создается на вашем устройстве: трафик не тратится.'}
+  $('#rlist').innerHTML=stations.map(s=>`<button class="stb ${r&&r.id==s.id?'on':''}" onclick="pickStation('${s.id}')"><span>${esc(s.name)}</span>${r&&r.id==s.id?'<i class="eq"><b></b><b></b><b></b></i>':''}</button>`).join('')+(r?`<button class="stb" onclick="send({t:'radio',id:null})">⏹ Выключить для всех</button>`:'');
+  $('#rmute').textContent=radioMuted?'🔇 Не слушаю':'🔊 Слушаю';
+  $('#rvol').style.display=$('#rvl').style.display=volOK?'':'none';$('#rvol').value=Math.round(radioVol*100);$('#rvl').textContent=Math.round(radioVol*100)+'%';
+  $('#rhint').textContent=radioMuted?'Радио выключено только у вас, поток не загружается.':radioErr?'Станция не отвечает, выберите другую.':radioBlocked?'Нажмите в любом месте экрана, чтобы включить звук.':'Радио идет через интернет и расходует трафик. '+(volOK?'По умолчанию играет тихо (7%), громкость можно поднять ползунком.':'Громкость на iPhone: кнопками телефона.')}
 /*SND*/
 let muted=false;try{muted=localStorage.mute=='1'}catch(e){}
 let AC,nb,prevSt=null,prevLogN=null;
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state=='suspended')AC.resume();return AC}
-['pointerdown','touchend','click'].forEach(e=>addEventListener(e,()=>{if(!muted||curRadio)ac()},{passive:true}));
+['pointerdown','touchend','click'].forEach(e=>addEventListener(e,()=>{if(!muted)ac()},{passive:true}));
 function nz(t,d,f0,f1,q,g,type,dst){const c=AC;if(!nb){nb=c.createBuffer(1,c.sampleRate,c.sampleRate);const a=nb.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1}
   const s=c.createBufferSource();s.buffer=nb;const f=c.createBiquadFilter();f.type=type||'bandpass';f.Q.value=q;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+d);
   const v=c.createGain();v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(g,t+.006);v.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -255,6 +215,7 @@ const S={
   win:(t,v)=>[523,659,784,1047].forEach((f,i)=>tn(t+i*.11,f,.3,.12*v,0,'triangle')),
   lose:(t,v)=>[392,330,262].forEach((f,i)=>tn(t+i*.18,f,.4,.12*v,f*.96,'sine')),
   msg:(t,v)=>tn(t,880,.09,.08*v),
+  warn:(t,v)=>{tn(t,440,.18,.14*v,0,'triangle');tn(t+.22,440,.18,.14*v,0,'triangle');tn(t+.44,330,.3,.14*v,0,'triangle')},
   pop:(t,v)=>tn(t,500,.1,.09*v,900)};
 function snd(n,d=0,v=1){if(muted)return;try{const c=ac();if(!c)return;S[n](c.currentTime+d+.01,v)}catch(e){}}
 function toggleSound(){muted=!muted;try{localStorage.mute=muted?'1':'0'}catch(e){}document.querySelectorAll('.snd').forEach(b=>b.textContent=muted?'🔇':'🔊');if(!muted)snd('pop')}
@@ -311,8 +272,8 @@ function conn(){
   ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,uid,initData:(tg&&tg.initData)||''})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();return}
-    if(m.ev=='stations'){stations=m.list;return}if(m.ev=='react')return float(m);
-    if(m.now){const o=m.now-Date.now();srvOff=srvOff===null?o:srvOff*.7+o*.3}selT=null;st=m;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
+    if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='react')return float(m);
+    if(m.ev=='afk')return afkEv(m);selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
@@ -334,6 +295,9 @@ function draw(){
     return st.table.length<6&&unb<defN&&ranks.has(c.r)};
   let msg=me==st.def?(hasOpen?'Отбейте карту или возьмите':'Всё отбито, ждем «Бито»'):me==st.att?(st.table.length?(hasOpen?'Соперник отбивается…':'Подкиньте карту или нажмите «Бито»'):'Ваш ход'):'Можно подкинуть карту того же достоинства';
   const offs=st.players.filter(p=>p.off&&!p.left);if(offs.length&&!st.over)msg='⏳ Ждем игрока: '+offs.map(p=>esc(p.name)).join(', ');
+  const ia=st.idle;if(ia&&!st.over&&!offs.length){const el=Date.now()-idleAt;
+    if(el>=ia.warn){if(ia.i==me){const end=el<ia.fine?ia.fine:ia.kick;msg=`⚠️ Ваш ход! ${el<ia.fine?'До снятия рейтинга':'До исключения'}: <span class="offt" data-e="${Date.now()+end-el}">${Math.ceil((end-el)/1000)}</span> с`}
+      else msg='⏳ '+esc(st.players[ia.i].name)+' долго думает'}}
   const b=[];
   if(!st.over&&me==st.def&&hasOpen)b.push(`<button class="btn" onclick="send({t:'take'})">Взять</button>`);
   if(!st.over&&me!=st.def&&st.table.length&&!hasOpen)b.push(`<button class="btn" onclick="send({t:'done'})">Бито</button>`);
@@ -345,10 +309,15 @@ function draw(){
   <div class="msg">${msg}</div>
   <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
   <div class="hand" style="--n:${Math.max(st.hand.length,2)}">${st.hand.map((c,k)=>card(c,'h'+(can(c)?'':' dim'),'h'+key(c),`style="--i:${k}" onclick="play(${k})"`)).join('')}</div>
-  ${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
+  ${st.players[me].left?`<div class="res"><div class="box"><div class="big">🚪</div><h2>Вы больше не в партии</h2><button class="btn" onclick="location.reload()">В меню</button></div></div>`:''}${st.over?`<div class="res"><div class="box"><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
   sfx(seen,next,me,win);seen=next;prevSt=st;
   if(st.over)try{tg.HapticFeedback.notificationOccurred(win?'success':'error')}catch(e){}
 }
+function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(e._t);e._t=setTimeout(()=>e.hidden=true,5000)}
+function afkEv(m){
+  if(m.stage=='warn'){toast('⏳ Ваш ход! Через 30 с будет снят рейтинг');snd('warn');try{tg.HapticFeedback.notificationOccurred('warning')}catch(e){}}
+  else if(m.stage=='fine'){toast(m.d?'⚠️ '+m.d+' к рейтингу за бездействие':'⚠️ Вы все еще не ходите');snd('warn');try{tg.HapticFeedback.notificationOccurred('error')}catch(e){}}
+  else toast('🚪 Вы исключены из игры за бездействие')}
 function float(m){snd('pop');const el=$('#seat-'+m.from),r=el?el.getBoundingClientRect():{left:innerWidth/2-20,top:innerHeight-170,width:40};
   const s=document.createElement('span');s.className='fl';s.textContent=m.e;s.style.left=r.left+r.width/2-18+'px';s.style.top=r.top+'px';document.body.appendChild(s);setTimeout(()=>s.remove(),1950)}
 $('#react').innerHTML=EMO.map(e=>`<button onclick="send({t:'react',e:'${e}'});toggleReact()">${e}</button>`).join('');
