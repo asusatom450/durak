@@ -1,6 +1,8 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const db = require('./db');
+let Chess = null;   // правила шахмат: библиотека chess.js
+import('chess.js').then(m => { Chess = m.Chess; }).catch(e => console.error('chess.js не загружен:', e.message));
 
 // ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
 const TOKEN = process.env.BOT_TOKEN, APP_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
@@ -8,18 +10,18 @@ const tg = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b)
 }).catch(() => {});
 
-const PLAY = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть', web_app: { url: APP_URL } }], [{ text: '📖 Правила', callback_data: 'rules' }]] } : undefined;
-const HELLO = `♠️ <b>ПОДКИДНОЙ ДУРАК</b> ♥️
-𝗢𝗡𝗟𝗜𝗡𝗘 · 𝟮–𝟲 𝗣𝗟𝗔𝗬𝗘𝗥𝗦
+const PLAY = APP_URL ? { inline_keyboard: [[{ text: '🃏 Дурак', web_app: { url: APP_URL } }, { text: '♞ Шахматы', web_app: { url: APP_URL + '/chess' } }], [{ text: '📖 Правила дурака', callback_data: 'rules' }]] } : undefined;
+const HELLO = `♠️ <b>ИГРОВОЙ КЛУБ</b> ♞
+𝗢𝗡𝗟𝗜𝗡𝗘 · 𝗙𝗢𝗥 𝗙𝗥𝗜𝗘𝗡𝗗𝗦
 
-<i>Карточная классика прямо в Telegram: играйте с друзьями или ботами.</i>
+<i>Классика прямо в Telegram: играйте с друзьями или с ботами.</i>
 
-<blockquote>🃏 Создайте комнату и отправьте код друзьям
-🤖 Пустые места займут боты
+<blockquote>🃏 <b>Подкидной дурак:</b> 2–6 игроков, боты на пустых местах
+♞ <b>Шахматы:</b> один на один или против компьютера, с часами
 💬 Чат, реакции и радио за столом
 🏆 Рейтинг и ранги: от Новичка до Легенды</blockquote>
 
-Нажмите <b>«Играть»</b> 👇
+Выберите игру 👇
 
 <i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
@@ -38,7 +40,12 @@ const srv = http.createServer((q, r) => {
   if (q.url.startsWith('/api/')) {
     const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
     (async () => {
-      if (q.url.startsWith('/api/top')) return json((await db.top(10)).map(u => ({ name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins })));
+      if (q.url.startsWith('/api/top')) {
+        const ch = new URL(q.url, 'http://x').searchParams.get('g') == 'chess';
+        const l = await db.top(10, ch ? 'crating' : 'rating', ch ? 'cgames' : 'games');
+        return json(l.map(u => ch ? { name: u.name, photo: u.photo, rating: u.crating ?? 800, games: u.cgames || 0, wins: u.cwins || 0 }
+          : { name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins }));
+      }
       if (q.url.startsWith('/api/me')) {
         const d = new URL(q.url, 'http://x').searchParams.get('d'), u = TOKEN && d && db.verify(d, TOKEN);
         return json(u ? await db.getUser('tg' + u.id, String(u.first_name || 'Игрок').slice(0, 24), PHOTO.test(u.photo_url || '') ? u.photo_url : '') : null);
@@ -167,7 +174,7 @@ function attack(R, i, k) { R.mv++; const c = R.players[i].hand.splice(k, 1)[0]; 
 function defend(R, i, k, oi) { R.mv++; const c = R.players[i].hand.splice(k, 1)[0]; R.table[oi].d = c; fin(R); }
 const take = (R, i) => endRound(R, true);
 
-function drop(R, p) { R.mv++;
+function drop(R, p) { R.mv++; if (R.game === 'chess') return chDrop(R, p);
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -182,6 +189,7 @@ function drop(R, p) { R.mv++;
 const actor = R => !R.table.length ? R.att : (open(R) ? R.def : R.att);
 const notify = (p, o) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(o)); };
 function afkTick(R) {
+  if (R.game === 'chess') return chTick(R);
   if (!R.started || R.over) { R.idleKey = null; return; }
   const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
   if (R.idleKey !== key) { R.idleKey = key; R.idleSince = Date.now(); R.warned = R.fined = false; return; }
@@ -198,6 +206,131 @@ function afkTick(R) {
   } else if (el >= AFK_WARN && !R.warned) {
     R.warned = true; sys(R, `⏳ ${p.name} долго думает`); notify(p, { ev: 'afk', stage: 'warn' }); send(R);
   }
+}
+
+// ================= ШАХМАТЫ =================
+const CH_TC = [3, 5, 10, 15], PV = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+const chOther = c => (c == 'w' ? 'b' : 'w');
+function chStart(R, tc) {
+  const again = R.over;
+  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
+  R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
+  if (R.players.length < 2) { R.started = false; R.over = false; return; }
+  R.col = again && R.col ? [R.col[1], R.col[0]] : (Math.random() < .5 ? ['w', 'b'] : ['b', 'w']);
+  const ms = (CH_TC.includes(tc) ? tc : 10) * 60000;
+  R.ch = new Chess(); R.started = true; R.over = false; R.result = null; R.rres = null; R.draw = null; R.last = null;
+  R.tc = ms / 60000; R.cl = { w: ms, b: ms, since: Date.now() }; R.mv++;
+}
+function chElo(R) {
+  const [a, b] = R.players;
+  if (!a.prof || !b.prof || a.bot || b.bot || R.ch.history().length < 4) return;
+  const sa = !R.result.winner ? .5 : (R.col[0] == R.result.winner ? 1 : 0);
+  const ra = a.prof.crating ?? 800, rb = b.prof.crating ?? 800;
+  const d = Math.round(32 * (sa - 1 / (1 + Math.pow(10, (rb - ra) / 400))));
+  R.rres = [];
+  [[a, 0, d, sa], [b, 1, -d, 1 - sa]].forEach(([p, i, dd, sc]) => {
+    const pr = p.prof, before = pr.crating ?? 800;
+    pr.crating = Math.max(100, before + dd); pr.cgames = (pr.cgames || 0) + 1;
+    if (sc == 1) pr.cwins = (pr.cwins || 0) + 1; else if (sc == 0) pr.closses = (pr.closses || 0) + 1; else pr.cdraws = (pr.cdraws || 0) + 1;
+    db.saveUser(pr); R.rres.push({ i, d: pr.crating - before, before, after: pr.crating });
+  });
+}
+function chEnd(R, res) { if (R.over) return; R.over = true; R.result = res; R.draw = null; chElo(R); }
+function chMove(R, i, m) {
+  const c = R.col[i]; if (R.ch.turn() !== c) return;
+  const promo = ['q', 'r', 'b', 'n'].includes(m.promo) ? m.promo : undefined;
+  let mv; try { mv = R.ch.move({ from: m.from, to: m.to, promotion: promo }); } catch { return; }
+  const now = Date.now(); R.cl[c] -= now - R.cl.since; R.cl.since = now;
+  if (R.cl[c] <= 0) { R.cl[c] = 0; return chEnd(R, { winner: chOther(c), reason: 'time' }); }
+  R.last = { from: mv.from, to: mv.to }; R.draw = null; R.mv++;
+  if (R.ch.isCheckmate()) chEnd(R, { winner: c, reason: 'mate' });
+  else if (R.ch.isStalemate()) chEnd(R, { winner: null, reason: 'stalemate' });
+  else if (R.ch.isThreefoldRepetition()) chEnd(R, { winner: null, reason: 'repetition' });
+  else if (R.ch.isInsufficientMaterial()) chEnd(R, { winner: null, reason: 'insufficient' });
+  else if (R.ch.isDraw()) chEnd(R, { winner: null, reason: 'fifty' });
+}
+function chDrop(R, p) {
+  if (p.left) return; p.left = true; p.off = false;
+  sys(R, p.name + ' покинул игру');
+  if (R.started && !R.over) chEnd(R, { winner: chOther(R.col[R.players.indexOf(p)]), reason: 'leave' });
+}
+function chTick(R) {
+  if (!R.started || R.over) return;
+  const c = R.ch.turn();
+  if (R.cl[c] - (Date.now() - R.cl.since) <= 0) { R.cl[c] = 0; chEnd(R, { winner: chOther(c), reason: 'time' }); send(R); }
+}
+function chMsg(R, i, m) {
+  const playing = R.started && !R.over, c = R.col && R.col[i];
+  if (m.t == 'bot') { if (!R.started && R.players.length < 2) R.players.push({ name: 'Компьютер', hand: [], bot: true, ws: null }); }
+  else if (m.t == 'start') { if (!R.started && R.players.length >= 2) chStart(R, +m.tc); }
+  else if (m.t == 'again') { if (R.over) chStart(R, R.tc); }
+  else if (m.t == 'move') { if (playing) chMove(R, i, m); }
+  else if (m.t == 'resign') { if (playing) chEnd(R, { winner: chOther(c), reason: 'resign' }); }
+  else if (m.t == 'draw') {
+    if (!playing) return;
+    R.draw = i;
+    const oi = 1 - i, op = R.players[oi];
+    if (op.bot) {   // компьютер соглашается, если не выигрывает
+      if (chEval(R.ch, R.col[oi]) <= 0) chEnd(R, { winner: null, reason: 'agreed' });
+      else { R.draw = null; sys(R, 'Компьютер отклонил ничью'); }
+    }
+  }
+  else if (m.t == 'accept') { if (playing && R.draw != null && R.draw !== i) chEnd(R, { winner: null, reason: 'agreed' }); }
+  else if (m.t == 'decline') { if (playing && R.draw != null && R.draw !== i) { R.draw = null; sys(R, R.players[i].name + ' отклонил ничью'); } }
+}
+// Компьютер: перебор на 2 хода вперед по материалу (уровень «любитель»)
+function chEval(ch, color) {
+  let s = 0;
+  for (const row of ch.board()) for (const x of row) if (x) s += (x.color == color ? 1 : -1) * PV[x.type];
+  return s;
+}
+function chBotPick(ch) {
+  const color = ch.turn(); let best = -1e9, pick = null;
+  for (const m of ch.moves({ verbose: true })) {
+    ch.move(m); let sc;
+    if (ch.isCheckmate()) sc = 1e6;
+    else {
+      const rs = ch.moves({ verbose: true }); let worst = 1e9;
+      if (!rs.length) worst = 0;
+      else for (const r of rs) { ch.move(r); let v = ch.isCheckmate() ? -1e6 : chEval(ch, color); ch.undo(); if (v < worst) worst = v; }
+      sc = worst;
+    }
+    ch.undo(); sc += Math.random() * 15;
+    if (sc > best) { best = sc; pick = m; }
+  }
+  return pick;
+}
+function chSchedule(R) {
+  if (!R.started || R.over) return;
+  const ti = R.col.indexOf(R.ch.turn());
+  if (!R.players[ti] || !R.players[ti].bot) return;
+  const key = R.mv;
+  R.tm = setTimeout(() => {
+    if (!R.started || R.over || R.mv !== key) return;
+    const m = chBotPick(R.ch); if (!m) return;
+    chMove(R, ti, { from: m.from, to: m.to, promo: m.promotion }); send(R);
+  }, 700 + Math.random() * 700);
+}
+function chState(R, i) {
+  const me = R.col ? R.col[i] : null, now = Date.now(), playing = R.started && !R.over;
+  const moves = {}, promo = [];
+  if (playing && R.ch.turn() === me) for (const m of R.ch.moves({ verbose: true })) {
+    (moves[m.from] = moves[m.from] || []).push(m.to);
+    if (m.promotion && !promo.includes(m.from + m.to)) promo.push(m.from + m.to);
+  }
+  const turn = R.ch ? R.ch.turn() : 'w';
+  return {
+    game: 'chess', room: R.code, you: i, host: true, started: R.started, over: R.over, status: playing ? 'play' : (R.over ? 'over' : 'lobby'),
+    col: me, fen: R.ch ? R.ch.fen() : '', turn, check: R.ch ? R.ch.isCheck() : false, last: R.last || null,
+    hist: R.ch ? R.ch.history() : [], moves, promo, draw: R.draw ?? null, tc: R.tc || 10,
+    clk: R.cl ? { w: R.cl.w - (playing && turn == 'w' ? now - R.cl.since : 0), b: R.cl.b - (playing && turn == 'b' ? now - R.cl.since : 0), turn, run: playing } : null,
+    result: R.result || null, win: R.result ? (R.result.winner ? R.col.indexOf(R.result.winner) : -1) : null, rres: R.rres || null,
+    players: R.players.map((p, j) => ({
+      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, col: R.col ? R.col[j] : null, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      prof: p.prof ? { rating: p.prof.crating ?? 800, games: p.prof.cgames || 0, wins: p.prof.cwins || 0, losses: p.prof.closses || 0, draws: p.prof.cdraws || 0, streak: 0, since: p.prof.since } : null
+    })),
+    log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
+  };
 }
 
 // ---------- бот (обычный алгоритм) ----------
@@ -221,8 +354,9 @@ function botStep(R) {
 
 // ---------- сеть ----------
 function stateFor(R, i) {
+  if (R.game === 'chess') return chState(R, i);
   return {
-    room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
+    game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
     players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
@@ -236,6 +370,7 @@ function send(R) {
   R.players.forEach(p => p.hand.sort((a, b) => w(R, a) - w(R, b) || a.s - b.s));
   R.players.forEach((p, i) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(stateFor(R, i))); });
   clearTimeout(R.tm);
+  if (R.game === 'chess') return chSchedule(R);
   if (R.started && !R.over && R.players.some(p => p.bot))
     R.tm = setTimeout(() => { if (botStep(R)) send(R); }, 900);
 }
@@ -248,7 +383,9 @@ wss.on('connection', ws => {
     if (m.t == 'join') {
       const code = String(m.room || '').toUpperCase().slice(0, 8);
       if (!code) return err(ws, 'Введите код комнаты');
-      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0 });
+      if (rooms[code] && rooms[code].game !== (m.game == 'chess' ? 'chess' : 'durak')) return err(ws, rooms[code].game == 'chess' ? 'Это комната для шахмат' : 'Это комната для дурака');
+      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: m.game == 'chess' ? 'chess' : 'durak' });
+      if (R.game == 'chess' && !Chess) return err(ws, 'Шахматы пока недоступны');
       const A = await auth(m), uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) {
@@ -259,7 +396,7 @@ wss.on('connection', ws => {
         return send(R);
       }
       if (R.started) return err(ws, 'Игра уже идет');
-      if (R.players.length >= 6) return err(ws, 'Комната заполнена (максимум 6)');
+      if (R.players.length >= (R.game == 'chess' ? 2 : 6)) return err(ws, 'Комната заполнена');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
       ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
       ws.R = R; R.players.push(ws.p);
@@ -281,6 +418,7 @@ wss.on('connection', ws => {
       return send(R);
     }
     if (m.t == 'react') { if (EMO.includes(m.e)) bcast(R, { ev: 'react', from: i, e: m.e }); return; }
+    if (R.game === 'chess') { chMsg(R, i, m); return send(R); }
     if (m.t == 'bot' && !R.started && R.players.length < 6)
       R.players.push({ name: BOTN[R.players.length % BOTN.length], hand: [], bot: true, ws: null });
     else if (m.t == 'start' && !R.started && R.players.length >= 2) start(R);
@@ -320,14 +458,14 @@ srv.listen(process.env.PORT || 3000, () => {
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
     tg('setMyCommands', { commands: [{ command: 'start', description: 'Открыть игру' }, { command: 'rules', description: 'Правила дурака' }] });
-    tg('setMyDescription', { description: `♠️ Подкидной дурак онлайн
+    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак и шахматы онлайн
 
-Играйте с друзьями или ботами прямо в Telegram: 2–6 игроков, чат, реакции, радио за столом и рейтинг с рангами от Новичка до Легенды.
+Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, рейтинг с рангами от Новичка до Легенды.
 
-Нажмите Start, затем «Играть».
+Нажмите Start и выберите игру.
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
-    tg('setMyShortDescription', { short_description: 'Подкидной дурак онлайн: друзья, боты, чат, радио, рейтинг. Первый вход до 60 сек ⏳' });
+    tg('setMyShortDescription', { short_description: 'Дурак и шахматы онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
     tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
   }
 });

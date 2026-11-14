@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Дурак</title>
+<title>Дурак</title><script>if(location.pathname.indexOf('/chess')==0)document.title='Шахматы'</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -105,6 +105,40 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 @keyframes eq{from{height:3px}to{height:14px}}
 .rbtn.on{box-shadow:0 0 0 2px var(--gold)}
 .top .ico{width:38px;height:38px;font-size:17px}
+.gt{display:flex;gap:10px;margin:2px 0}
+.gt button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border-radius:18px;border:1px solid #ffffff2a;background:#00000030;color:inherit;font:800 15px Manrope;cursor:pointer;transition:.2s}
+.gt button b{font-size:34px;line-height:1;font-weight:400}.gt button small{font:500 11px Manrope;opacity:.7}
+.gt button.on{border-color:var(--gold);background:#ecc96b22;box-shadow:0 0 0 2px #ecc96b55}
+.board{container-type:inline-size;width:min(100%,calc(100dvh - 340px),520px);aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);border-radius:12px;overflow:hidden;box-shadow:0 0 0 5px #4a2f14,0 0 0 7px var(--gold),0 24px 44px #000b}
+.sq{position:relative;cursor:pointer}
+.sq.l{background:#f0d9b5}.sq.d{background:#b58863}
+.sq::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none}
+.sq.lm::before{background:#f7ec5a88}.sq.sel::before{background:#58a6ffaa}
+.sq.chk::before{background:radial-gradient(circle,#ff1f1f 0%,#ff1f1faa 35%,#ff1f1f00 72%)}
+.pc{position:absolute;inset:0;display:grid;place-items:center;z-index:2;pointer-events:none;font-size:9vw;font-size:10.6cqw;line-height:1;font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Apple Symbols',sans-serif}
+.pc.w{color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 0 3px #000,0 2px 3px #0009}
+.pc.b{color:#1b1713;text-shadow:0 0 2px #fff8,0 2px 3px #0008}
+.pc.mv{animation:slide .24s ease-out;z-index:5}
+@keyframes slide{from{transform:translate(var(--dx),var(--dy))}}
+.dot,.cap{position:absolute;z-index:3;pointer-events:none;border-radius:50%}
+.dot{width:30%;height:30%;left:35%;top:35%;background:#1c4a2a66}
+.cap{inset:6%;border:5px solid #1c4a2a66}
+.co{position:absolute;z-index:4;font:800 10px Manrope;pointer-events:none;opacity:.75}
+.co.r{left:3px;top:2px}.co.f{right:3px;bottom:1px}
+.sq.l .co{color:#b58863}.sq.d .co{color:#f0d9b5}
+.pb{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:16px;background:#00000033;border:1px solid #ffffff1a;transition:.3s}
+.pb.turn{border-color:var(--gold);box-shadow:0 0 16px #ecc96b55}
+.pb .av{width:40px;height:40px;flex:none}.pb .info{flex:1;min-width:0}.pb .nm{font-size:14px}
+.pb .cp{font:14px/1 serif;min-height:16px;letter-spacing:-1px;display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.pb .cp span{font-size:15px}.pb .cp .bk{color:#17120d;text-shadow:0 0 1px #fff8}.pb .cp .wh{color:#fff;text-shadow:0 0 2px #000}
+.pb .cp b{font:800 12px Manrope;margin-left:6px;color:var(--gold);letter-spacing:0}
+.clk{font:900 22px 'Playfair Display',Georgia,serif;font-variant-numeric:tabular-nums;background:#0007;border-radius:12px;padding:4px 12px;min-width:76px;text-align:center}
+.pb.turn .clk{background:#f6efd9;color:#1a1712}
+.clk.low{background:#c2352c!important;color:#fff!important;animation:pulse .8s infinite alternate}
+@keyframes pulse{to{opacity:.65}}
+.mlist{display:flex;gap:12px;overflow-x:auto;white-space:nowrap;font-size:13px;padding:4px 6px;opacity:.9;scrollbar-width:none}
+.mlist i{font-style:normal;opacity:.5;margin-right:2px}
+.pcb{font-size:40px!important;line-height:1;padding:6px 16px!important;color:#1b1713!important}
 #bd{position:fixed;inset:0;z-index:39;background:#0007}
 #bd[hidden]{display:none}
 .sh{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope}
@@ -155,7 +189,7 @@ box-shadow:0 2px 0 #0003,0 8px 16px #0006;font:900 calc(var(--w)*.3)/1 'Playfair
 <script>
 const tg=window.Telegram&&Telegram.WebApp;
 try{tg.ready();tg.expand();tg.setHeaderColor('#0d5238');tg.setBackgroundColor('#04241a')}catch(e){}
-const INVITE='https://t.me/duraktelega_bot/durakvtelege';
+const INVITES={durak:'https://t.me/duraktelega_bot/durakvtelege',chess:'https://t.me/duraktelega_bot/chess'};
 const RK=['6','7','8','9','10','В','Д','К','Т'],SU=['♠','♥','♦','♣'],EMO=['👍','😂','😮','😡','🔥','👏','😎','🤝'];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -166,6 +200,62 @@ const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
 const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
+/*CHESS*/
+let chGame=location.pathname.indexOf('/chess')==0?'chess':'durak',chSel=null,chPromo=null,chTc=10,chAt=0,prevHist=-1,chPrevOver=false,chAnim=false;
+const GL={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},VAL={p:1,n:3,b:3,r:5,q:9},INIT={p:8,n:2,b:2,r:2,q:1};
+const gl=t=>GL[t.toLowerCase()]+'\uFE0E',fmtT=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const clkNow=c=>st&&st.clk?Math.max(0,st.clk[c]-(st.clk.run&&st.clk.turn==c?Date.now()-chAt:0)):0;
+const RS={mate:'Мат',resign:'Сдача',time:'Время вышло',stalemate:'Пат',agreed:'Ничья по согласию',repetition:'Троекратное повторение',insufficient:'Недостаточно материала',fifty:'Правило 50 ходов',leave:'Соперник покинул игру'};
+function pickGame(g){chGame=g;document.querySelectorAll('.gt button').forEach(b=>b.classList.toggle('on',b.id=='g-'+g))}
+function fenRows(f){return f.split(' ')[0].split('/').map(r=>{const a=[];for(const c of r){if(c>='1'&&c<='8')for(let i=0;i<+c;i++)a.push('');else a.push(c)}return a})}
+function caps(f){const n={w:{p:0,n:0,b:0,r:0,q:0},b:{p:0,n:0,b:0,r:0,q:0}};
+  for(const row of fenRows(f))for(const c of row){if(!c||c.toLowerCase()=='k')continue;n[c==c.toUpperCase()?'w':'b'][c.toLowerCase()]++}
+  const mk=col=>{const s=[];let v=0;for(const t of 'qrbnp'){const m=Math.max(0,INIT[t]-n[col][t]);for(let i=0;i<m;i++)s.push(t);v+=m*VAL[t]}return{s,v}};
+  return{w:mk('b'),b:mk('w')}}   // w: что взяли белые (черные фигуры), b: что взяли черные
+function chSound(){const san=st.hist[st.hist.length-1]||'';snd(/[+#]/.test(san)?'check':/x/.test(san)?'cap':'move');hap('light')}
+function boardHTML(){const rows=fenRows(st.fen),flip=st.col=='b',mv=st.moves||{},L=st.last;
+  const disp=n=>{const c='abcdefgh'.indexOf(n[0]),r=8-+n[1];return flip?[7-c,7-r]:[c,r]};let h='';
+  for(let ri=0;ri<8;ri++)for(let ci=0;ci<8;ci++){const r=flip?7-ri:ri,c=flip?7-ci:ci,n='abcdefgh'[c]+(8-r),p=rows[r][c],light=(r+c)%2==0;
+    const isK=p&&p.toLowerCase()=='k'&&(p==p.toUpperCase()?'w':'b')==st.turn;
+    const cls='sq '+(light?'l':'d')+(L&&(n==L.from||n==L.to)?' lm':'')+(chSel==n?' sel':'')+(st.check&&isK?' chk':'');
+    const tg=chSel&&mv[chSel]&&mv[chSel].includes(n);let anim='';
+    if(chAnim&&L&&n==L.to){const f=disp(L.from),t=disp(L.to);anim=` mv" style="--dx:${(f[0]-t[0])*100}%;--dy:${(f[1]-t[1])*100}%`}
+    h+=`<div class="${cls}" onclick="chTap('${n}')">${p?`<span class="pc ${p==p.toUpperCase()?'w':'b'}${anim}">${gl(p)}</span>`:''}${tg?`<i class="${p?'cap':'dot'}"></i>`:''}${ci==0?`<b class="co r">${8-r}</b>`:''}${ri==7?`<b class="co f">${'abcdefgh'[c]}</b>`:''}</div>`}
+  return h}
+function chTap(s){if(!st||st.status!='play')return;const mv=st.moves||{};
+  if(chSel&&mv[chSel]&&mv[chSel].includes(s)){if((st.promo||[]).includes(chSel+s)){chPromo={from:chSel,to:s};draw();return}
+    send({t:'move',from:chSel,to:s});chSel=null;return}
+  const p=fenRows(st.fen)[8-+s[1]]['abcdefgh'.indexOf(s[0])];chSel=(p&&mv[s])?s:null;draw()}
+function chResign(){const f=()=>send({t:'resign'});tg&&tg.showConfirm?tg.showConfirm('Сдаться?',ok=>ok&&f()):confirm('Сдаться?')&&f()}
+function chBar(j){const p=st.players[j],c=p.col,cs=caps(st.fen),cp=cs[c],adv=(c=='w'?1:-1)*(cs.w.v-cs.b.v);
+  return `<div class="pb ${st.status=='play'&&st.turn==c?'turn':''}" id="seat-${j}" onclick="showProf(${j})">${av({...p,n:''})}<div class="info"><div class="nm" style="max-width:none">${esc(p.name)}${p.bot?' 🤖':''}${p.left?' 🚪':p.off?' 📵':''}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}<div class="cp">${cp.s.map(t=>`<span class="${c=='w'?'bk':'wh'}">${gl(t)}</span>`).join('')}${adv>0?`<b>+${adv}</b>`:''}</div></div><div class="clk" data-s="${c}">${fmtT(clkNow(c))}</div></div>`}
+function chLobby(a){a.innerHTML=`${sndBtn()}<h1 style="font-size:40px;margin-top:20px">Шахматы</h1><p class="sub">Комната <b style="color:var(--gold)">${esc(st.room)}</b>: ждем соперника</p>
+  <div class="lob">${st.players.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
+  <p class="sub" style="margin-top:14px">Время на партию каждому</p>
+  <div class="row">${[3,5,10,15].map(t=>`<button class="btn ${chTc==t?'':'ghost'}" onclick="chTc=${t};draw()">${t} мин</button>`).join('')}</div><div style="flex:1"></div>
+  <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=2?'disabled':''}>+ Компьютер</button><button class="btn" onclick="send({t:'start',tc:chTc})" ${st.players.length<2?'disabled':''}>Начать</button></div>`}
+function drawChess(a){
+  if(st.status=='lobby'){chLobby(a);prevHist=-1;chPrevOver=false;return}
+  const me=st.you,opp=1-me,n=st.hist.length;
+  chAnim=prevHist>=0&&n==prevHist+1;
+  if(n!=prevHist){if(prevHist>=0&&n>prevHist)chSound();chSel=null;chPromo=null}
+  prevHist=n;
+  if(st.over&&!chPrevOver)snd(st.win==me?'win':st.win<0?'turn':'lose',.35);
+  chPrevOver=st.over;
+  const myTurn=st.status=='play'&&st.turn==st.col;
+  let msg=st.over?'Партия окончена':myTurn?(st.check?'⚠️ Вам шах! Ваш ход':'Ваш ход'):'Ход соперника…';
+  if(st.players[opp].off&&!st.over)msg='📵 Соперник потерял связь…';
+  const dr=st.draw!=null&&st.status=='play'?(st.draw==me?'🤝 Ничья предложена…':`🤝 Соперник предлагает ничью <button class="btn" style="padding:6px 12px" onclick="send({t:'accept'})">Принять</button> <button class="btn ghost" style="padding:6px 12px" onclick="send({t:'decline'})">Нет</button>`):'';
+  const ml=[];for(let i=0;i<n;i+=2)ml.push(`<span><i>${i/2+1}.</i>${st.hist[i]} ${st.hist[i+1]||''}</span>`);
+  const unread=chatOpen?0:st.logN-logSeen,rr=(st.rres||[]).find(x=>x.i==me);
+  const ov=st.over?`<div class="res"><div class="box"><div class="big">${st.win==me?'🏆':st.win<0?'🤝':'😔'}</div><h2>${st.win==me?'Победа':st.win<0?'Ничья':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${RS[st.result.reason]||''}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Шахматный рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+  const pv=chPromo?`<div class="res" onclick="chPromo=null;draw()"><div class="box"><h2>Превращение пешки</h2><div class="row">${['q','r','b','n'].map(t=>`<button class="btn pcb" onclick="event.stopPropagation();send({t:'move',from:'${chPromo.from}',to:'${chPromo.to}',promo:'${t}'});chPromo=null;chSel=null">${gl(t)}</button>`).join('')}</div></div></div>`:'';
+  a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div><div class="chip">♞ ${st.tc} мин</div></div>
+  ${chBar(opp)}<div style="flex:1;display:grid;place-items:center;min-height:0"><div class="board">${boardHTML()}</div></div>${chBar(me)}
+  <div class="msg">${dr||msg}</div><div class="mlist" id="ml">${ml.join('')}</div>
+  <div class="bar"><button class="ico" onclick="chResign()">🏳</button><button class="ico" onclick="send({t:'draw'})">🤝</button><div style="flex:1"></div><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div>${ov}${pv}`;
+  const m=$('#ml');if(m)m.scrollLeft=m.scrollWidth}
+/*ENDCH*/
 /*RADIO*/
 // Радио: каждый телефон качает поток сам. Громкость по умолчанию 7% (тихий фон).
 const RA=new Audio();RA.preload='none';
@@ -215,6 +305,9 @@ const S={
   win:(t,v)=>[523,659,784,1047].forEach((f,i)=>tn(t+i*.11,f,.3,.12*v,0,'triangle')),
   lose:(t,v)=>[392,330,262].forEach((f,i)=>tn(t+i*.18,f,.4,.12*v,f*.96,'sine')),
   msg:(t,v)=>tn(t,880,.09,.08*v),
+  move:(t,v)=>{tn(t,220,.07,.25*v,90);nz(t,.05,1800,900,1.2,.35*v)},
+  cap:(t,v)=>{tn(t,160,.11,.35*v,60);nz(t,.08,2600,700,1,.5*v)},
+  check:(t,v)=>{tn(t,880,.1,.1*v,0,'triangle');tn(t+.12,1175,.18,.1*v,0,'triangle')},
   warn:(t,v)=>{tn(t,440,.18,.14*v,0,'triangle');tn(t+.22,440,.18,.14*v,0,'triangle');tn(t+.44,330,.3,.14*v,0,'triangle')},
   pop:(t,v)=>tn(t,500,.1,.09*v,900)};
 function snd(n,d=0,v=1){if(muted)return;try{const c=ac();if(!c)return;S[n](c.currentTime+d+.01,v)}catch(e){}}
@@ -237,15 +330,15 @@ function badge(rt,s){const k=rankIdx(rt),R=RANKS[k],id='g'+k;
   return `<svg width="${s}" height="${Math.round(s*1.17)}" viewBox="0 0 48 56"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${R.c[0]}"/><stop offset="1" stop-color="${R.c[1]}"/></linearGradient></defs><path d="M24 2 44 10v18c0 14-10 23-20 27C14 51 4 42 4 28V10z" fill="url(#${id})" stroke="#fff" stroke-opacity=".75" stroke-width="2"/><path d="M24 7 39 13v15c0 10-7 17-15 21" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><text x="24" y="33" text-anchor="middle" font-size="22" font-weight="900" font-family="Playfair Display,Georgia,serif" fill="${k==5?'#fff':'#1a1712'}" fill-opacity=".88">${R.g}</text>${[...Array(k)].map((_,i)=>`<circle cx="${24-(k-1)*4+i*8}" cy="45" r="2" fill="#fff" fill-opacity=".9"/>`).join('')}</svg>`}
 function profCard(name,pr){const k=rankIdx(pr.rating),R=RANKS[k],nx=RANKS[k+1];
   const pct=nx?Math.round((pr.rating-R.min)/(nx.min-R.min)*100):100,wr=pr.games?Math.round(pr.wins/pr.games*100):0,days=Math.max(1,Math.ceil((Date.now()-pr.since)/864e5));
-  return `<div class="pc"><div class="badge-big">${badge(pr.rating,86)}</div><h3>${esc(name)}</h3><div style="opacity:.9">${R.n} · ${pr.rating}</div><div class="bar2"><i style="width:${pct}%"></i></div><div style="font-size:12px;opacity:.7">${nx?`До ранга «${nx.n}»: ${nx.min-pr.rating}`:'Высший ранг'}</div><div class="grid"><div><b>${pr.games}</b>партий</div><div><b>${wr}%</b>побед</div><div><b>${pr.streak}</b>серия</div></div><p style="font-size:12px;opacity:.7;margin:12px 0 0">Играет с ${new Date(pr.since).toLocaleDateString('ru',{month:'long',year:'numeric'})} (${days} дн.)</p></div>`}
+  return `<div class="pc"><div class="badge-big">${badge(pr.rating,86)}</div><h3>${esc(name)}</h3><div style="opacity:.9">${R.n} · ${pr.rating}</div><div class="bar2"><i style="width:${pct}%"></i></div><div style="font-size:12px;opacity:.7">${nx?`До ранга «${nx.n}»: ${nx.min-pr.rating}`:'Высший ранг'}</div><div class="grid"><div><b>${pr.games}</b>партий</div><div><b>${wr}%</b>побед</div>${pr.draws!==undefined?`<div><b>${pr.draws}</b>ничьих</div>`:`<div><b>${pr.streak}</b>серия</div>`}</div><p style="font-size:12px;opacity:.7;margin:12px 0 0">Играет с ${new Date(pr.since).toLocaleDateString('ru',{month:'long',year:'numeric'})} (${days} дн.)</p></div>`}
 function showProf(j){const p=st.players[j],pm=$('#pm');
   pm.innerHTML=p.prof?profCard(p.name,p.prof):`<div class="pc"><h3>${esc(p.name)}</h3><p style="opacity:.8">${p.bot?'У ботов нет рейтинга':'Гость: рейтинг ведется для игроков из Telegram'}</p></div>`;pm.hidden=false}
 let me0;
 async function loadMe(){try{const d=tg&&tg.initData;if(!d)return;const p=await (await fetch('/api/me?d='+encodeURIComponent(d))).json();if(!p||!$('#me'))return;me0=p;
   $('#me').innerHTML=`<div class="seat me" onclick="meCard()" style="margin:6px auto;width:max-content">${av({name:p.name,photo:p.photo,n:'',prof:p})}<div><div class="nm">${esc(p.name)}</div><div class="rt">${rankOf(p.rating).n} · ${p.rating}</div></div></div>`}catch(e){}}
 function meCard(){$('#pm').innerHTML=profCard(me0.name,me0);$('#pm').hidden=false}
-async function showTop(){let l=[];try{l=await (await fetch('/api/top')).json()}catch(e){}
-  $('#pm').innerHTML=`<div class="pc"><h3>Лучшие игроки</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
+async function showTop(g){g=chGame;let l=[];try{l=await (await fetch('/api/top?g='+g)).json()}catch(e){}
+  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Лучшие игроки: ${g=='chess'?'шахматы':'дурак'}</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
 function resHTML(me){const r=(st.result||[]).find(x=>x.i==me);
   if(!r)return st.players[me].prof?'':'<p style="opacity:.7;font-size:13px;margin:0 0 14px">Рейтинг ведется для игроков из Telegram</p>';
   const a=rankIdx(r.before),b=rankIdx(r.after);
@@ -258,22 +351,22 @@ const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
-  $('#app').innerHTML=`${sndBtn()}<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>
-  <h1>Дурак</h1><p class="sub">Подкидной онлайн на 2–6 игроков</p><div id="me"></div>
+  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${['♞','♛','♚'].map((g,i)=>`<span class="pc ${i==1?'b':'w'}" style="position:static;display:block;width:auto;font-size:${i==1?84:68}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards">${g}&#xFE0E;</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
+  <h1>${chGame=='chess'?'Шахматы':'Дурак'}</h1><p class="sub">${chGame=='chess'?'Партии онлайн с друзьями и компьютером':'Подкидной онлайн на 2–6 игроков'}</p><div id="me"></div>
   <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
   <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">
   <div class="row"><button class="btn" type="submit">Войти</button><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">Новая комната</button></div></form><div class="row" style="margin-top:6px"><button class="btn ghost" onclick="showTop()">🏆 Лучшие игроки</button></div>`;
   loadMe();
 }
 function go(e){if(e)e.preventDefault();const room=$('#rm').value.trim();if(!room){alert('Введите код комнаты');return false}
-  cur={room,name:$('#nm').value.trim()||'Игрок'};conn();return false}
+  cur={room,name:$('#nm').value.trim()||'Игрок',game:chGame};conn();return false}
 function conn(){
   ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
-  ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,uid,initData:(tg&&tg.initData)||''})};
+  ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,game:cur.game,uid,initData:(tg&&tg.initData)||''})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();return}
     if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='react')return float(m);
-    if(m.ev=='afk')return afkEv(m);selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
+    if(m.ev=='afk')return afkEv(m);chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
@@ -282,10 +375,11 @@ function lobby(a){
   <div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
 }
-function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITE+'?startapp='+st.room)+'&text='+encodeURIComponent('Сыграем в дурака? Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
+function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITES[chGame]+'?startapp='+st.room)+'&text='+encodeURIComponent((chGame=='chess'?'Сыграем в шахматы?':'Сыграем в дурака?')+' Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
 function play(k){if(st.over)return;send({t:'play',i:k,to:selT});selT=null;hap('light')}
 function draw(){
   const a=$('#app');next=new Set();
+  if(st.game=='chess'){drawChess(a);return}
   if(!st.started){lobby(a);seen=next;prevSt=st;return}
   const me=st.you,T=st.tc.s,hasOpen=st.table.some(t=>!t.d),defN=st.players[st.def].n,unb=st.table.filter(t=>!t.d).length;
   const ranks=new Set(st.table.flatMap(t=>[t.a.r,t.d&&t.d.r].filter(Boolean)));
@@ -330,6 +424,7 @@ function chatRender(){if(!st)return;const l=$('#log');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closeSheets()});
 setInterval(()=>document.querySelectorAll('.offt').forEach(e=>e.textContent=Math.max(0,Math.ceil((+e.dataset.e-Date.now())/1000))),500);
+setInterval(()=>{if(!st||st.game!='chess'||!st.clk)return;document.querySelectorAll('.clk').forEach(e=>{const c=e.dataset.s,ms=clkNow(c);e.textContent=fmtT(ms);e.classList.toggle('low',ms<30000&&st.clk.run&&st.clk.turn==c)})},250);
 entry();
 </script>
 </body>
