@@ -21,33 +21,31 @@ if (!col) {
   console.log('Firestore не подключен: рейтинг хранится в файле и пропадет при перезапуске на Render.');
 }
 const flush = () => { if (!col) try { fs.writeFileSync(FILE, JSON.stringify(mem)); } catch {} };
-const fresh = (uid, name, photo) => ({ uid, name, photo, rating: START, games: 0, wins: 0, losses: 0, streak: 0, since: Date.now(),
-  crating: START, cgames: 0, cwins: 0, closses: 0, cdraws: 0 });   // c*: шахматы
+const fresh = (uid, name, photo) => ({ uid, name, photo, rating: START, games: 0, wins: 0, losses: 0, streak: 0, since: Date.now() });
 
 async function getUser(uid, name, photo) {
   if (col) {
     const ref = col.doc(uid), snap = await ref.get();
     if (!snap.exists) { const u = fresh(uid, name, photo); await ref.set(u); return u; }
-    const u = { ...fresh(uid, name, photo), ...snap.data(), uid };
+    const u = { uid, ...snap.data() };
     if (u.name !== name || u.photo !== photo) { u.name = name; u.photo = photo; await ref.update({ name, photo }); }
     return u;
   }
-  const u = mem[uid] = Object.assign(fresh(uid, name, photo), mem[uid] || {});
+  const u = mem[uid] || (mem[uid] = fresh(uid, name, photo));
   u.name = name; u.photo = photo; flush();
   return { ...u };
 }
 async function saveUser(p) {
-  const f = { rating: p.rating, games: p.games, wins: p.wins, losses: p.losses, streak: p.streak,
-    crating: p.crating ?? START, cgames: p.cgames || 0, cwins: p.cwins || 0, closses: p.closses || 0, cdraws: p.cdraws || 0 };
+  const f = { rating: p.rating, games: p.games, wins: p.wins, losses: p.losses, streak: p.streak };
   if (col) return col.doc(p.uid).update(f).catch(e => console.error('db save:', e.message));
   mem[p.uid] = { ...mem[p.uid], ...f }; flush();
 }
-async function top(n = 10, rf = 'rating', gf = 'games') {
+async function top(n = 10) {
   if (col) {
-    const s = await col.orderBy(rf, 'desc').limit(60).get();   // без составного индекса
-    return s.docs.map(x => x.data()).filter(u => u[gf] > 0).slice(0, n);
+    const s = await col.orderBy('rating', 'desc').limit(60).get();   // без составного индекса
+    return s.docs.map(d => d.data()).filter(u => u.games > 0).slice(0, n);
   }
-  return Object.values(mem).filter(u => u[gf] > 0).sort((a, b) => (b[rf] ?? 0) - (a[rf] ?? 0)).slice(0, n);
+  return Object.values(mem).filter(u => u.games > 0).sort((a, b) => b.rating - a.rating).slice(0, n);
 }
 // Проверка подписи Telegram Mini App (initData): без нее рейтинг подделать нельзя.
 function verify(d, token) {
