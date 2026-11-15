@@ -1,7 +1,7 @@
 // Хранилище игроков: Firebase Firestore (FIREBASE_KEY) или JSON-файл для локальных тестов.
 // У каждой игры свой набор профилей: у дурака коллекция players, у шахмат chess_players (рейтинги не связаны).
 const fs = require('fs'), crypto = require('crypto');
-const START = 800, COLS = { durak: 'players', chess: 'chess_players' };
+const START = 800, COLS = { durak: 'players', chess: 'chess_players', mafia: 'mafia_players' };
 let cols = null, mem = {};
 const FILE = process.env.DATA_FILE || 'data.json';
 
@@ -12,7 +12,7 @@ if (process.env.FIREBASE_KEY) {
     if (key.private_key) key.private_key = key.private_key.replace(/\\n/g, '\n');
     admin.initializeApp({ credential: admin.credential.cert(key) });
     const fsx = admin.firestore();
-    cols = { durak: fsx.collection(COLS.durak), chess: fsx.collection(COLS.chess) };
+    cols = { durak: fsx.collection(COLS.durak), chess: fsx.collection(COLS.chess), mafia: fsx.collection(COLS.mafia) };
     console.log('Firestore подключен, проект:', key.project_id);
   } catch (e) {
     console.error('Не удалось подключить Firestore, проверьте FIREBASE_KEY:', e.message);

@@ -10,6 +10,7 @@ const tg = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
 }).catch(() => {});
 
 const KB_D = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть в дурака', web_app: { url: APP_URL } }], [{ text: '📖 Правила', callback_data: 'rules_durak' }]] } : undefined;
+const KB_M = APP_URL ? { inline_keyboard: [[{ text: '🔪 Играть в мафию', web_app: { url: APP_URL + '/mafia' } }], [{ text: '📖 Правила', callback_data: 'rules_mafia' }]] } : undefined;
 const KB_C = APP_URL ? { inline_keyboard: [[{ text: '♞ Играть в шахматы', web_app: { url: APP_URL + '/chess' } }], [{ text: '📖 Правила', callback_data: 'rules_chess' }]] } : undefined;
 const WAIT = '<i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>';
 const CARD_D = `🃏 <b>ПОДКИДНОЙ ДУРАК</b>
@@ -55,6 +56,35 @@ const RULES_C = `📖 <b>ПРАВИЛА ШАХМАТ</b>
 <b>Как играть:</b> нажмите на свою фигуру, затем на клетку с точкой. Кнопки внизу: 🏳 сдаться, 🤝 предложить ничью.
 
 <b>Рейтинг</b> считается по системе Эло. Партии с компьютером и очень короткие рейтинг не меняют.`;
+const CARD_M = `🔪 <b>МАФИЯ</b>
+𝗡𝗜𝗚𝗛𝗧 · 𝗗𝗔𝗬 · 𝗩𝗢𝗧𝗘
+
+<i>Город засыпает, просыпается мафия. Найдите злодеев раньше, чем они найдут вас.</i>
+
+<blockquote>👥 5–12 игроков, пустые места займут боты
+🎭 Роли: мафия, комиссар, доктор, мирные жители
+🌙 Ночью мафия выбирает жертву, днем город голосует
+💬 Чат, реакции и тайный чат мафии
+🏅 Свой рейтинг и ранги: от Прохожего до Дона</blockquote>
+
+${WAIT}`;
+const RULES_M = `📖 <b>ПРАВИЛА МАФИИ</b>
+𝗠𝗔𝗙𝗜𝗔
+
+<blockquote>🔪 <b>Мафия:</b> знает своих, ночью убивает одного игрока.
+🕵️ <b>Комиссар:</b> ночью проверяет игрока и узнает, мафия ли он.
+💉 <b>Доктор:</b> ночью лечит игрока (того же два раза подряд нельзя).
+🧑 <b>Мирные жители:</b> ночью спят, днем ищут мафию.</blockquote>
+
+<b>Ход игры</b>
+🌙 <b>Ночь:</b> мафия выбирает жертву (у них свой тайный чат), доктор и комиссар действуют.
+☀️ <b>Утро:</b> город узнает, кто погиб и какая у него была роль.
+💬 <b>Обсуждение:</b> общий чат, подозревайте и защищайтесь.
+🗳️ <b>Голосование:</b> игрок с наибольшим числом голосов изгоняется (при ничьей никого).
+
+<b>Победа:</b> мирные побеждают, когда вся мафия изгнана; мафия побеждает, когда ее становится не меньше, чем остальных.
+
+<b>Рейтинг</b> меняется только за игру: победа повышает, поражение понижает. С ботами изменения меньше. Если выйти из игры, засчитывается поражение.`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 𝗣𝗢𝗗𝗞𝗜𝗗𝗡𝗢𝗬 𝗗𝗨𝗥𝗔𝗞
 
@@ -71,7 +101,7 @@ const srv = http.createServer((q, r) => {
   if (q.url.startsWith('/api/')) {
     const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
     (async () => {
-      const gp = new URL(q.url, 'http://x').searchParams, g = gp.get('g') == 'chess' ? 'chess' : 'durak';
+      const gp = new URL(q.url, 'http://x').searchParams, g = GAMES.includes(gp.get('g')) ? gp.get('g') : 'durak';
       if (q.url.startsWith('/api/top')) return json((await db.top(10, g)).map(u => ({ name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins })));
       if (q.url.startsWith('/api/me')) {
         const d = gp.get('d'), u = TOKEN && d && db.verify(d, TOKEN);
@@ -92,13 +122,15 @@ const srv = http.createServer((q, r) => {
           tg('answerCallbackQuery', { callback_query_id: cb.id });
           const ch = cb.message.chat.id;
           if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
+          else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
           else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
         } else if (m && m.text) {
           const t = m.text, id = m.chat.id;
-          if (/^\/start/.test(t)) msg(id, CARD_D, KB_D).then(() => msg(id, CARD_C, KB_C));   // две отдельные карточки
+          if (/^\/start/.test(t)) msg(id, CARD_D, KB_D).then(() => msg(id, CARD_C, KB_C)).then(() => msg(id, CARD_M, KB_M));   // две отдельные карточки
           else if (/^\/durak/.test(t)) msg(id, CARD_D, KB_D);
           else if (/^\/chess/.test(t)) msg(id, CARD_C, KB_C);
-          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C));
+          else if (/^\/mafia/.test(t)) msg(id, CARD_M, KB_M);
+          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M));
         }
       } catch {}
     });
@@ -109,6 +141,8 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv });
 const rooms = {};
+const GAMES = ['durak', 'chess', 'mafia'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии' };
+const gameOf = m => (GAMES.includes(m.game) ? m.game : 'durak');
 // Радио: каждый телефон качает поток сам, через сервер трафик не идет. Список можно менять здесь, без правки приложения.
 const STATIONS = [
   { id: 'hit', name: 'Hit FM', url: 'https://online.hitfm.ua/HitFM_HD' },
@@ -208,6 +242,7 @@ function defend(R, i, k, oi) { R.mv++; const c = R.players[i].hand.splice(k, 1)[
 const take = (R, i) => endRound(R, true);
 
 function drop(R, p) { R.mv++; if (R.game === 'chess') return chDrop(R, p);
+  if (R.game === 'mafia') return mfDrop(R, p);
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -223,6 +258,7 @@ const actor = R => !R.table.length ? R.att : (open(R) ? R.def : R.att);
 const notify = (p, o) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(o)); };
 function afkTick(R) {
   if (R.game === 'chess') return chTick(R);
+  if (R.game === 'mafia') return mfTick(R);
   if (!R.started || R.over) { R.idleKey = null; return; }
   const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
   if (R.idleKey !== key) { R.idleKey = key; R.idleSince = Date.now(); R.warned = R.fined = false; return; }
@@ -372,6 +408,190 @@ function chState(R, i) {
   };
 }
 
+// ================= МАФИЯ =================
+const MF = { night: +process.env.MF_NIGHT_MS || 40000, day: +process.env.MF_DAY_MS || 75000, vote: +process.env.MF_VOTE_MS || 30000 };
+const MF_BOTN = ['Тони', 'Лука', 'Виктор', 'Эмма', 'Ада', 'Макс', 'Роза', 'Хьюго', 'Вера', 'Феликс', 'Нина', 'Борис'];
+const MF_RN = { mafia: 'Мафия', doctor: 'Доктор', sheriff: 'Комиссар', civ: 'Мирный житель' };
+const rnd = a => a[Math.random() * a.length | 0];
+const mfAlive = R => R.players.map((_, i) => i).filter(i => R.mf.alive[i]);
+function mfVis(R, e, j) {
+  if (e.ch == 'p') return e.to === j;
+  if (!R.mf) return true;
+  if (e.ch == 'mafia') return R.mf.roles[j] == 'mafia';
+  if (e.ch == 'dead') return !R.mf.alive[j];
+  return true;
+}
+function mfPush(R, e) {
+  R.log.push(e); R.log = R.log.slice(-40);
+  R.players.forEach((p, j) => { if (mfVis(R, e, j)) p.lc = (p.lc || 0) + 1; });
+}
+const mfSys = (R, text) => mfPush(R, { n: -1, text, ch: 'all' });
+function mfStart(R) {
+  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
+  R.players.forEach(p => { p.off = false; p.left = false; clearTimeout(p.tm); p.lc = 0; });
+  const n = R.players.length;
+  if (n < 5) { R.started = false; R.over = false; R.mf = null; return; }
+  const mc = n >= 12 ? 4 : n >= 9 ? 3 : n >= 6 ? 2 : 1, roles = [];
+  for (let k = 0; k < mc; k++) roles.push('mafia');
+  roles.push('doctor', 'sheriff'); while (roles.length < n) roles.push('civ');
+  for (let k = n - 1; k > 0; k--) { const j = Math.random() * (k + 1) | 0; [roles[k], roles[j]] = [roles[j], roles[k]]; }
+  R.mf = { roles, alive: roles.map(() => true), day: 0, phase: 'night', end: 0, t0: 0, dur: 0, allAt: 0, nv: {}, heal: null, lastHeal: -1, check: null, checks: {}, ready: {}, votes: {}, won: null };
+  R.started = true; R.over = false; R.rres = null; R.log = [];
+  mfSys(R, `🎭 Игра началась: игроков ${n}, мафии ${mc}`);
+  mfNight(R, 1);
+}
+function mfSched(R, ms) {
+  const mf = R.mf, now = Date.now(); mf.t0 = now; mf.end = now + ms; mf.dur = ms; mf.allAt = 0;
+  R.players.forEach(p => { p.botDone = false; p.botAt = now + 2500 + Math.random() * Math.max(1000, ms * .5); });
+}
+function mfNight(R, day) {
+  const mf = R.mf; mf.phase = 'night'; mf.day = day; mf.nv = {}; mf.heal = null; mf.check = null; mf.ready = {}; mf.votes = {};
+  mfSched(R, MF.night); mfSys(R, `🌙 Ночь ${day}. Город засыпает, просыпается мафия…`);
+}
+function mfKill(R, i, how) { R.mf.alive[i] = false; mfSys(R, `${how} ${R.players[i].name}: ${MF_RN[R.mf.roles[i]]}`); }
+function mfEnd(R, w) {
+  const mf = R.mf; mf.phase = 'over'; mf.won = w; R.over = true;
+  mfSys(R, w == 'mafia' ? '🔪 Победила мафия!' : '🏆 Победили мирные жители!');
+  mfSettle(R);
+}
+function mfWinCheck(R) {
+  const mf = R.mf, al = mfAlive(R), m = al.filter(i => mf.roles[i] == 'mafia').length;
+  const w = !m ? 'town' : (m >= al.length - m ? 'mafia' : null);
+  if (w) mfEnd(R, w);
+  return !!w;
+}
+function mfTop(cnt) {   // единственный лидер по голосам или null
+  let best = 0, tie = [];
+  for (const [t, c] of Object.entries(cnt)) { if (c > best) { best = c; tie = [+t]; } else if (c == best) tie.push(+t); }
+  return tie;
+}
+function mfDawn(R) {
+  const mf = R.mf, cnt = {};
+  mfAlive(R).filter(i => mf.roles[i] == 'mafia').forEach(i => { const t = mf.nv[i]; if (t != null && mf.alive[t]) cnt[t] = (cnt[t] || 0) + 1; });
+  const tie = mfTop(cnt), target = tie.length ? rnd(tie) : null;
+  mf.lastHeal = mf.heal == null ? -1 : mf.heal; mf.phase = 'day'; mf.ready = {}; mf.votes = {};
+  if (target != null && target !== mf.heal) mfKill(R, target, `☀️ День ${mf.day}. Ночью убит`);
+  else mfSys(R, `☀️ День ${mf.day}. Этой ночью никто не погиб.`);
+  if (mfWinCheck(R)) return;
+  mfSched(R, MF.day); mfSys(R, '💬 Обсуждение: кто из вас мафия?');
+}
+function mfAdvance(R) {
+  const mf = R.mf;
+  if (mf.phase == 'night') mfDawn(R);
+  else if (mf.phase == 'day') { mf.phase = 'vote'; mf.votes = {}; mfSched(R, MF.vote); mfSys(R, '🗳️ Голосование: кого изгнать из города?'); }
+  else if (mf.phase == 'vote') {
+    const cnt = {};
+    Object.entries(mf.votes).forEach(([v, t]) => { if (t != null && mf.alive[+v] && mf.alive[t]) cnt[t] = (cnt[t] || 0) + 1; });
+    const tie = mfTop(cnt);
+    if (tie.length == 1) mfKill(R, tie[0], '⚖️ Город изгнал'); else mfSys(R, '⚖️ Мнения разошлись: никого не изгнали.');
+    if (mfWinCheck(R)) return;
+    mfNight(R, mf.day + 1);
+  }
+}
+function mfAllDone(R) {
+  const mf = R.mf, al = mfAlive(R);
+  if (mf.phase == 'night') return al.every(i => mf.roles[i] == 'mafia' ? mf.nv[i] != null : mf.roles[i] == 'doctor' ? mf.heal != null : mf.roles[i] == 'sheriff' ? mf.check != null : true);
+  if (mf.phase == 'day') return al.every(i => mf.ready[i]);
+  if (mf.phase == 'vote') return al.every(i => i in mf.votes);
+  return false;
+}
+function mfBots(R) {
+  const mf = R.mf, now = Date.now(); let ch = false;
+  R.players.forEach((p, i) => {
+    if (!p.bot || !mf.alive[i] || p.botDone || now < p.botAt) return;
+    p.botDone = true; ch = true;
+    const alive = mfAlive(R), role = mf.roles[i], others = alive.filter(j => j != i), nm = others.filter(j => mf.roles[j] != 'mafia');
+    if (mf.phase == 'night') {
+      if (role == 'mafia') { const mate = Object.values(mf.nv).find(t => t != null && mf.alive[t]); mf.nv[i] = mate != null ? mate : rnd(nm); }
+      else if (role == 'doctor') mf.heal = rnd(alive.filter(j => j != mf.lastHeal));
+      else if (role == 'sheriff') { const pool = others.filter(j => mf.checks[j] === undefined), t = rnd(pool.length ? pool : others); mf.check = t; mf.checks[t] = mf.roles[t] == 'mafia'; }
+    } else if (mf.phase == 'day') mf.ready[i] = true;
+    else if (mf.phase == 'vote') {
+      let t;
+      if (role == 'mafia') { const mate = Object.entries(mf.votes).find(([v, x]) => x != null && mf.roles[+v] == 'mafia' && mf.alive[x] && mf.roles[x] != 'mafia'); t = mate ? mate[1] : rnd(nm); }
+      else { const known = role == 'sheriff' ? others.find(j => mf.checks[j] === true) : undefined; t = known !== undefined ? known : (Math.random() < .12 ? null : rnd(others)); }
+      mf.votes[i] = t == undefined ? null : t;
+    }
+  });
+  return ch;
+}
+function mfTick(R) {
+  if (!R.started || R.over || !R.mf) return;
+  const mf = R.mf, now = Date.now(); let ch = mfBots(R);
+  if (mfAllDone(R)) { if (!mf.allAt) mf.allAt = now; } else mf.allAt = 0;
+  if (now >= mf.end || (mf.allAt && now >= mf.allAt + 1500 && now >= mf.t0 + 3000)) { mfAdvance(R); ch = true; }
+  if (ch) send(R);
+}
+function mfDrop(R, p) {
+  const i = R.players.indexOf(p); if (i < 0 || p.left) return;
+  p.left = true; p.off = false;
+  if (!R.started || R.over || !R.mf || !R.mf.alive[i]) return;
+  R.mf.alive[i] = false; mfSys(R, `🚪 ${p.name} покинул игру: ${MF_RN[R.mf.roles[i]]}`);
+  mfWinCheck(R);
+}
+function mfSettle(R) {
+  const mf = R.mf, multi = R.players.filter(p => p.prof).length >= 4; R.rres = [];
+  R.players.forEach((p, i) => {
+    if (!p.prof) return;
+    const pr = p.prof, win = !p.left && (mf.roles[i] == 'mafia' ? 'mafia' : 'town') == mf.won;
+    let d = multi ? (win ? 20 : -15) : (win ? 6 : -5); if (win && pr.streak >= 2) d += 3;
+    const before = pr.rating; pr.rating = Math.max(100, before + d); pr.games++;
+    if (win) { pr.wins++; pr.streak++; } else { pr.losses++; pr.streak = 0; }
+    db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating });
+  });
+}
+function mfChat(R, i, m) {
+  const tx = String(m.text || '').trim().slice(0, 120); if (!tx) return;
+  const mf = R.mf; let ch = 'all';
+  if (R.started && !R.over && mf) {
+    if (!mf.alive[i]) ch = 'dead';
+    else if (mf.phase == 'night') { if (mf.roles[i] != 'mafia') return; ch = 'mafia'; }
+  }
+  mfPush(R, { n: i, name: R.players[i].name, text: tx, ch });
+}
+function mfMsg(R, i, m) {
+  const mf = R.mf;
+  if (!R.started) {
+    if (m.t == 'bot' && R.players.length < 12) R.players.push({ name: MF_BOTN[R.players.length % 12], hand: [], bot: true, ws: null });
+    else if (m.t == 'start') mfStart(R);
+    return;
+  }
+  if (R.over) {
+    if (m.t == 'again') { R.started = false; R.over = false; R.mf = null; R.log = []; R.players = R.players.filter(p => p.bot || (p.ws && !p.left)); R.players.forEach(p => { p.lc = 0; p.off = false; }); }
+    return;
+  }
+  if (!mf.alive[i]) return;
+  const role = mf.roles[i], t = m.target, ok = Number.isInteger(t) && t >= 0 && t < R.players.length && mf.alive[t];
+  if (m.t == 'act' && mf.phase == 'night' && ok) {
+    if (role == 'mafia' && mf.roles[t] != 'mafia') mf.nv[i] = t;
+    else if (role == 'doctor' && t !== mf.lastHeal) mf.heal = t;
+    else if (role == 'sheriff' && mf.check == null && t !== i) {
+      mf.check = t; const isM = mf.roles[t] == 'mafia'; mf.checks[t] = isM;
+      mfPush(R, { n: -1, ch: 'p', to: i, text: `🔎 Проверка: ${R.players[t].name} — ${isM ? 'МАФИЯ' : 'не мафия'}` });
+    }
+  } else if (m.t == 'ready' && mf.phase == 'day') mf.ready[i] = true;
+  else if (m.t == 'vote' && mf.phase == 'vote') { if (m.target == null) mf.votes[i] = null; else if (ok && t !== i) mf.votes[i] = t; }
+}
+function mfState(R, i) {
+  const mf = R.mf, now = Date.now(), my = mf ? mf.roles[i] : null, aliveMe = mf ? mf.alive[i] : true;
+  const ghost = !!mf && (!aliveMe || R.over), mafiaMe = my == 'mafia';
+  return {
+    game: 'mafia', room: R.code, you: i, host: true, started: R.started, over: R.over, status: !R.started ? 'lobby' : (R.over ? 'over' : 'play'),
+    phase: mf ? mf.phase : 'lobby', day: mf ? mf.day : 0, left: mf ? Math.max(0, mf.end - now) : 0, dur: mf ? mf.dur : 0,
+    myRole: my, alive: aliveMe, won: mf ? mf.won : null, need: 5,
+    players: R.players.map((p, j) => ({
+      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      alive: mf ? mf.alive[j] : true,
+      role: mf && (ghost || j === i || (mafiaMe && mf.roles[j] == 'mafia') || !mf.alive[j]) ? mf.roles[j] : null,
+      prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null
+    })),
+    mv: mf && mafiaMe && mf.phase == 'night' ? mf.nv : null, heal: mf && my == 'doctor' ? mf.heal : null, lastHeal: mf && my == 'doctor' ? mf.lastHeal : -1,
+    check: mf && my == 'sheriff' ? mf.check : null, checks: mf && my == 'sheriff' ? mf.checks : null,
+    votes: mf && mf.phase == 'vote' ? mf.votes : null, ready: mf ? Object.keys(mf.ready).map(Number) : [],
+    log: R.log.filter(e => mfVis(R, e, i)).slice(-30), logN: R.players[i].lc || 0, rres: R.rres || null, radio: R.radio || null, now
+  };
+}
+
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
   for (let i = 0; i < R.players.length; i++) {
@@ -394,6 +614,7 @@ function botStep(R) {
 // ---------- сеть ----------
 function stateFor(R, i) {
   if (R.game === 'chess') return chState(R, i);
+  if (R.game === 'mafia') return mfState(R, i);
   return {
     game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
@@ -410,6 +631,7 @@ function send(R) {
   R.players.forEach((p, i) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(stateFor(R, i))); });
   clearTimeout(R.tm);
   if (R.game === 'chess') return chSchedule(R);
+  if (R.game === 'mafia') return;
   if (R.started && !R.over && R.players.some(p => p.bot))
     R.tm = setTimeout(() => { if (botStep(R)) send(R); }, 900);
 }
@@ -422,8 +644,8 @@ wss.on('connection', ws => {
     if (m.t == 'join') {
       const code = String(m.room || '').toUpperCase().slice(0, 8);
       if (!code) return err(ws, 'Введите код комнаты');
-      if (rooms[code] && rooms[code].game !== (m.game == 'chess' ? 'chess' : 'durak')) return err(ws, rooms[code].game == 'chess' ? 'Это комната для шахмат' : 'Это комната для дурака');
-      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: m.game == 'chess' ? 'chess' : 'durak' });
+      if (rooms[code] && rooms[code].game !== gameOf(m)) return err(ws, 'Это комната для ' + GN[rooms[code].game]);
+      const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: gameOf(m) });
       const A = await auth(m, R.game), uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) {
@@ -434,7 +656,7 @@ wss.on('connection', ws => {
         return send(R);
       }
       if (R.started) return err(ws, 'Игра уже идет');
-      if (R.players.length >= (R.game == 'chess' ? 2 : 6)) return err(ws, 'Комната заполнена');
+      if (R.players.length >= (R.game == 'chess' ? 2 : R.game == 'mafia' ? 12 : 6)) return err(ws, 'Комната заполнена');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
       ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
       ws.R = R; R.players.push(ws.p);
@@ -450,6 +672,7 @@ wss.on('connection', ws => {
       sys(R, stn ? `🎵 Радио: ${stn.name} (запустил ${R.players[i].name})` : `🔇 Радио выключено (${R.players[i].name})`);
       return send(R);
     }
+    if (R.game === 'mafia' && m.t == 'chat') { mfChat(R, i, m); return send(R); }
     if (m.t == 'chat') {
       const tx = String(m.text || '').trim().slice(0, 80);
       if (tx) { R.log.push({ n: i, name: R.players[i].name, text: tx }); R.log = R.log.slice(-30); R.logN++; }
@@ -457,6 +680,7 @@ wss.on('connection', ws => {
     }
     if (m.t == 'react') { if (EMO.includes(m.e)) bcast(R, { ev: 'react', from: i, e: m.e }); return; }
     if (R.game === 'chess') { chMsg(R, i, m); return send(R); }
+    if (R.game === 'mafia') { mfMsg(R, i, m); return send(R); }
     if (m.t == 'bot' && !R.started && R.players.length < 6)
       R.players.push({ name: BOTN[R.players.length % BOTN.length], hand: [], bot: true, ws: null });
     else if (m.t == 'start' && !R.started && R.players.length >= 2) start(R);
@@ -495,15 +719,15 @@ srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
-    tg('setMyCommands', { commands: [{ command: 'start', description: 'Выбрать игру' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'rules', description: 'Правила игр' }] });
-    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак и шахматы онлайн
+    tg('setMyCommands', { commands: [{ command: 'start', description: 'Выбрать игру' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'rules', description: 'Правила игр' }] });
+    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы и мафия онлайн
 
-Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, рейтинг с рангами от Новичка до Легенды.
+Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, отдельный рейтинг с рангами в каждой игре.
 
 Нажмите Start и выберите игру.
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
-    tg('setMyShortDescription', { short_description: 'Дурак и шахматы онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
+    tg('setMyShortDescription', { short_description: 'Дурак, шахматы и мафия онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
     tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
   }
 });

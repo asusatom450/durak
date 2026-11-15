@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Дурак</title><script>if(location.pathname.indexOf('/chess')==0)document.title='Шахматы'</script>
+<title>Дурак</title><script>var __p=location.pathname;document.title=__p.indexOf('/chess')==0?'Шахматы':__p.indexOf('/mafia')==0?'Мафия':'Дурак'</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Playfair+Display:wght@700;900&family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Playfair+Display:wght@700;900&family=Oswald:wght@500;700&family=Courier+Prime:wght@400;700&family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{--gold:#ecc96b;--paper:#fbf6e6;--red:#c23b32;--ink:#1a1712}
@@ -186,6 +186,58 @@ body.chess{--gold:#7cc4ff;color:#e8f1fb;background:radial-gradient(ellipse 80% 5
 .chess .seat{border-radius:12px;background:#0b1220aa}
 #app>.hero{margin-top:auto}
 #app>.row:last-child{margin-bottom:auto}
+/* ===== тема мафии: нуар, багровый на чёрном, ночь и день ===== */
+body.mafia{--gold:#ff5470;color:#f4eaec;background:#07060a}
+.mafia #app{z-index:1}
+#mfbg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#mfbg i{position:absolute;inset:0;opacity:0;transition:opacity 1.4s}
+#mfbg .n{background:radial-gradient(circle at 82% 11%,#fff 0,#e8edff 2.2%,#9db0ff55 5%,#9db0ff00 22%),radial-gradient(2px 2px at 12% 18%,#fff 50%,#0000),radial-gradient(2px 2px at 30% 8%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 55% 22%,#fff 50%,#0000),radial-gradient(2px 2px at 66% 6%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 92% 34%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 8% 40%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 46% 44%,#fff 50%,#0000),radial-gradient(2px 2px at 22% 56%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 78% 52%,#fff 50%,#0000),linear-gradient(#101a4a,#070a1c 62%,#020308)}
+#mfbg .d{background:radial-gradient(circle at 18% 10%,#ffd98aaa 0,#ffd98a00 34%),linear-gradient(#6a3d2c,#2d1a1c 60%,#140b0e)}
+#mfbg .v{background:radial-gradient(ellipse at 50% -10%,#ff3b5c77 0,#ff3b5c00 55%),linear-gradient(#2c0c15,#0d0509)}
+.mf-night #mfbg .n,.mf-day #mfbg .d,.mf-vote #mfbg .v{opacity:1}
+.mafia h1{font:700 40px/1.05 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:4px;color:#ffe9ee;text-shadow:0 0 30px #ff547099}
+.mafia .sub{opacity:.75}
+.mafia .btn{border-radius:4px;background:linear-gradient(#ff6d86,#c4223f);color:#fff;box-shadow:0 3px 0 #7d1226,0 8px 18px #0008;text-transform:uppercase;letter-spacing:1px;font-family:'Oswald','Manrope',sans-serif;font-weight:600}
+.mafia .btn:active{box-shadow:0 1px 0 #7d1226}
+.mafia .btn.ghost{background:#ffffff12;color:#f4eaec;box-shadow:none;border:1px solid #ffffff2e}
+.mafia input{border-radius:4px;background:#000a}
+.mafia .chip,.mafia .ico,.mafia .seat{border-radius:6px;background:#0008}
+.mafia .chip b,.mafia .rt,.mafia .pos{color:#ff8da0}
+.mfgrid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:center;padding:2px}
+.mfc{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 8px;border-radius:6px;background:#0009;border:1px solid #ffffff1c;transition:.25s}
+.mfc.can{border-color:#ff547099;cursor:pointer;box-shadow:0 0 0 1px #ff547033}
+.mfc.sel{border-color:#ff5470;background:#ff547033;box-shadow:0 0 18px #ff547077}
+.mfc.mate{border-color:#ff9aa8cc}
+.mfc.me{outline:1px dashed #ffffff55;outline-offset:2px}
+.mfc.dead{opacity:.5;background:#000b}.mfc.dead .av{filter:grayscale(1)}
+.mfc .av{width:52px;height:52px}
+.mfc .nm{font-size:12.5px;max-width:100%}
+.mfr{font-size:11px;opacity:.85;min-height:14px;text-align:center}
+.vc{position:absolute;top:4px;right:4px;background:#ff5470;color:#fff;font:800 11px Manrope;border-radius:10px;padding:2px 7px;animation:pop .3s}
+.chk2{position:absolute;top:4px;left:4px;font:800 13px Manrope;border-radius:50%;width:20px;height:20px;display:grid;place-items:center}
+.chk2.ok{background:#3ecf8e;color:#032}.chk2.bad{background:#ff4560;color:#fff}
+.mfrole{text-align:center;font-size:13px;padding:6px 10px;border-radius:4px;background:#000a;border:1px solid #ffffff22;cursor:pointer}
+.mfph{font-family:'Oswald','Manrope',sans-serif;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;font-size:13px}
+.mft{font-family:'Courier Prime',ui-monospace,monospace;font-weight:700}
+.mfann{text-align:center;font:600 14px 'Courier Prime',ui-monospace,monospace;min-height:20px;color:#ffd9df}
+.mafia .msg{font-family:'Courier Prime',ui-monospace,monospace}
+.mfsplash{position:fixed;inset:0;z-index:48;display:grid;place-items:center;text-align:center;background:#000c;animation:mfs 2s forwards;pointer-events:none}
+.mfsplash b{display:block;font-size:72px;line-height:1}
+.mfsplash h2{margin:8px 0 0;font:700 34px 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:5px}
+.mfsplash p{margin:6px 0 0;opacity:.8}
+@keyframes mfs{0%{opacity:0;transform:scale(.92)}18%{opacity:1;transform:none}78%{opacity:1}100%{opacity:0}}
+.rc-in{width:min(320px,88vw);padding:26px 22px;border-radius:8px;text-align:center;background:linear-gradient(#2a0d16,#0e0509);border:1px solid #ff5470;box-shadow:0 0 50px #ff547055;animation:flip .9s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes flip{from{transform:rotateY(180deg) scale(.7);opacity:0}}
+.rc-ic{font-size:72px;line-height:1}
+.rc-in h3{font:700 28px 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:3px;margin:10px 0 6px}
+.rc-in p{opacity:.88;font-size:14px;line-height:1.45}.rc-in small{opacity:.5}
+.mafia .res .box,.mafia .pc{background:linear-gradient(#2a0d16,#0e0509);border-color:#ff547099;border-radius:8px}
+.mafia .sheet{background:#0b0509f5;border-radius:10px 10px 0 0}
+.mafia .res h2,.mafia .pc h3{font:700 24px 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:2px}
+.mafia .stb.on{border-color:#ff5470;background:#ff547022}.mafia .eq b{background:#ff5470}.mafia .rbtn.on{box-shadow:0 0 0 2px #ff5470}
+.mafia #toast{border-color:#ff5470}.mafia .bar2 i{background:linear-gradient(90deg,#c4223f,#ff8da0)}
+.mafia .m.me{background:#ff5470;color:#fff}.m.mafiach{background:#5a1020}.m.deadch{opacity:.65;font-style:italic}
+.m.sys.priv{background:#123a2a;color:#baf5d8;opacity:1;align-self:stretch;text-align:center;border-radius:8px;padding:6px 10px;font-size:13px}
 @keyframes deal{from{transform:translateY(90px) rotate(-10deg) scale(.6);opacity:0}}
 @keyframes drop{from{transform:translateY(140px) scale(.8);opacity:0}}
 @keyframes slam{from{transform:translate(-26px,-70px) rotate(-14deg) scale(1.35);opacity:0}}
@@ -219,9 +271,9 @@ body.chess{--gold:#7cc4ff;color:#e8f1fb;background:radial-gradient(ellipse 80% 5
 </div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;
-if(location.pathname.indexOf('/chess')==0)document.body.classList.add('chess');
+if(location.pathname.indexOf('/chess')==0)document.body.classList.add('chess');else if(location.pathname.indexOf('/mafia')==0)document.body.classList.add('mafia');
 try{tg.ready();tg.expand();tg.setHeaderColor('#0d5238');tg.setBackgroundColor('#04241a')}catch(e){}
-const INVITES={durak:'https://t.me/duraktelega_bot/durakvtelege',chess:'https://t.me/duraktelega_bot/chess'};
+const INVITES={durak:'https://t.me/duraktelega_bot/durakvtelege',chess:'https://t.me/duraktelega_bot/chess',mafia:'https://t.me/duraktelega_bot/mafia'};
 const RK=['6','7','8','9','10','В','Д','К','Т'],SU=['♠','♥','♦','♣'],EMO=['👍','😂','😮','😡','🔥','👏','😎','🤝'];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -233,7 +285,7 @@ const hue=s=>[...s].reduce((a,c)=>a*31+c.charCodeAt(0),7)%360;
 const key=c=>c.r+'-'+c.s;
 const hap=t=>{try{tg.HapticFeedback.impactOccurred(t)}catch(e){}};
 /*CHESS*/
-let chGame=location.pathname.indexOf('/chess')==0?'chess':'durak',chSel=null,chPromo=null,chTc=10,chAt=0,prevHist=-1,chPrevOver=false,chAnim=false;
+let chGame=location.pathname.indexOf('/chess')==0?'chess':location.pathname.indexOf('/mafia')==0?'mafia':'durak',chSel=null,chPromo=null,chTc=10,chAt=0,prevHist=-1,chPrevOver=false,chAnim=false;
 const GL={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'},VAL={p:1,n:3,b:3,r:5,q:9},INIT={p:8,n:2,b:2,r:2,q:1};
 const gl=t=>GL[t.toLowerCase()]+'\uFE0E',fmtT=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const clkNow=c=>st&&st.clk?Math.max(0,st.clk[c]-(st.clk.run&&st.clk.turn==c?Date.now()-chAt:0)):0;
@@ -287,6 +339,76 @@ function drawChess(a){
   <div class="bar"><button class="ico" onclick="chResign()">🏳</button><button class="ico" onclick="send({t:'draw'})">🤝</button><div style="flex:1"></div><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div>${ov}${pv}`;
   const m=$('#ml');if(m)m.scrollLeft=m.scrollWidth}
 /*ENDCH*/
+/*MAFIA*/
+const GT={durak:['Дурак','Подкидной онлайн на 2–6 игроков'],chess:['Шахматы','Партии онлайн с друзьями и компьютером'],mafia:['Мафия','Город засыпает… Найдите мафию, пока не поздно']};
+const QP={durak:['Ваш ход!','Бито','Ну вы даёте','gg'],chess:['Хороший ход!','Ничья?','gg','Реванш?'],mafia:['Я мирный','Я комиссар!','Подозреваю …','Голосуем вместе']};
+function setChatUI(){const g=st?st.game:chGame,q=document.querySelector('.quick');if(q)q.innerHTML=QP[g].map(x=>`<button onclick="say('${x}')">${x}</button>`).join('');
+  let ph='Сообщение',dis=false;
+  if(g=='mafia'&&st&&st.status=='play'){if(!st.alive)ph='👻 Чат выбывших';else if(st.phase=='night'){if(st.myRole=='mafia')ph='🔪 Тайный чат мафии';else{ph='Ночью говорит только мафия';dis=true}}}
+  const i=$('#ci');i.placeholder=ph;i.disabled=dis}
+const MF_ROLE={mafia:{n:'Мафия',ic:'🔪',d:'Ночью вместе с напарниками выбираете жертву. Днём изображайте мирного жителя и не попадитесь.'},doctor:{n:'Доктор',ic:'💉',d:'Каждую ночь лечите одного игрока: если мафия выберет его, он выживет. Одного и того же два раза подряд лечить нельзя.'},sheriff:{n:'Комиссар',ic:'🕵️',d:'Каждую ночь проверяете одного игрока и узнаёте, мафия он или нет. Одна проверка за ночь.'},civ:{n:'Мирный житель',ic:'🧑',d:'Ночью вы спите. Днём ищите мафию: обсуждайте и голосуйте.'}};
+const MF_PH={night:['🌙','Ночь'],day:['☀️','Обсуждение'],vote:['🗳️','Голосование'],over:['🏁','Итог']};
+let mfPrev=null,mfRoleSeen=false;
+function mfBg(){if(!$('#mfbg')){const d=document.createElement('div');d.id='mfbg';d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i>';document.body.prepend(d)}
+  const ph=st.phase;document.body.classList.toggle('mf-night',ph=='night'||ph=='lobby');document.body.classList.toggle('mf-day',ph=='day');document.body.classList.toggle('mf-vote',ph=='vote'||ph=='over')}
+function mfSplash(ic,t,s){const d=document.createElement('div');d.className='mfsplash';d.innerHTML=`<div><b>${ic}</b><h2>${t}</h2><p>${s}</p></div>`;document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
+function mfRoleCard(){const r=MF_ROLE[st.myRole];if(!r)return;
+  const mates=st.myRole=='mafia'?st.players.filter((p,j)=>p.role=='mafia'&&j!=st.you).map(p=>esc(p.name)):[];
+  $('#pm').innerHTML=`<div class="rcard"><div class="rc-in"><div class="rc-ic">${r.ic}</div><h3>${r.n}</h3><p>${r.d}</p>${mates.length?`<p>🔪 Ваша команда: <b>${mates.join(', ')}</b></p>`:''}<small>Нажмите, чтобы закрыть</small></div></div>`;$('#pm').hidden=false}
+function mfRoles(){$('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Роли</h3><div class="top10">${Object.values(MF_ROLE).map(r=>`<div class="r" style="align-items:flex-start"><b style="font-size:22px">${r.ic}</b><span><b>${r.n}</b><br><small style="opacity:.75">${r.d}</small></span></div>`).join('')}</div><p style="font-size:12px;opacity:.7">Мирные побеждают, когда вся мафия изгнана. Мафия: когда её не меньше, чем остальных.</p></div>`;$('#pm').hidden=false}
+function mfCan(j){const P=st.players,my=st.myRole,ph=st.phase;if(!st.alive||st.over||!P[j].alive)return false;
+  if(ph=='night'){if(my=='mafia')return P[j].role!='mafia';if(my=='doctor')return j!==st.lastHeal;if(my=='sheriff')return st.check==null&&j!==st.you;return false}
+  if(ph=='vote')return j!==st.you;return false}
+function mfTap(j){if(!mfCan(j)){showProf(j);return}hap('light');send(st.phase=='vote'?{t:'vote',target:j}:{t:'act',target:j});snd('vote')}
+function mfHint(){const my=st.myRole,ph=st.phase;
+  if(!st.alive)return '👻 Вы выбыли: наблюдаете за игрой, писать можно в чат выбывших';
+  if(ph=='night'){if(my=='mafia')return st.mv&&st.mv[st.you]!=null?'Выбор сделан. Можно сменить, пока не вышло время':'Выберите жертву: нажмите на игрока';
+    if(my=='doctor')return st.heal!=null?'Вы лечите выбранного игрока':'Кого вылечить этой ночью?'+(st.lastHeal>=0?' Не того же, что в прошлый раз.':'');
+    if(my=='sheriff')return st.check!=null?'Проверка проведена: результат в чате':'Кого проверить?';
+    return '😴 Вы спите… Город ждёт утра'}
+  if(ph=='day')return 'Обсуждайте и ищите мафию';
+  if(ph=='vote'){const v=(st.votes||{})[st.you];return v===undefined?'Нажмите на игрока, чтобы проголосовать за изгнание':v===null?'Вы воздержались':'Ваш голос: '+esc(st.players[v].name)}
+  return ''}
+function mfFx(){const key=st.phase+':'+st.day,al=st.players.filter(p=>p.alive).length,p0=mfPrev;
+  if(p0&&p0.key!=key&&!st.over){
+    if(st.phase=='night'){snd('night');mfSplash('🌙','Ночь '+st.day,'Город засыпает…')}
+    else if(st.phase=='day'){snd('dawn');mfSplash('☀️','Утро',al<p0.al?'Этой ночью что-то случилось…':'Все дожили до утра')}
+    else if(st.phase=='vote'){snd('vote');mfSplash('🗳️','Голосование','Кого изгнать из города?')}
+    if(al<p0.al)snd(p0.phase=='vote'?'gavel':'kill',.5)}
+  if(st.over&&!(p0&&p0.over)){const side=st.myRole=='mafia'?'mafia':'town';snd(st.won==side?'win':'lose',.5)}
+  mfPrev={key,al,over:st.over,phase:st.phase}}
+function mfLobby(a){const P=st.players,n=P.length,mc=n>=12?4:n>=9?3:n>=6?2:1,ok=n>=5;
+  a.innerHTML=`${sndBtn()}<h1 style="margin-top:18px">Мафия</h1><p class="sub">Комната <b style="color:var(--gold)">${esc(st.room)}</b></p>
+  <div class="lob">${P.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
+  <p class="sub" style="margin-top:12px">${ok?`Мафия ${mc} · Комиссар 1 · Доктор 1 · Мирные ${n-mc-2}`:`Нужно минимум 5 игроков (сейчас ${n}). Добавьте ботов.`}</p><div style="flex:1"></div>
+  <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻</button><button class="btn ghost" onclick="mfRoles()">🎭 Роли</button><button class="btn ghost" onclick="send({t:'bot'})" ${n>=12?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${ok?'':'disabled'}>Начать</button></div>`}
+function drawMafia(a){
+  mfBg();
+  if(st.status=='lobby'){mfRoleSeen=false;mfPrev=null;mfLobby(a);return}
+  mfFx();
+  if(!mfRoleSeen&&st.myRole&&!st.over){mfRoleSeen=true;setTimeout(mfRoleCard,350)}
+  const me=st.you,ph=st.phase,P=st.players,my=st.myRole,cnt={};
+  if(ph=='night'&&st.mv)Object.values(st.mv).forEach(t=>cnt[t]=(cnt[t]||0)+1);
+  if(ph=='vote'&&st.votes)Object.values(st.votes).forEach(t=>{if(t!=null)cnt[t]=(cnt[t]||0)+1});
+  const sel=j=>ph=='night'?(my=='mafia'?(st.mv||{})[me]===j:my=='doctor'?st.heal===j:my=='sheriff'?st.check===j:false):ph=='vote'?(st.votes||{})[me]===j:false;
+  const card=(p,j)=>{const t=mfCan(j),r=p.role?MF_ROLE[p.role]:null;
+    return `<div class="mfc ${p.alive?'':'dead'} ${t?'can':''} ${sel(j)?'sel':''} ${p.role=='mafia'&&p.alive&&my=='mafia'&&j!=me?'mate':''} ${j==me?'me':''}" id="seat-${j}" onclick="mfTap(${j})">${av({...p,n:''})}${cnt[j]?`<b class="vc">${ph=='night'?'🔪':'🗳'} ${cnt[j]}</b>`:''}${st.checks&&st.checks[j]!==undefined?`<b class="chk2 ${st.checks[j]?'bad':'ok'}">${st.checks[j]?'✖':'✔'}</b>`:''}<div class="nm">${esc(p.name)}${j==me?' (вы)':''}</div><div class="mfr">${!p.alive?'✝ '+(r?r.n:''):r?r.ic+' '+r.n:p.bot?'🤖 бот':p.off?'📵 нет связи':'&nbsp;'}</div></div>`};
+  const aliveN=P.filter(p=>p.alive&&!p.left).length,readyN=st.ready.filter(j=>P[j]&&P[j].alive).length,iReady=st.ready.includes(me);
+  const last=[...st.log].reverse().find(m=>m.n<0&&m.ch=='all'),unread=chatOpen?0:st.logN-logSeen,rr=(st.rres||[]).find(x=>x.i==me),side=my=='mafia'?'mafia':'town';
+  let act='';
+  if(st.alive&&ph=='day')act=iReady?`<div class="mfann">Вы готовы к голосованию (${readyN}/${aliveN})</div>`:`<button class="btn" onclick="send({t:'ready'})">Готов к голосованию (${readyN}/${aliveN})</button>`;
+  else if(st.alive&&ph=='vote')act=`<button class="btn ghost" onclick="send({t:'vote',target:null})">Воздержаться</button>`;
+  const ov=st.over?`<div class="res"><div class="box" style="max-width:92vw"><div class="big">${st.won==side?'🏆':'💀'}</div><h2>${st.won=='mafia'?'Победила мафия':'Победили мирные'}</h2><p style="margin:-6px 0 8px;opacity:.85">${st.won==side?'Ваша команда победила':'Ваша команда проиграла'}</p><div class="top10" style="max-height:30vh">${P.map(p=>`<div class="r"><span>${MF_ROLE[p.role||'civ'].ic} ${esc(p.name)}${p.left?' 🚪':''}</span><b>${p.role?MF_ROLE[p.role].n:''}</b></div>`).join('')}</div>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}" style="margin-top:10px">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:2px 0 12px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:'<div style="height:12px"></div>'}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё раз</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+  const phm=MF_PH[ph]||['',''];
+  a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div>
+    <div class="chip mfph">${phm[0]} ${phm[1]}${st.day?' '+st.day:''}${st.over?'':` · <span class="mft" data-e="${Date.now()+st.left}">${fmtT(st.left)}</span>`}</div></div>
+  <div class="mfrole" onclick="mfRoleCard()">${MF_ROLE[my].ic} <b>${MF_ROLE[my].n}</b>${st.alive?'':' · вы выбыли'}</div>
+  <div class="mfgrid">${P.map(card).join('')}</div>
+  <div class="mfann">${last?esc(last.text):''}</div><div class="msg">${mfHint()}</div>${act?`<div class="row">${act}</div>`:''}
+  <div class="bar"><div style="flex:1"></div><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div>${ov}`}
+setInterval(()=>document.querySelectorAll('.mft').forEach(e=>e.textContent=fmtT(+e.dataset.e-Date.now())),500);
+if(chGame=='mafia'){const d=document.createElement('div');d.id='mfbg';d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i>';document.body.prepend(d);document.body.classList.add('mf-night')}
+/*ENDMF*/
 /*RADIO*/
 // Радио: каждый телефон качает поток сам. Громкость по умолчанию 7% (тихий фон).
 const RA=new Audio();RA.preload='none';
@@ -336,6 +458,11 @@ const S={
   win:(t,v)=>[523,659,784,1047].forEach((f,i)=>tn(t+i*.11,f,.3,.12*v,0,'triangle')),
   lose:(t,v)=>[392,330,262].forEach((f,i)=>tn(t+i*.18,f,.4,.12*v,f*.96,'sine')),
   msg:(t,v)=>tn(t,880,.09,.08*v),
+  night:(t,v)=>{tn(t,196,1.3,.12*v,147);tn(t+.35,147,1.5,.1*v,110)},
+  dawn:(t,v)=>[392,523,659].forEach((f,i)=>tn(t+i*.15,f,.7,.1*v,0,'triangle')),
+  kill:(t,v)=>{nz(t,.2,900,200,1.2,.5*v);tn(t,120,.3,.28*v,50)},
+  gavel:(t,v)=>[0,.2].forEach(d=>{tn(t+d,180,.1,.4*v,70);nz(t+d,.06,1800,700,1,.5*v)}),
+  vote:(t,v)=>tn(t,660,.06,.09*v),
   move:(t,v)=>{tn(t,220,.07,.25*v,90);nz(t,.05,1800,900,1.2,.35*v)},
   cap:(t,v)=>{tn(t,160,.11,.35*v,60);nz(t,.08,2600,700,1,.5*v)},
   check:(t,v)=>{tn(t,880,.1,.1*v,0,'triangle');tn(t+.12,1175,.18,.1*v,0,'triangle')},
@@ -357,10 +484,11 @@ function sfx(pn,nx,me,win){const pst=prevSt;
 /*END*/
 const RANKS=[{n:'Новичок',min:0,c:['#a9b3ae','#5b6663'],g:'6'},{n:'Игрок',min:1000,c:['#eab27a','#8a4f27'],g:'♣'},{n:'Знаток',min:1150,c:['#eef3f7','#8794a0'],g:'♦'},{n:'Мастер',min:1300,c:['#ffe38f','#c98a12'],g:'♥'},{n:'Шулер',min:1500,c:['#9ff5e4','#168a80'],g:'♠'},{n:'Легенда',min:1800,c:['#ff9f90','#a81c28'],g:'♛'}];
 const CH_RANKS=[{n:'Пешка',min:0,c:['#cbd5e1','#64748b'],g:'♟'},{n:'Конь',min:1000,c:['#9ed0ff','#2d6aa3'],g:'♞'},{n:'Слон',min:1150,c:['#a8f0ff','#168aa6'],g:'♝'},{n:'Ладья',min:1300,c:['#ffd88a','#b9770e'],g:'♜'},{n:'Ферзь',min:1500,c:['#e2b8ff','#7a3fb0'],g:'♛'},{n:'Король',min:1800,c:['#fff1b8','#d4af37'],g:'♚'}];
-const RK_=()=>chGame=='chess'?CH_RANKS:RANKS;
+const MA_RANKS=[{n:'Прохожий',min:0,c:['#b9b8c4','#55546a'],g:'I'},{n:'Свидетель',min:1000,c:['#efc08e','#8a5430'],g:'II'},{n:'Детектив',min:1150,c:['#b6d3f2','#3d6fa5'],g:'III'},{n:'Капо',min:1300,c:['#ff9fae','#b3203a'],g:'IV'},{n:'Консильери',min:1500,c:['#e8c8ff','#7a3fb0'],g:'V'},{n:'Дон',min:1800,c:['#ffe69a','#b8860b'],g:'VI'}];
+const RK_=()=>({chess:CH_RANKS,mafia:MA_RANKS})[chGame]||RANKS;
 const rankIdx=r=>RK_().reduce((a,x,i)=>r>=x.min?i:a,0),rankOf=r=>RK_()[rankIdx(r)];
-function badge(rt,s){const k=rankIdx(rt),R=RK_()[k],id=chGame[0]+'g'+k,SH=chGame=='chess'?'M24 2 44 13v24L24 54 4 37V13z':'M24 2 44 10v18c0 14-10 23-20 27C14 51 4 42 4 28V10z';
-  return `<svg width="${s}" height="${Math.round(s*1.17)}" viewBox="0 0 48 56"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${R.c[0]}"/><stop offset="1" stop-color="${R.c[1]}"/></linearGradient></defs><path d="${SH}" fill="url(#${id})" stroke="#fff" stroke-opacity=".75" stroke-width="2"/><path d="M24 7 39 13v15c0 10-7 17-15 21" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><text x="24" y="33" text-anchor="middle" font-size="22" font-weight="900" font-family="Playfair Display,Georgia,serif" fill="${k==5&&chGame!='chess'?'#fff':'#10141c'}" fill-opacity=".88">${R.g}${chGame=='chess'?'&#xFE0E;':''}</text>${[...Array(k)].map((_,i)=>`<circle cx="${24-(k-1)*4+i*8}" cy="45" r="2" fill="#fff" fill-opacity=".9"/>`).join('')}</svg>`}
+function badge(rt,s){const k=rankIdx(rt),R=RK_()[k],id=chGame[0]+'g'+k,SH=({chess:'M24 2 44 13v24L24 54 4 37V13z',mafia:'M2 27a22 22 0 1 0 44 0 22 22 0 1 0-44 0z'})[chGame]||'M24 2 44 10v18c0 14-10 23-20 27C14 51 4 42 4 28V10z',HL=chGame=='mafia'?'M6 27a18 18 0 1 0 36 0 18 18 0 1 0-36 0z':'M24 7 39 13v15c0 10-7 17-15 21';
+  return `<svg width="${s}" height="${Math.round(s*1.17)}" viewBox="0 0 48 56"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${R.c[0]}"/><stop offset="1" stop-color="${R.c[1]}"/></linearGradient></defs><path d="${SH}" fill="url(#${id})" stroke="#fff" stroke-opacity=".75" stroke-width="2"/><path d="${HL}" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><text x="24" y="33" text-anchor="middle" font-size="22" font-weight="900" font-family="Playfair Display,Georgia,serif" fill="${k==5&&chGame!='chess'?'#fff':'#10141c'}" fill-opacity=".88">${R.g}${chGame=='chess'?'&#xFE0E;':''}</text>${[...Array(k)].map((_,i)=>`<circle cx="${24-(k-1)*4+i*8}" cy="45" r="2" fill="#fff" fill-opacity=".9"/>`).join('')}</svg>`}
 function profCard(name,pr){const k=rankIdx(pr.rating),R=RK_()[k],nx=RK_()[k+1];
   const pct=nx?Math.round((pr.rating-R.min)/(nx.min-R.min)*100):100,wr=pr.games?Math.round(pr.wins/pr.games*100):0,days=Math.max(1,Math.ceil((Date.now()-pr.since)/864e5));
   return `<div class="pc"><div class="badge-big">${badge(pr.rating,86)}</div><h3>${esc(name)}</h3><div style="opacity:.9">${R.n} · ${pr.rating}</div><div class="bar2"><i style="width:${pct}%"></i></div><div style="font-size:12px;opacity:.7">${nx?`До ранга «${nx.n}»: ${nx.min-pr.rating}`:'Высший ранг'}</div><div class="grid"><div><b>${pr.games}</b>партий</div><div><b>${wr}%</b>побед</div>${pr.draws!==undefined?`<div><b>${pr.draws}</b>ничьих</div>`:`<div><b>${pr.streak}</b>серия</div>`}</div><p style="font-size:12px;opacity:.7;margin:12px 0 0">Играет с ${new Date(pr.since).toLocaleDateString('ru',{month:'long',year:'numeric'})} (${days} дн.)</p></div>`}
@@ -371,7 +499,7 @@ async function loadMe(){try{const d=tg&&tg.initData;if(!d)return;const p=await (
   $('#me').innerHTML=`<div class="seat me" onclick="meCard()" style="margin:6px auto;width:max-content">${av({name:p.name,photo:p.photo,n:'',prof:p})}<div><div class="nm">${esc(p.name)}</div><div class="rt">${rankOf(p.rating).n} · ${p.rating}</div></div></div>`}catch(e){}}
 function meCard(){$('#pm').innerHTML=profCard(me0.name,me0);$('#pm').hidden=false}
 async function showTop(g){g=chGame;let l=[];try{l=await (await fetch('/api/top?g='+g)).json()}catch(e){}
-  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Лучшие игроки: ${g=='chess'?'шахматы':'дурак'}</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
+  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Лучшие игроки: ${({durak:'дурак',chess:'шахматы',mafia:'мафия'})[g]}</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
 function resHTML(me){const r=(st.result||[]).find(x=>x.i==me);
   if(!r)return st.players[me].prof?'':'<p style="opacity:.7;font-size:13px;margin:0 0 14px">Рейтинг ведется для игроков из Telegram</p>';
   const a=rankIdx(r.before),b=rankIdx(r.after);
@@ -384,8 +512,8 @@ const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
-  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${['♞','♛','♚'].map((g,i)=>`<span class="pz ${i==1?'b':'w'}" style="position:static;display:block;width:auto;font-size:${i==1?84:68}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards">${g}&#xFE0E;</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
-  <h1>${chGame=='chess'?'Шахматы':'Дурак'}</h1><p class="sub">${chGame=='chess'?'Партии онлайн с друзьями и компьютером':'Подкидной онлайн на 2–6 игроков'}</p><div id="me"></div>
+  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${['♞','♛','♚'].map((g,i)=>`<span class="pz ${i==1?'b':'w'}" style="position:static;display:block;width:auto;font-size:${i==1?84:68}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards">${g}&#xFE0E;</span>`).join('')}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:center;gap:18px">${['🎩','🕵️','🔪'].map((g,i)=>`<span style="font-size:${i==1?76:58}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 6px 14px #000a)">${g}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
+  <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div>
   <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
   <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">
   <div class="row"><button class="btn" type="submit">Войти</button><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">Новая комната</button></div></form><div class="row" style="margin-top:6px"><button class="btn ghost" onclick="showTop()">🏆 Лучшие игроки</button></div>`;
@@ -408,11 +536,12 @@ function lobby(a){
   <div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
 }
-function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITES[chGame]+'?startapp='+st.room)+'&text='+encodeURIComponent((chGame=='chess'?'Сыграем в шахматы?':'Сыграем в дурака?')+' Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
+function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITES[chGame]+'?startapp='+st.room)+'&text='+encodeURIComponent(({durak:'Сыграем в дурака?',chess:'Сыграем в шахматы?',mafia:'Сыграем в мафию?'})[chGame]+' Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
 function play(k){if(st.over)return;send({t:'play',i:k,to:selT});selT=null;hap('light')}
 function draw(){
   const a=$('#app');next=new Set();
   if(st.game=='chess'){drawChess(a);return}
+  if(st.game=='mafia'){drawMafia(a);return}
   if(!st.started){lobby(a);seen=next;prevSt=st;return}
   const me=st.you,T=st.tc.s,hasOpen=st.table.some(t=>!t.d),defN=st.players[st.def].n,unb=st.table.filter(t=>!t.d).length;
   const ranks=new Set(st.table.flatMap(t=>[t.a.r,t.d&&t.d.r].filter(Boolean)));
@@ -451,9 +580,9 @@ $('#react').innerHTML=EMO.map(e=>`<button onclick="send({t:'react',e:'${e}'});to
 function toggleReact(){const r=$('#react');r.hidden=!r.hidden}
 function toggleChat(){chatOpen=!chatOpen;if(chatOpen&&radioOpen)toggleRadio();$('#sheet').classList.toggle('open',chatOpen);$('#bd').hidden=!(chatOpen||radioOpen);if(!chatOpen)$('#ci').blur();if(chatOpen)$('#react').hidden=true;if(st){logSeen=st.logN;chatRender();draw()}}
 function say(t){const i=$('#ci');const text=(t||i.value).trim();if(!text)return;send({t:'chat',text});i.value=''}
-function chatRender(){if(!st)return;const l=$('#log');
+function chatRender(){if(!st)return;setChatUI();const l=$('#log');
   if(prevLogN!==null&&st.logN>prevLogN){const lm=st.log[st.log.length-1];if(lm&&lm.n>=0&&lm.n!=st.you)snd('msg')}prevLogN=st.logN;
-  l.innerHTML=st.log.map(m=>m.n<0?`<div class="m sys">${esc(m.text)}</div>`:`<div class="m ${m.n==st.you?'me':''}"><small>${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
+  l.innerHTML=st.log.map(m=>m.n<0?`<div class="m sys ${m.ch=='p'?'priv':''}">${esc(m.text)}</div>`:`<div class="m ${m.n==st.you?'me':''} ${m.ch=='mafia'?'mafiach':m.ch=='dead'?'deadch':''}"><small>${m.ch=='mafia'?'🔪 ':m.ch=='dead'?'👻 ':''}${esc(m.name)}</small>${esc(m.text)}</div>`).join('');
   l.scrollTop=l.scrollHeight;if(chatOpen)logSeen=st.logN}
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closeSheets()});
 setInterval(()=>document.querySelectorAll('.offt').forEach(e=>e.textContent=Math.max(0,Math.ceil((+e.dataset.e-Date.now())/1000))),500);
