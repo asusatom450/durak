@@ -1,6 +1,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const db = require('./db');
+const BL = require('./billiards.js');
 const { Chess } = require('./chess-lib.js');   // правила шахмат: chess.js, положен в проект целиком
 
 // ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
@@ -11,6 +12,7 @@ const tg = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
 
 const KB_D = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть в дурака', web_app: { url: APP_URL } }], [{ text: '📖 Правила', callback_data: 'rules_durak' }]] } : undefined;
 const KB_M = APP_URL ? { inline_keyboard: [[{ text: '🔪 Играть в мафию', web_app: { url: APP_URL + '/mafia' } }], [{ text: '📖 Правила', callback_data: 'rules_mafia' }]] } : undefined;
+const KB_B = APP_URL ? { inline_keyboard: [[{ text: '🎱 Играть в бильярд', web_app: { url: APP_URL + '/billiards' } }], [{ text: '📖 Правила', callback_data: 'rules_billiards' }]] } : undefined;
 const KB_C = APP_URL ? { inline_keyboard: [[{ text: '♞ Играть в шахматы', web_app: { url: APP_URL + '/chess' } }], [{ text: '📖 Правила', callback_data: 'rules_chess' }]] } : undefined;
 const WAIT = '<i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>';
 const CARD_D = `🃏 <b>ПОДКИДНОЙ ДУРАК</b>
@@ -85,6 +87,36 @@ const RULES_M = `📖 <b>ПРАВИЛА МАФИИ</b>
 <b>Победа:</b> мирные побеждают, когда вся мафия изгнана; мафия побеждает, когда ее становится не меньше, чем остальных.
 
 <b>Рейтинг</b> меняется только за игру: победа повышает, поражение понижает. С ботами изменения меньше. Если выйти из игры, засчитывается поражение.`;
+const CARD_B = `🎱 <b>БИЛЬЯРД</b>
+𝗔𝗠𝗘𝗥𝗜𝗖𝗔𝗡 𝗣𝗢𝗢𝗟 · 𝟴-𝗕𝗔𝗟𝗟
+
+<i>Американка на восемь шаров: целитесь, выбирайте силу и забивайте.</i>
+
+<blockquote>🎯 Точная наводка и сила удара
+👥 Игра с другом или против компьютера
+⏱ 60 секунд на удар
+🏅 Свой рейтинг и ранги: от Новичка до Чемпиона</blockquote>
+
+${WAIT}`;
+const RULES_B = `📖 <b>ПРАВИЛА БИЛЬЯРДА</b>
+𝗣𝗢𝗢𝗟
+
+<blockquote>🎱 15 шаров и белый биток. Цель: забить все шары своей группы (цельные 1–7 или полосатые 9–15), затем черную восьмерку.
+🔺 Первый удар: разбой пирамиды. Пока никто не забил, стол «открыт».
+🎯 Первый забитый шар определяет вашу группу.</blockquote>
+
+<b>Ход</b>
+• Забили свой шар: бьете еще раз. Не забили: ход соперника.
+• Первым биток должен коснуться шара вашей группы (когда они закончились, восьмерки).
+• После касания какой-нибудь шар должен дойти до борта или упасть в лузу.
+
+<b>Фол:</b> биток упал в лузу, касание не своего шара, нет касаний, нет борта, не уложились во время. Соперник ставит биток в любое место стола («шар в руке»).
+
+<b>Победа:</b> вы забили восьмерку после всех своих шаров без фола. <b>Поражение:</b> забили восьмерку раньше времени или с фолом.
+
+<b>Как играть:</b> ведите пальцем по столу, чтобы прицелиться, кнопки ◀ ▶ для точной наводки, ползунок задает силу, кнопка «Удар».
+
+Вызывать лузу не нужно. Рейтинг считается по системе Эло, партии с компьютером рейтинг не меняют. Если соперник не бьет 60 секунд, шар в руке переходит к вам, три раза подряд означает поражение.`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 𝗣𝗢𝗗𝗞𝗜𝗗𝗡𝗢𝗬 𝗗𝗨𝗥𝗔𝗞
 
@@ -123,14 +155,16 @@ const srv = http.createServer((q, r) => {
           const ch = cb.message.chat.id;
           if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
           else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
+          else if (cb.data == 'rules_billiards') msg(ch, RULES_B, KB_B);
           else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
         } else if (m && m.text) {
           const t = m.text, id = m.chat.id;
-          if (/^\/start/.test(t)) msg(id, CARD_D, KB_D).then(() => msg(id, CARD_C, KB_C)).then(() => msg(id, CARD_M, KB_M));   // две отдельные карточки
+          if (/^\/start/.test(t)) msg(id, CARD_D, KB_D).then(() => msg(id, CARD_C, KB_C)).then(() => msg(id, CARD_M, KB_M)).then(() => msg(id, CARD_B, KB_B));   // две отдельные карточки
           else if (/^\/durak/.test(t)) msg(id, CARD_D, KB_D);
           else if (/^\/chess/.test(t)) msg(id, CARD_C, KB_C);
           else if (/^\/mafia/.test(t)) msg(id, CARD_M, KB_M);
-          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M));
+          else if (/^\/billiards/.test(t)) msg(id, CARD_B, KB_B);
+          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B));
         }
       } catch {}
     });
@@ -139,9 +173,9 @@ const srv = http.createServer((q, r) => {
   r.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
   r.end(fs.readFileSync(path.join(__dirname, 'index.html')));
 });
-const wss = new WebSocketServer({ server: srv });
+const wss = new WebSocketServer({ server: srv, perMessageDeflate: { threshold: 1024 } });
 const rooms = {};
-const GAMES = ['durak', 'chess', 'mafia'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии' };
+const GAMES = ['durak', 'chess', 'mafia', 'billiards'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии', billiards: 'бильярда' };
 const gameOf = m => (GAMES.includes(m.game) ? m.game : 'durak');
 // Радио: каждый телефон качает поток сам, через сервер трафик не идет. Список можно менять здесь, без правки приложения.
 const STATIONS = [
@@ -243,6 +277,7 @@ const take = (R, i) => endRound(R, true);
 
 function drop(R, p) { R.mv++; if (R.game === 'chess') return chDrop(R, p);
   if (R.game === 'mafia') return mfDrop(R, p);
+  if (R.game === 'billiards') return blDrop(R, p);
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -259,6 +294,7 @@ const notify = (p, o) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stri
 function afkTick(R) {
   if (R.game === 'chess') return chTick(R);
   if (R.game === 'mafia') return mfTick(R);
+  if (R.game === 'billiards') return blTick(R);
   if (!R.started || R.over) { R.idleKey = null; return; }
   const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
   if (R.idleKey !== key) { R.idleKey = key; R.idleSince = Date.now(); R.warned = R.fined = false; return; }
@@ -592,6 +628,97 @@ function mfState(R, i) {
   };
 }
 
+// ================= БИЛЬЯРД =================
+const BL_MS = +process.env.BL_SHOT_MS || 60000;
+function blStart(R) {
+  const again = R.over && R.bl;
+  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
+  R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
+  if (R.players.length < 2) { R.started = false; R.over = false; return; }
+  const first = again ? 1 - R.bl.breaker : (Math.random() < .5 ? 0 : 1);
+  R.bl = { balls: BL.newBalls(), turn: first, breaker: first, groups: [null, null], open: true, hand: false, shots: 0, over: false, winner: null, reason: '', msg: 'Разбейте пирамиду', to: [0, 0], end: Date.now() + BL_MS, seq: 0 };
+  R.started = true; R.over = false; R.rres = null; R.animUntil = 0; R.mv++;
+  sys(R, `🎱 Игра началась. Разбивает ${R.players[first].name}`);
+}
+function blEnd(R) {
+  const bl = R.bl; R.over = true; bl.over = true; R.rres = null;
+  const [a, b] = R.players;
+  if (a.prof && b.prof && !a.bot && !b.bot) {
+    const sa = bl.winner === 0 ? 1 : 0, d = Math.round(32 * (sa - 1 / (1 + Math.pow(10, (b.prof.rating - a.prof.rating) / 400))));
+    R.rres = [];
+    [[a, 0, d, sa], [b, 1, -d, 1 - sa]].forEach(([p, i, dd, sc]) => {
+      const pr = p.prof, before = pr.rating; pr.rating = Math.max(100, before + dd); pr.games++; if (sc) pr.wins++; else pr.losses++;
+      db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating });
+    });
+  }
+}
+function blShot(R, i, a, p) {
+  const bl = R.bl;
+  if (!bl || bl.over || bl.turn !== i || !Number.isFinite(a) || !Number.isFinite(p) || !bl.balls[0].on) return false;
+  if (Date.now() < (R.animUntil || 0) - 400) return false;
+  p = Math.max(.03, Math.min(1, p));
+  const sim = BL.simulate(bl.balls, a, p, true), out = BL.judge(bl, sim);
+  BL.apply(bl, sim, out);
+  bl.to[i] = 0; bl.seq++; R.mv++;
+  R.animUntil = Date.now() + sim.dur * 1000 + 700; bl.end = R.animUntil + BL_MS;
+  bcast(R, { ev: 'shot', seq: bl.seq, frames: sim.frames, events: sim.events, by: i });
+  if (bl.over) blEnd(R);
+  return true;
+}
+function blMsg(R, i, m) {
+  if (!R.started) {
+    if (m.t == 'bot' && R.players.length < 2) R.players.push({ name: 'Компьютер', hand: [], bot: true, ws: null });
+    else if (m.t == 'start' && R.players.length >= 2) blStart(R);
+    return;
+  }
+  if (R.over) { if (m.t == 'again') blStart(R); return; }
+  const bl = R.bl;
+  if (m.t == 'shot') blShot(R, i, +m.a, +m.p);
+  else if (m.t == 'place') {
+    if (bl.turn === i && bl.hand && Date.now() >= (R.animUntil || 0) - 400 && BL.canPlace(bl, +m.x, +m.y)) { const c = bl.balls[0]; c.x = +m.x; c.y = +m.y; c.on = true; }
+  } else if (m.t == 'resign') { bl.winner = 1 - i; bl.reason = R.players[i].name + ' сдался'; blEnd(R); }
+}
+function blTick(R) {
+  if (!R.started || R.over || !R.bl) return;
+  const bl = R.bl, now = Date.now(), i = bl.turn, p = R.players[i];
+  if (!p || p.bot || p.off || p.left || now < bl.end) return;
+  bl.to[i]++;
+  if (bl.to[i] >= 3) { bl.winner = 1 - i; bl.reason = p.name + ' не ходит (вышло время)'; blEnd(R); }
+  else { bl.turn = 1 - i; bl.hand = true; bl.msg = `${p.name} не успел ударить: шар в руке у соперника`; bl.end = now + BL_MS; R.mv++; }
+  send(R);
+}
+function blDrop(R, p) {
+  if (p.left) return; p.left = true; p.off = false;
+  sys(R, p.name + ' покинул игру');
+  if (R.started && !R.over && R.bl) { R.bl.winner = 1 - R.players.indexOf(p); R.bl.reason = 'соперник покинул игру'; blEnd(R); }
+}
+function blSchedule(R) {
+  if (!R.started || R.over || !R.bl) return;
+  const bl = R.bl, p = R.players[bl.turn]; if (!p || !p.bot) return;
+  const key = bl.seq, wait = Math.max(0, (R.animUntil || 0) - Date.now());
+  R.tm = setTimeout(() => {
+    if (!R.started || R.over || R.bl !== bl || bl.seq !== key || !R.players[bl.turn].bot) return;
+    const plan = BL.botPlan(bl);
+    if (plan.place) { const c = bl.balls[0]; c.x = plan.place.x; c.y = plan.place.y; c.on = true; }
+    blShot(R, bl.turn, plan.angle, plan.power); send(R);
+  }, wait + 1300 + Math.random() * 900);
+}
+function blState(R, i) {
+  const bl = R.bl, now = Date.now(), playing = R.started && !R.over;
+  return {
+    game: 'billiards', room: R.code, you: i, host: true, started: R.started, over: R.over, status: playing ? 'play' : (R.over ? 'over' : 'lobby'),
+    turn: bl ? bl.turn : 0, groups: bl ? bl.groups : [null, null], open: bl ? bl.open : true, hand: bl ? bl.hand : false, shots: bl ? bl.shots : 0,
+    balls: bl ? bl.balls.filter(o => o.on).map(o => [o.id, Math.round(o.x * 10) / 10, Math.round(o.y * 10) / 10]) : [],
+    msg: bl ? bl.msg : '', seq: bl ? bl.seq : 0, left: bl ? Math.max(0, bl.end - now) : 0, shotMs: BL_MS,
+    winner: bl && bl.over ? bl.winner : null, reason: bl && bl.over ? bl.reason : '', rres: R.rres || null,
+    players: R.players.map(p => ({
+      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak || 0, since: p.prof.since } : null
+    })),
+    log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
+  };
+}
+
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
   for (let i = 0; i < R.players.length; i++) {
@@ -615,6 +742,7 @@ function botStep(R) {
 function stateFor(R, i) {
   if (R.game === 'chess') return chState(R, i);
   if (R.game === 'mafia') return mfState(R, i);
+  if (R.game === 'billiards') return blState(R, i);
   return {
     game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
@@ -632,6 +760,7 @@ function send(R) {
   clearTimeout(R.tm);
   if (R.game === 'chess') return chSchedule(R);
   if (R.game === 'mafia') return;
+  if (R.game === 'billiards') return blSchedule(R);
   if (R.started && !R.over && R.players.some(p => p.bot))
     R.tm = setTimeout(() => { if (botStep(R)) send(R); }, 900);
 }
@@ -656,7 +785,7 @@ wss.on('connection', ws => {
         return send(R);
       }
       if (R.started) return err(ws, 'Игра уже идет');
-      if (R.players.length >= (R.game == 'chess' ? 2 : R.game == 'mafia' ? 12 : 6)) return err(ws, 'Комната заполнена');
+      if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : 6)) return err(ws, 'Комната заполнена');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
       ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
       ws.R = R; R.players.push(ws.p);
@@ -681,6 +810,7 @@ wss.on('connection', ws => {
     if (m.t == 'react') { if (EMO.includes(m.e)) bcast(R, { ev: 'react', from: i, e: m.e }); return; }
     if (R.game === 'chess') { chMsg(R, i, m); return send(R); }
     if (R.game === 'mafia') { mfMsg(R, i, m); return send(R); }
+    if (R.game === 'billiards') { blMsg(R, i, m); return send(R); }
     if (m.t == 'bot' && !R.started && R.players.length < 6)
       R.players.push({ name: BOTN[R.players.length % BOTN.length], hand: [], bot: true, ws: null });
     else if (m.t == 'start' && !R.started && R.players.length >= 2) start(R);
@@ -719,15 +849,15 @@ srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
-    tg('setMyCommands', { commands: [{ command: 'start', description: 'Выбрать игру' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'rules', description: 'Правила игр' }] });
-    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы и мафия онлайн
+    tg('setMyCommands', { commands: [{ command: 'start', description: 'Выбрать игру' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'rules', description: 'Правила игр' }] });
+    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия и бильярд онлайн
 
 Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, отдельный рейтинг с рангами в каждой игре.
 
 Нажмите Start и выберите игру.
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
-    tg('setMyShortDescription', { short_description: 'Дурак, шахматы и мафия онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
+    tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия и бильярд онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
     tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
   }
 });
