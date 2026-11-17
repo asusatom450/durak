@@ -129,6 +129,41 @@ const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 🤲 Не можете побить: нажмите <b>«Взять»</b>.
 🔄 После хода все добирают карты до 6.
 🤡 Кто остался с картами последним, тот <b>дурак</b>.`;
+const TIPS = {
+  tip_durak: '🃏 Колода 36 карт, по 6 каждому, козырь по последней карте. Бейте старшей картой той же масти или козырем, подкидывайте карты того же достоинства. Кто остался с картами последним, тот дурак.',
+  tip_chess: '♞ Мат королю выигрывает партию. Есть рокировка, взятие на проходе и превращение пешки. Ничья: пат, повтор, 50 ходов. Упало время: поражение. Нажмите фигуру, затем клетку с точкой.',
+  tip_mafia: '🔪 Ночью мафия убивает, доктор лечит, комиссар проверяет. Днем город обсуждает и голосует. Мирные побеждают, изгнав всю мафию, мафия: когда ее не меньше остальных.',
+  tip_billiards: '🎱 Забейте все шары своей группы (цельные 1–7 или полосатые 9–15), затем восьмерку. Фол: биток в лузе, нет касания или борта. После фола шар в руке у соперника.'
+};
+// Меню игр на /start: одна картинка с панелью на каждую игру + кнопки. Правила показываются всплывающим окошком (как подсказка).
+const MENU_CAP = `<b>ИГРОВОЙ КЛУБ</b>
+Выберите игру. Кнопка 📖 показывает правила во всплывающем окошке.
+
+<i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>`;
+const MENU_KB = APP_URL ? { inline_keyboard: [
+  [{ text: '🃏 Дурак', web_app: { url: APP_URL } }, { text: '📖 Правила', callback_data: 'tip_durak' }],
+  [{ text: '♞ Шахматы', web_app: { url: APP_URL + '/chess' } }, { text: '📖 Правила', callback_data: 'tip_chess' }],
+  [{ text: '🔪 Мафия', web_app: { url: APP_URL + '/mafia' } }, { text: '📖 Правила', callback_data: 'tip_mafia' }],
+  [{ text: '🎱 Бильярд', web_app: { url: APP_URL + '/billiards' } }, { text: '📖 Правила', callback_data: 'tip_billiards' }]] } : undefined;
+let MENU_ID = null;   // file_id картинки: после первой отправки Telegram хранит ее у себя
+async function sendMenu(chat) {
+  try {
+    if (!MENU_ID) {
+      const fd = new FormData();
+      fd.append('chat_id', String(chat)); fd.append('caption', MENU_CAP); fd.append('parse_mode', 'HTML');
+      if (MENU_KB) fd.append('reply_markup', JSON.stringify(MENU_KB));
+      fd.append('photo', new Blob([fs.readFileSync(path.join(__dirname, 'menu.jpg'))], { type: 'image/jpeg' }), 'menu.jpg');
+      const r = await (await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd })).json();
+      if (!r.ok) throw new Error(r.description);
+      MENU_ID = r.result.photo[r.result.photo.length - 1].file_id;
+      return;
+    }
+    await tg('sendPhoto', { chat_id: chat, photo: MENU_ID, caption: MENU_CAP, parse_mode: 'HTML', reply_markup: MENU_KB });
+  } catch (e) {   // нет картинки или Telegram отказал: показываем то же меню текстом
+    console.error('menu:', e.message);
+    await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: MENU_CAP, reply_markup: MENU_KB });
+  }
+}
 const srv = http.createServer((q, r) => {
   if (q.url.startsWith('/api/')) {
     const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
@@ -151,7 +186,7 @@ const srv = http.createServer((q, r) => {
         const u = JSON.parse(s), m = u.message, cb = u.callback_query;
         const msg = (chat, text, kb) => tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text, reply_markup: kb });
         if (cb) {
-          tg('answerCallbackQuery', { callback_query_id: cb.id });
+          tg('answerCallbackQuery', TIPS[cb.data] ? { callback_query_id: cb.id, text: TIPS[cb.data], show_alert: true } : { callback_query_id: cb.id });
           const ch = cb.message.chat.id;
           if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
           else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
@@ -159,7 +194,7 @@ const srv = http.createServer((q, r) => {
           else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
         } else if (m && m.text) {
           const t = m.text, id = m.chat.id;
-          if (/^\/start/.test(t)) msg(id, CARD_D, KB_D).then(() => msg(id, CARD_C, KB_C)).then(() => msg(id, CARD_M, KB_M)).then(() => msg(id, CARD_B, KB_B));   // две отдельные карточки
+          if (/^\/(start|menu)/.test(t)) sendMenu(id);   // одно меню с картинкой вместо ленты сообщений   // две отдельные карточки
           else if (/^\/durak/.test(t)) msg(id, CARD_D, KB_D);
           else if (/^\/chess/.test(t)) msg(id, CARD_C, KB_C);
           else if (/^\/mafia/.test(t)) msg(id, CARD_M, KB_M);
@@ -849,7 +884,7 @@ srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
-    tg('setMyCommands', { commands: [{ command: 'start', description: 'Выбрать игру' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'rules', description: 'Правила игр' }] });
+    tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'rules', description: 'Правила игр' }] });
     tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия и бильярд онлайн
 
 Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, отдельный рейтинг с рангами в каждой игре.
