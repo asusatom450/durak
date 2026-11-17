@@ -1,7 +1,9 @@
 'use strict';
 // Бильярд (американка, 8 шаров): физика, правила и компьютерный соперник.
 // Стол вертикальный: x от 0 до W (ширина), y от 0 до L (длина). Низ стола (большой y) = «дом», пирамида вверху.
-const T = { W: 500, L: 1000, R: 13, PK: [[0, 0, 30], [500, 0, 30], [0, 1000, 30], [500, 1000, 30], [0, 500, 27], [500, 500, 27]] };
+// Шары крупные относительно стола (так их видно на телефоне), стол слегка укорочен.
+const T = { W: 500, L: 800, R: 16, PK: [[0, 0, 36], [500, 0, 36], [0, 800, 36], [500, 800, 36], [0, 400, 32], [500, 400, 32]] };
+const CX = T.W / 2, CY = T.L / 2, HEAD = T.L * .75, APEX = T.L * .3;   // центр, «дом» (откуда бьют) и вершина пирамиды
 const FRIC_K = 0.45, FRIC_C = 85, REST_WALL = 0.8, REST_BALL = 0.96, STOP = 5;
 const isSolid = id => id >= 1 && id <= 7, isStripe = id => id >= 9 && id <= 15;
 const inGroup = (g, id) => (g === 'solid' ? isSolid(id) : g === 'stripe' ? isStripe(id) : false);
@@ -9,12 +11,12 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.r
 
 function newBalls() {
   const sp = 2 * T.R + .2, pos = [];
-  for (let r = 0; r < 5; r++) for (let c = 0; c <= r; c++) pos.push([250 + (c - r / 2) * sp, 300 - r * (Math.sqrt(3) / 2 * sp)]);
+  for (let r = 0; r < 5; r++) for (let c = 0; c <= r; c++) pos.push([CX + (c - r / 2) * sp, APEX - r * (Math.sqrt(3) / 2 * sp)]);
   const solids = shuffle([1, 2, 3, 4, 5, 6, 7]), stripes = shuffle([9, 10, 11, 12, 13, 14, 15]), pl = new Array(15);
   pl[4] = 8; pl[10] = solids.pop(); pl[14] = stripes.pop();
   const rest = shuffle([...solids, ...stripes]);
   for (let i = 0; i < 15; i++) if (pl[i] === undefined) pl[i] = rest.pop();
-  const balls = [{ id: 0, x: 250, y: 750, on: true }];
+  const balls = [{ id: 0, x: CX, y: HEAD, on: true }];
   pos.forEach((p, i) => balls.push({ id: pl[i], x: p[0], y: p[1], on: true }));
   return balls.sort((a, b) => a.id - b.id);
 }
@@ -22,7 +24,7 @@ function newBalls() {
 // Один удар: возвращает конечные позиции, запись кадров (30 Гц) и события для звуков.
 function simulate(balls0, angle, power, rec) {
   const R = T.R, DT = 1 / 240, b = balls0.map(o => ({ id: o.id, x: o.x, y: o.y, vx: 0, vy: 0, on: o.on }));
-  const cue = b[0], v0 = 150 + power * 2250; cue.vx = Math.cos(angle) * v0; cue.vy = Math.sin(angle) * v0;
+  const cue = b[0], v0 = 120 + power * 1950; cue.vx = Math.cos(angle) * v0; cue.vy = Math.sin(angle) * v0;
   const frames = [], events = [], pocketed = [];
   let firstHit = null, rail = false, cuePocketed = false, step = 0;
   const snap = () => { if (!rec) return; const f = []; for (const o of b) { if (o.on) f.push(Math.round(o.x * 4), Math.round(o.y * 4)); else f.push(-1, -1); } frames.push(f); };
@@ -148,7 +150,7 @@ function clear(balls, x1, y1, x2, y2, ign, rad) { for (const o of balls) if (o.o
 function candidates(bl, cue) {
   const R = T.R, out = [];
   for (const t of targetsOf(bl, bl.turn)) for (const pk of T.PK) {
-    const px = pk[0] + (250 - pk[0]) * .04, py = pk[1] + (500 - pk[1]) * .02, dx = px - t.x, dy = py - t.y, d = Math.hypot(dx, dy);
+    const px = pk[0] + (CX - pk[0]) * .04, py = pk[1] + (CY - pk[1]) * .02, dx = px - t.x, dy = py - t.y, d = Math.hypot(dx, dy);
     if (d < 1) continue;
     const ux = dx / d, uy = dy / d, gx = t.x - ux * 2 * R, gy = t.y - uy * 2 * R, cx = gx - cue.x, cy = gy - cue.y, cd = Math.hypot(cx, cy);
     if (cd < 1) continue;
@@ -172,18 +174,18 @@ function botPlan(bl) {
   if (bl.hand || !cueBall.on) {   // шар в руке: ищем лучшее место
     let best = null, bs = -1e9;
     for (let ix = 0; ix < 6; ix++) for (let iy = 0; iy < 9; iy++) {
-      const x = 60 + ix * 76, y = 80 + iy * 105;
+      const x = 60 + ix * ((T.W - 120) / 5), y = 70 + iy * ((T.L - 140) / 8);
       if (!canPlace(bl, x, y)) continue;
       const c = candidates(bl, { x, y });
       const s = c.length * 100 - (c[0] ? c[0].dist / 10 : 500);
       if (s > bs) { bs = s; best = { x, y }; }
     }
-    plan.place = best || { x: 250, y: 750 };
+    plan.place = best || { x: CX, y: HEAD };
   }
   const cue = plan.place ? { id: 0, x: plan.place.x, y: plan.place.y, on: true } : cueBall;
   const balls = bl.balls.map(o => (o.id === 0 ? cue : o));
   if (bl.shots === 0 && !plan.place) {   // разбой
-    plan.angle = Math.atan2(300 - cue.y, 250 - cue.x) + (Math.random() - .5) * .05; plan.power = .95; return plan;
+    plan.angle = Math.atan2(APEX - cue.y, CX - cue.x) + (Math.random() - .5) * .05; plan.power = .95; return plan;
   }
   const b2 = { ...bl, balls }, cands = candidates(b2, cue).slice(0, 10);
   let best = null, bs = -1e9;
