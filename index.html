@@ -233,12 +233,34 @@ body.chess{--gold:#7cc4ff;color:#e8f1fb;background:radial-gradient(ellipse 80% 5
 /* ===== тема мафии: нуар, багровый на чёрном, ночь и день ===== */
 body.mafia{--gold:#ff5470;color:#f4eaec;background:#07060a}
 .mafia #app{z-index:1}
-#mfbg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#mfbg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 #mfbg i{position:absolute;inset:0;opacity:0;transition:opacity 1.4s}
-#mfbg .n{background:radial-gradient(circle at 82% 11%,#fff 0,#e8edff 2.2%,#9db0ff55 5%,#9db0ff00 22%),radial-gradient(2px 2px at 12% 18%,#fff 50%,#0000),radial-gradient(2px 2px at 30% 8%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 55% 22%,#fff 50%,#0000),radial-gradient(2px 2px at 66% 6%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 92% 34%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 8% 40%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 46% 44%,#fff 50%,#0000),radial-gradient(2px 2px at 22% 56%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 78% 52%,#fff 50%,#0000),linear-gradient(#101a4a,#070a1c 62%,#020308)}
-#mfbg .d{background:radial-gradient(circle at 18% 10%,#ffd98aaa 0,#ffd98a00 34%),linear-gradient(#6a3d2c,#2d1a1c 60%,#140b0e)}
+#mfbg .n{background:radial-gradient(circle at 82% 11%,#fff 0,#e8edff 2.2%,#9db0ff55 5%,#9db0ff00 22%),radial-gradient(2px 2px at 12% 18%,#fff 50%,#0000),radial-gradient(2px 2px at 30% 8%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 55% 22%,#fff 50%,#0000),radial-gradient(2px 2px at 66% 6%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 92% 34%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 8% 40%,#fff 50%,#0000),radial-gradient(1.5px 1.5px at 46% 44%,#fff 50%,#0000),linear-gradient(#101a4a,#070a1c 62%,#020308)}
+#mfbg .d{background:radial-gradient(circle at 18% 10%,#ffd98aaa 0,#ffd98a00 34%),linear-gradient(#7a4a32,#3a2220 55%,#160b0c)}
 #mfbg .v{background:radial-gradient(ellipse at 50% -10%,#ff3b5c77 0,#ff3b5c00 55%),linear-gradient(#2c0c15,#0d0509)}
 .mf-night #mfbg .n,.mf-day #mfbg .d,.mf-vote #mfbg .v{opacity:1}
+/* город: дальние и ближние дома, окна, фонарь, туман, дождь ночью, луч прожектора на суде */
+body.mafia{--far:#151127;--near:#06050a;--win:#19141f}
+body.mafia.mf-day{--far:#40261f;--near:#170d0d;--win:#2b1a17}
+body.mafia.mf-vote{--far:#2c0c15;--near:#0c0306;--win:#200a10}
+#mfbg .city{position:absolute;left:0;bottom:0;width:100%}
+#mfbg .far{height:42vh;fill:var(--far);transition:fill 1.4s}
+#mfbg .near{height:33vh}#mfbg .bld,#mfbg .lampp{fill:var(--near);transition:fill 1.4s}
+#mfbg .w{fill:var(--win);transition:fill 1.4s}
+.mf-night #mfbg .w.on{fill:#ffcf6e}.mf-day #mfbg .w.on{fill:#3b2620}.mf-vote #mfbg .w.on{fill:#ff5470aa}
+#mfbg .w.fl{animation:flick 7s steps(1) infinite}
+@keyframes flick{0%,46%,53%,74%,78%{opacity:1}48%{opacity:.15}76%{opacity:.35}}
+#mfbg .lampg{opacity:0;transition:opacity 1.4s}.mf-night #mfbg .lampg{opacity:1}
+#mfbg .fog{position:absolute;left:-30%;right:-30%;bottom:7vh;height:28vh;background:radial-gradient(ellipse 40% 60% at 30% 60%,#c9d2ff1c,#0000 70%),radial-gradient(ellipse 35% 50% at 75% 50%,#c9d2ff16,#0000 70%);animation:fog 38s ease-in-out infinite alternate}
+#mfbg .fog.f2{bottom:-2vh;height:18vh;animation-duration:52s;animation-direction:alternate-reverse}
+.mf-day #mfbg .fog{opacity:.35}.mf-vote #mfbg .fog{opacity:.5}
+@keyframes fog{to{transform:translateX(16%)}}
+#mfbg .rain{position:absolute;left:0;right:0;top:-120px;bottom:0;opacity:0;transition:opacity 1.4s;will-change:transform;animation:rain .5s linear infinite;
+background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='120'%3E%3Cg stroke='%23aab8ff' stroke-opacity='.32' stroke-width='1'%3E%3Cpath d='M10 0l-4 22M38 40l-4 22M24 78l-4 22M53 98l-4 22'/%3E%3C/g%3E%3C/svg%3E")}
+.mf-night #mfbg .rain{opacity:.6}
+@keyframes rain{to{transform:translateY(120px)}}
+#mfbg .spot{position:absolute;left:50%;top:-6%;width:140vw;height:110vh;transform:translateX(-50%);opacity:0;transition:opacity 1.4s;background:conic-gradient(from 180deg at 50% 0%,#0000 0 158deg,#ff3b5c1c 168deg,#ff3b5c38 180deg,#ff3b5c1c 192deg,#0000 202deg)}
+.mf-vote #mfbg .spot{opacity:1}
 .mafia h1{font:700 40px/1.05 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:4px;color:#ffe9ee;text-shadow:0 0 30px #ff547099}
 .mafia .sub{opacity:.75}
 .mafia .btn{border-radius:4px;background:linear-gradient(#ff6d86,#c4223f);color:#fff;box-shadow:0 3px 0 #7d1226,0 8px 18px #0008;text-transform:uppercase;letter-spacing:1px;font-family:'Oswald','Manrope',sans-serif;font-weight:600}
@@ -247,30 +269,64 @@ body.mafia{--gold:#ff5470;color:#f4eaec;background:#07060a}
 .mafia input{border-radius:4px;background:#000a}
 .mafia .chip,.mafia .ico,.mafia .seat{border-radius:6px;background:#0008}
 .mafia .chip b,.mafia .rt,.mafia .pos{color:#ff8da0}
-.mfgrid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:center;padding:2px}
-.mfc{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 8px;border-radius:6px;background:#0009;border:1px solid #ffffff1c;transition:.25s}
-.mfc.can{border-color:#ff547099;cursor:pointer;box-shadow:0 0 0 1px #ff547033}
-.mfc.sel{border-color:#ff5470;background:#ff547033;box-shadow:0 0 18px #ff547077}
+.mfgrid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px 10px;align-content:center;padding:10px 4px 6px}
+/* карточка игрока: фото из дела с булавкой и подписью на бумажной полоске */
+.mfc{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 6px 8px;border-radius:3px;background:linear-gradient(#231b1e,#120d10);border:1px solid #ffffff17;box-shadow:0 8px 18px #000a;transform:rotate(var(--r,0deg));transition:transform .25s,box-shadow .25s,border-color .25s}
+.mfc .pin{position:absolute;top:-6px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb0bc,#c4223f 55%,#5a0a18);box-shadow:0 2px 3px #000a;z-index:4}
+.mfc .ph{position:relative;line-height:0}
+.mfc .av{width:58px;height:58px;border-radius:2px;border:3px solid #e9e2d4;box-shadow:0 3px 8px #000b;filter:grayscale(.75) sepia(.3) contrast(1.05)}
+.mfc .lbl{max-width:100%;padding:2px 6px;background:#e9e2d4;color:#1c1416;font:700 11.5px 'Courier Prime',ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 2px #0008;transform:rotate(-1.2deg)}
+.mfc.me .lbl{background:#ffd9df}
+.mfc.can{border-color:#ff5470aa;cursor:pointer;animation:mfcan 1.3s ease-in-out infinite alternate}
+@keyframes mfcan{to{box-shadow:0 8px 18px #000a,0 0 18px #ff547077}}
+.mfc.sel{border-color:#ff5470;box-shadow:0 0 0 1px #ff5470,0 0 24px #ff5470aa;transform:rotate(0) scale(1.05);animation:none}
 .mfc.mate{border-color:#ff9aa8cc}
-.mfc.me{outline:1px dashed #ffffff55;outline-offset:2px}
-.mfc.dead{opacity:.5;background:#000b}.mfc.dead .av{filter:grayscale(1)}
-.mfc .av{width:52px;height:52px}
-.mfc .nm{font-size:12.5px;max-width:100%}
-.mfr{font-size:11px;opacity:.85;min-height:14px;text-align:center}
-.vc{position:absolute;top:4px;right:4px;background:#ff5470;color:#fff;font:800 11px Manrope;border-radius:10px;padding:2px 7px;animation:pop .3s}
-.chk2{position:absolute;top:4px;left:4px;font:800 13px Manrope;border-radius:50%;width:20px;height:20px;display:grid;place-items:center}
-.chk2.ok{background:#3ecf8e;color:#032}.chk2.bad{background:#ff4560;color:#fff}
-.mfrole{text-align:center;font-size:13px;padding:6px 10px;border-radius:4px;background:#000a;border:1px solid #ffffff22;cursor:pointer}
+.mfc.dead{background:linear-gradient(#141012,#0a0708)}.mfc.dead .av{filter:grayscale(1) brightness(.55)}.mfc.dead .lbl{opacity:.7;text-decoration:line-through}
+.dst{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-18deg);padding:1px 5px;border:2px solid #e02a47;color:#ff4a63;background:#000b;font:700 11px/1.2 'Oswald',sans-serif;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;z-index:3;box-shadow:0 0 0 1px #0008}
+.mfr{font:600 10.5px Manrope,sans-serif;opacity:.88;min-height:15px;text-align:center;display:flex;align-items:center;gap:3px;justify-content:center;white-space:nowrap}
+.mfr .ra{width:13px;height:15px;flex:none}
+.vc{position:absolute;top:1px;right:1px;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#ff7d91,#a8152f 60%,#5a0a18);color:#ffe3e8;font:700 12px 'Oswald',sans-serif;box-shadow:0 2px 5px #000a,inset 0 0 0 2px #ffffff22;z-index:4;animation:pop .3s}
+.chk2{position:absolute;top:5px;left:1px;width:auto;height:auto;padding:1px 4px;border:1.5px solid;border-radius:2px;font:700 8.5px 'Oswald',sans-serif;letter-spacing:.6px;text-transform:uppercase;transform:rotate(-11deg);z-index:4;background:#000c;display:block}
+.chk2.bad{color:#ff4a63;border-color:#ff4a63}.chk2.ok{color:#5fe0a0;border-color:#5fe0a0}
+.mk{position:absolute;inset:-6px;z-index:3;pointer-events:none;line-height:0}.mk svg{width:100%;height:100%}
+.mk.heal,.mk.look{inset:auto;right:-9px;bottom:-9px;width:26px;height:26px}
+/* рисованные карты ролей */
+.ra{display:inline-block;vertical-align:middle;width:18px;height:21px}span>.ra{width:100%;height:100%;display:block}
+.rc-art{width:150px;height:175px;margin:0 auto;filter:drop-shadow(0 10px 20px #000c)}.rc-art svg{width:100%;height:100%}
+/* утренняя газета */
+.mfnews{position:fixed;inset:0;z-index:49;display:grid;place-items:center;background:#000b;pointer-events:none;animation:fade .3s}
+.np{width:min(300px,84vw);padding:14px 16px 16px;color:#1c1712;box-shadow:0 24px 60px #000e;animation:npspin 2.7s cubic-bezier(.2,.8,.3,1) forwards;
+background:radial-gradient(ellipse at 50% 40%,#f3ead3,#ddd0b0),#efe6cf}
+.np .mast{font:900 25px/1 'Playfair Display',Georgia,serif;text-align:center;border-bottom:3px double #1c1712;padding-bottom:6px}
+.np .npd{display:flex;justify-content:space-between;font:700 10px 'Courier Prime',ui-monospace,monospace;text-transform:uppercase;border-bottom:1px solid #1c1712;padding:4px 0;margin-bottom:8px}
+.np h3{font:700 25px/1.05 'Oswald',sans-serif;text-transform:uppercase;text-align:center;margin:6px 0 10px;letter-spacing:.5px}
+.np .npp{display:flex;gap:10px;align-items:center}.np .av{width:78px;height:78px;flex:none;border-radius:1px;border:3px solid #fff;box-shadow:0 2px 6px #0006;filter:grayscale(1) contrast(1.15)}
+.np p{font:italic 600 13px/1.35 Georgia,serif;margin:0;text-align:left}.np .cols{flex:1;font:11px/1.35 Georgia,serif;color:#3a3128}
+.np .cols b{font-style:normal;display:block;font:700 13px 'Oswald',sans-serif;text-transform:uppercase;color:#7a1020;margin-bottom:3px}
+@keyframes npspin{0%{transform:rotate(-720deg) scale(.05);opacity:0}28%{transform:rotate(-4deg) scale(1);opacity:1}86%{transform:rotate(-4deg) scale(1);opacity:1}100%{transform:rotate(-4deg) scale(1.12);opacity:0}}
+/* итог: папка «Дело закрыто» */
+.dossier{position:relative;width:min(340px,92vw);max-height:88vh;overflow:auto;padding:20px 16px 16px;border-radius:4px;color:#2a1d10;box-shadow:0 24px 60px #000e;animation:pop .5s cubic-bezier(.2,1.3,.4,1);background:radial-gradient(ellipse at 40% 20%,#e4d2a8,#c9b282)}
+.dossier .tabl{font:700 11px 'Courier Prime',ui-monospace,monospace;text-transform:uppercase;letter-spacing:1px;opacity:.75;border-bottom:1px solid #2a1d1066;padding-bottom:6px}
+.dossier h2{font:700 25px/1.1 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;color:#2a1d10;margin:12px 0 2px}
+.dossier .sub2{font:italic 600 13px Georgia,serif;margin:0 0 10px;opacity:.85}
+.dossier .stamp.ds{position:absolute;right:10px;top:26px;font-size:17px;transform:rotate(12deg);animation:stampbox .6s .3s cubic-bezier(.2,.9,.3,1) backwards}
+.dossier .dlist{display:flex;flex-direction:column;text-align:left;max-height:34vh;overflow:auto}
+.dossier .dlist .r{display:flex;gap:8px;align-items:center;padding:5px 4px;border-bottom:1px dashed #2a1d1055;font:700 13px 'Courier Prime',ui-monospace,monospace}
+.dossier .dlist .r span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dossier .dlist .r.x span{text-decoration:line-through;opacity:.65}
+.dossier .dlist .r b{font:700 12px 'Oswald',sans-serif;text-transform:uppercase}.dossier .dlist .r.mf b{color:#a8152f}
+.dossier .dl.up{color:#1f7a3a}.dossier .dl.dn{color:#a8152f}.dossier .btn.ghost{color:#2a1d10;border-color:#2a1d1066;background:#2a1d1012}
+.mfrole{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;padding:5px 10px;border-radius:4px;background:#000a;border:1px solid #ffffff22;cursor:pointer}.mfrole .ra{width:22px;height:26px}
 .mfph{font-family:'Oswald','Manrope',sans-serif;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;font-size:13px}
 .mft{font-family:'Courier Prime',ui-monospace,monospace;font-weight:700}
 .mfann{text-align:center;font:600 14px 'Courier Prime',ui-monospace,monospace;min-height:20px;color:#ffd9df}
 .mafia .msg{font-family:'Courier Prime',ui-monospace,monospace}
+.mafia .mfann,.mafia .msg{text-shadow:0 1px 2px #000,0 0 10px #000,0 0 18px #000c}
 .mfsplash{position:fixed;inset:0;z-index:48;display:grid;place-items:center;text-align:center;background:#000c;animation:mfs 2s forwards;pointer-events:none}
 .mfsplash b{display:block;font-size:72px;line-height:1}
 .mfsplash h2{margin:8px 0 0;font:700 34px 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:5px}
 .mfsplash p{margin:6px 0 0;opacity:.8}
 @keyframes mfs{0%{opacity:0;transform:scale(.92)}18%{opacity:1;transform:none}78%{opacity:1}100%{opacity:0}}
-.rc-in{width:min(320px,88vw);padding:26px 22px;border-radius:8px;text-align:center;background:linear-gradient(#2a0d16,#0e0509);border:1px solid #ff5470;box-shadow:0 0 50px #ff547055;animation:flip .9s cubic-bezier(.2,.9,.3,1.1)}
+.rc-in{width:min(320px,88vw);padding:20px 22px 22px;border-radius:8px;text-align:center;background:linear-gradient(#2a0d16,#0e0509);border:1px solid #ff5470;box-shadow:0 0 50px #ff547055;animation:flip .9s cubic-bezier(.2,.9,.3,1.1)}
 @keyframes flip{from{transform:rotateY(180deg) scale(.7);opacity:0}}
 .rc-ic{font-size:72px;line-height:1}
 .rc-in h3{font:700 28px 'Oswald','Manrope',sans-serif;text-transform:uppercase;letter-spacing:3px;margin:10px 0 6px}
@@ -556,15 +612,47 @@ function setChatUI(){const g=st?st.game:chGame,q=document.querySelector('.quick'
   if(g=='mafia'&&st&&st.status=='play'){if(!st.alive)ph='👻 Чат выбывших';else if(st.phase=='night'){if(st.myRole=='mafia')ph='🔪 Тайный чат мафии';else{ph='Ночью говорит только мафия';dis=true}}}
   const i=$('#ci');i.placeholder=ph;i.disabled=dis}
 const MF_ROLE={mafia:{n:'Мафия',ic:'🔪',d:'Ночью вместе с напарниками выбираете жертву. Днём изображайте мирного жителя и не попадитесь.'},doctor:{n:'Доктор',ic:'💉',d:'Каждую ночь лечите одного игрока: если мафия выберет его, он выживет. Одного и того же два раза подряд лечить нельзя.'},sheriff:{n:'Комиссар',ic:'🕵️',d:'Каждую ночь проверяете одного игрока и узнаёте, мафия он или нет. Одна проверка за ночь.'},civ:{n:'Мирный житель',ic:'🧑',d:'Ночью вы спите. Днём ищите мафию: обсуждайте и голосуйте.'}};
+// Рисованные роли в духе нуара: силуэт на фоне луны своего цвета
+const MF_ACC={mafia:['#ff5470','#7a1022'],sheriff:['#8fc4ff','#1e3f72'],doctor:['#7ff0b8','#14583c'],civ:['#ffd27a','#6a4512']};
+function mfArt(role,cls){const [hi,lo]=MF_ACC[role]||MF_ACC.civ,k='ma'+role,ink='#0b0709',coat='<path d="M14 140c2-28 16-42 32-48l14 12 14-12c16 6 30 20 32 48z" fill="'+ink+'"/><path d="M48 84l12 20 12-20z" fill="'+ink+'"/><ellipse cx="60" cy="67" rx="15" ry="18" fill="'+ink+'"/>';
+  let a='<svg class="'+(cls||'ra')+'" viewBox="0 0 120 140"><defs><radialGradient id="'+k+'" cx=".45" cy=".4" r=".6"><stop offset="0" stop-color="'+hi+'"/><stop offset="1" stop-color="'+lo+'"/></radialGradient></defs><circle cx="60" cy="60" r="46" fill="url(#'+k+')"/>';
+  if(role=='civ')a+='<g stroke="'+hi+'" stroke-opacity=".45" stroke-width="1"><path d="M18 30l-4 12M30 18l-4 12M96 22l-4 12M104 40l-4 12M22 62l-4 12M100 66l-4 12"/></g>';
+  a+=coat;
+  if(role=='mafia')a+='<path d="M46 92l12 26 2-14zM74 92l-12 26-2-14z" fill="#1c1215"/><path d="M44 53c0-17 32-17 32 0l1 4H43z" fill="'+ink+'"/><path d="M29 59c11-9 51-9 62 0-11 5-51 5-62 0z" fill="'+ink+'"/><path d="M44 55h32" stroke="'+hi+'" stroke-width="2.6"/><path d="M30 59c10-7 22-8 30-8M46 71c1 8 6 14 12 16" stroke="'+hi+'" stroke-width="1.2" fill="none" opacity=".75"/><circle cx="73" cy="106" r="4.2" fill="#e01e44"/><path d="M73 110l-1 9" stroke="#2f6a3a" stroke-width="1.6"/><path d="M71 79l11 2" stroke="#e9e2d4" stroke-width="2"/><circle cx="83" cy="81" r="1.3" fill="#ff8a3a"/><path d="M85 77c6-8-2-13 4-21 5-7-2-12 3-18" stroke="#fff" stroke-opacity=".4" stroke-width="1.4" fill="none"/>';
+  else if(role=='sheriff')a+='<path d="M45 53c1-15 29-15 30 0z" fill="'+ink+'"/><path d="M35 57c9-7 41-7 50 0-9 4-41 4-50 0z" fill="'+ink+'"/><path d="M45 54h30" stroke="'+hi+'" stroke-width="2.2"/><path d="M36 57c9-6 18-7 24-7M46 71c1 8 6 14 12 16" stroke="'+hi+'" stroke-width="1.2" fill="none" opacity=".75"/><path d="M47 103l2.4 5 5.4.6-4 3.6 1.2 5.3-5-2.7-4.8 2.7 1.1-5.3-4-3.6 5.4-.6z" fill="#e8c35a" stroke="#7a5410" stroke-width=".6"/><path d="M78 104l-11 14" stroke="#3a2a20" stroke-width="5" stroke-linecap="round"/><circle cx="85" cy="95" r="11" fill="'+hi+'" fill-opacity=".18" stroke="#d6e2f2" stroke-width="3.2"/><path d="M79 90a7 7 0 0 1 6-3" stroke="#fff" stroke-width="1.6" fill="none"/>';
+  else if(role=='doctor')a+='<path d="M14 140c2-28 16-42 32-48l14 12 14-12c16 6 30 20 32 48z" fill="#d7dfd9"/><path d="M46 92l14 12 14-12-6 20h-16z" fill="#b9c4bd"/><path d="M48 84l12 20 12-20z" fill="'+ink+'"/><ellipse cx="60" cy="67" rx="15" ry="18" fill="'+ink+'"/><path d="M46 56c2-12 26-12 28 0" fill="'+ink+'"/><circle cx="60" cy="51" r="6.5" fill="#cfd9e6" stroke="'+ink+'" stroke-width="1.5"/><path d="M57 49a3.5 3.5 0 0 1 3-2" stroke="#fff" stroke-width="1.2" fill="none"/><path d="M48 96c-4 12 4 22 14 18" stroke="#2a3a33" stroke-width="2" fill="none"/><circle cx="62" cy="114" r="3" fill="#2a3a33"/><rect x="72" y="110" width="30" height="22" rx="3" fill="#2a1a12"/><path d="M80 110v-4h14v4" stroke="#2a1a12" stroke-width="2.4" fill="none"/><rect x="83" y="114" width="8" height="14" fill="#e9fff3"/><rect x="80" y="117" width="14" height="8" fill="#e9fff3"/><path d="M84.5 115.5v11M81.5 121h11" stroke="#d8223e" stroke-width="3"/>';
+  else a+='<path d="M60 22v100" stroke="'+ink+'" stroke-width="2.4"/><path d="M60 122c0 6 8 6 8 0" stroke="'+ink+'" stroke-width="2.4" fill="none"/><path d="M22 46c6-26 70-26 76 0-8-4-15-4-21 0-6-4-14-4-17 0-3-4-11-4-17 0-6-4-14-4-21 0z" fill="'+ink+'"/><path d="M24 44c8-20 46-24 62-12" stroke="'+hi+'" stroke-width="1.3" fill="none" opacity=".7"/><path d="M44 58c2-10 26-11 30-2l6 3H43z" fill="'+ink+'"/><path d="M46 71c1 8 6 14 12 16" stroke="'+hi+'" stroke-width="1.2" fill="none" opacity=".7"/>';
+  return a+'</svg>'}
+const MF_MK={cross:'<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" fill="none" stroke="#ff2d4b" stroke-width="2"/><path d="M20 1v11M20 28v11M1 20h11M28 20h11" stroke="#ff2d4b" stroke-width="2"/><circle cx="20" cy="20" r="2" fill="#ff2d4b"/></svg>',
+  heal:'<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11.5" fill="#e9fff3" stroke="#1f9a5a" stroke-width="1.6"/><path d="M13 6.5v13M6.5 13h13" stroke="#1f9a5a" stroke-width="3.4"/></svg>',
+  look:'<svg viewBox="0 0 26 26"><circle cx="11" cy="11" r="8" fill="#0d1a2acc" stroke="#d6e2f2" stroke-width="2.4"/><path d="M17 17l6 6" stroke="#d6e2f2" stroke-width="3.2" stroke-linecap="round"/></svg>'};
 const MF_PH={night:['🌙','Ночь'],day:['☀️','Обсуждение'],vote:['🗳️','Голосование'],over:['🏁','Итог']};
 let mfPrev=null,mfRoleSeen=false;
-function mfBg(){if(!$('#mfbg')){const d=document.createElement('div');d.id='mfbg';d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i>';document.body.prepend(d)}
+// город строится один раз: дальние силуэты, ближние дома с окнами (часть светится, некоторые мигают), фонарь
+function mfScene(){if($('#mfbg'))return;let sd=1234;const R=()=>(sd=(sd*1664525+1013904223)>>>0)/4294967296,f=v=>v.toFixed(1);let far='',near='',win='',x=-4;
+  while(x<404){const w=14+R()*30,h=46+R()*74;far+='<rect x="'+f(x)+'" y="'+f(200-h)+'" width="'+f(w)+'" height="'+f(h)+'"/>';if(R()<.3)far+='<rect x="'+f(x+w/2-1)+'" y="'+f(200-h-14)+'" width="2" height="14"/>';x+=w+1+R()*3}
+  x=-6;while(x<404){const w=30+R()*46,h=56+R()*92,y=200-h;near+='<rect x="'+f(x)+'" y="'+f(y)+'" width="'+f(w)+'" height="'+f(h)+'"/>';
+    const t=R();if(t<.22)near+='<path d="M'+f(x+w*.25)+' '+f(y)+'v-12h16v12z"/><path d="M'+f(x+w*.25-2)+' '+f(y-12)+'l10-6 10 6z"/>';else if(t<.36)near+='<path d="M'+f(x)+' '+f(y)+'l'+f(w/2)+' -16 '+f(w/2)+' 16z"/>';
+    const cols=Math.floor((w-8)/9),rows=Math.floor((h-12)/12);for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){if(R()<.15)continue;const on=R()<.33,fl=on&&R()<.1;win+='<rect class="w'+(on?' on':'')+(fl?' fl':'')+'" x="'+f(x+5+c*9)+'" y="'+f(y+8+r*12)+'" width="4.6" height="6.4"/>'}
+    x+=w+R()*5}
+  const d=document.createElement('div');d.id='mfbg';
+  d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i><div class="spot"></div><svg class="city far" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice">'+far+'</svg><div class="fog"></div>'+
+    '<svg class="city near" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice"><defs><radialGradient id="lampgr"><stop offset="0" stop-color="#ffd98a" stop-opacity=".65"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient></defs><g class="bld">'+near+'</g><g>'+win+'</g><circle class="lampg" cx="54" cy="134" r="30" fill="url(#lampgr)"/><g class="lampp"><rect x="53" y="132" width="2.6" height="70"/><path d="M47 132h14l-3-9h-8z"/></g></svg><div class="fog f2"></div><div class="rain"></div>';
+  document.body.prepend(d)}
+function mfBg(){mfScene();
   const ph=st.phase;document.body.classList.toggle('mf-night',ph=='night'||ph=='lobby');document.body.classList.toggle('mf-day',ph=='day');document.body.classList.toggle('mf-vote',ph=='vote'||ph=='over')}
+// заставки идут по очереди: сначала газета с итогом ночи или голосования, потом смена фазы
+let mfQ=[],mfQBusy=false;
+function mfShow(fn,ms){mfQ.push([fn,ms]);if(!mfQBusy)mfNext()}
+function mfNext(){const x=mfQ.shift();if(!x){mfQBusy=false;return}mfQBusy=true;x[0]();setTimeout(mfNext,x[1])}
+function mfPaper(head,p,role,day,note){const d=document.createElement('div');d.className='mfnews';const r=role?MF_ROLE[role]:null;
+  d.innerHTML=`<div class="np"><div class="mast">Городские вести</div><div class="npd"><span>Экстренный выпуск</span><span>День ${day}</span></div><h3>${head}</h3><div class="npp">${p?av({...p,n:''}):''}<div class="cols">${r?`<b>Роль: ${r.n}</b>`:''}${note}</div></div></div>`;
+  document.body.appendChild(d);setTimeout(()=>d.remove(),2700)}
 function mfSplash(ic,t,s){const d=document.createElement('div');d.className='mfsplash';d.innerHTML=`<div><b>${ic}</b><h2>${t}</h2><p>${s}</p></div>`;document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
 function mfRoleCard(){const r=MF_ROLE[st.myRole];if(!r)return;
   const mates=st.myRole=='mafia'?st.players.filter((p,j)=>p.role=='mafia'&&j!=st.you).map(p=>esc(p.name)):[];
-  $('#pm').innerHTML=`<div class="rcard"><div class="rc-in"><div class="rc-ic">${r.ic}</div><h3>${r.n}</h3><p>${r.d}</p>${mates.length?`<p>🔪 Ваша команда: <b>${mates.join(', ')}</b></p>`:''}<small>Нажмите, чтобы закрыть</small></div></div>`;$('#pm').hidden=false}
-function mfRoles(){$('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Роли</h3><div class="top10">${Object.values(MF_ROLE).map(r=>`<div class="r" style="align-items:flex-start"><b style="font-size:22px">${r.ic}</b><span><b>${r.n}</b><br><small style="opacity:.75">${r.d}</small></span></div>`).join('')}</div><p style="font-size:12px;opacity:.7">Мирные побеждают, когда вся мафия изгнана. Мафия: когда её не меньше, чем остальных.</p></div>`;$('#pm').hidden=false}
+  $('#pm').innerHTML=`<div class="rcard"><div class="rc-in"><div class="rc-art">${mfArt(st.myRole,'rca')}</div><h3>${r.n}</h3><p>${r.d}</p>${mates.length?`<p>🔪 Ваша команда: <b>${mates.join(', ')}</b></p>`:''}<small>Нажмите, чтобы закрыть</small></div></div>`;$('#pm').hidden=false}
+function mfRoles(){$('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Роли</h3><div class="top10">${Object.entries(MF_ROLE).map(([k,r])=>`<div class="r" style="align-items:flex-start"><span style="flex:none;width:34px;height:40px">${mfArt(k)}</span><span><b>${r.n}</b><br><small style="opacity:.75">${r.d}</small></span></div>`).join('')}</div><p style="font-size:12px;opacity:.7">Мирные побеждают, когда вся мафия изгнана. Мафия: когда её не меньше, чем остальных.</p></div>`;$('#pm').hidden=false}
 function mfCan(j){const P=st.players,my=st.myRole,ph=st.phase;if(!st.alive||st.over||!P[j].alive)return false;
   if(ph=='night'){if(my=='mafia')return P[j].role!='mafia';if(my=='doctor')return j!==st.lastHeal;if(my=='sheriff')return st.check==null&&j!==st.you;return false}
   if(ph=='vote')return j!==st.you;return false}
@@ -578,14 +666,17 @@ function mfHint(){const my=st.myRole,ph=st.phase;
   if(ph=='day')return 'Обсуждайте и ищите мафию';
   if(ph=='vote'){const v=(st.votes||{})[st.you];return v===undefined?'Нажмите на игрока, чтобы проголосовать за изгнание':v===null?'Вы воздержались':'Ваш голос: '+esc(st.players[v].name)}
   return ''}
-function mfFx(){const key=st.phase+':'+st.day,al=st.players.filter(p=>p.alive).length,p0=mfPrev;
-  if(p0&&p0.key!=key&&!st.over){
-    if(st.phase=='night'){snd('night');mfSplash('🌙','Ночь '+st.day,'Город засыпает…')}
-    else if(st.phase=='day'){snd('dawn');mfSplash('☀️','Утро',al<p0.al?'Этой ночью что-то случилось…':'Все дожили до утра')}
-    else if(st.phase=='vote'){snd('vote');mfSplash('🗳️','Голосование','Кого изгнать из города?')}
+function mfFx(){const key=st.phase+':'+st.day,alive=st.players.map(p=>p.alive),al=alive.filter(Boolean).length,p0=mfPrev;
+  if(p0&&p0.key!=key&&!st.over){const P=st.players,died=P.map((_,j)=>j).filter(j=>p0.alive&&p0.alive[j]&&!alive[j]);
+    if(st.phase=='day'){snd('dawn');const k=died.find(j=>P[j].fate=='kill');
+      mfShow(()=>k!=null?mfPaper('Жертва ночи: '+esc(P[k].name),P[k],P[k].role,st.day,'Город просыпается в тревоге. Мафия всё ещё среди нас.'):mfPaper('Ночь прошла спокойно',null,null,st.day,'Все жители дожили до утра. Доктор не зря не спал.'),2700)}
+    else if(st.phase=='night'){if(p0.phase=='vote'){const v=died.find(j=>P[j].fate=='vote');
+        mfShow(()=>v!=null?mfPaper('Город изгнал: '+esc(P[v].name),P[v],P[v].role,st.day-1,P[v].role=='mafia'?'Суд оказался прав.':'Похоже, город ошибся.'):mfPaper('Мнения разделились',null,null,st.day-1,'Никого не изгнали. Подозрения остаются.'),2700)}
+      mfShow(()=>{snd('night');mfSplash('🌙','Ночь '+st.day,'Город засыпает…')},2000)}
+    else if(st.phase=='vote'){snd('vote');mfShow(()=>mfSplash('🗳️','Голосование','Кого изгнать из города?'),2000)}
     if(al<p0.al)snd(p0.phase=='vote'?'gavel':'kill',.5)}
   if(st.over&&!(p0&&p0.over)){const side=st.myRole=='mafia'?'mafia':'town';snd(st.won==side?'win':'lose',.5)}
-  mfPrev={key,al,over:st.over,phase:st.phase}}
+  mfPrev={key,al,alive,over:st.over,phase:st.phase}}
 function mfLobby(a){const P=st.players,n=P.length,mc=n>=12?4:n>=9?3:n>=6?2:1,ok=n>=5;
   a.innerHTML=`${sndBtn()}<h1 style="margin-top:18px">Мафия</h1><p class="sub">Комната <b style="color:var(--gold)">${esc(st.room)}</b></p>
   <div class="lob">${P.map((p,j)=>`<div class="seat" onclick="showProf(${j})" style="animation:pop .4s backwards">${av({...p,n:''})}<div class="nm">${esc(p.name)}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:`<div class="role">${p.bot?'🤖 бот':'&nbsp;'}</div>`}</div>`).join('')}</div>
@@ -600,23 +691,24 @@ function drawMafia(a){
   if(ph=='night'&&st.mv)Object.values(st.mv).forEach(t=>cnt[t]=(cnt[t]||0)+1);
   if(ph=='vote'&&st.votes)Object.values(st.votes).forEach(t=>{if(t!=null)cnt[t]=(cnt[t]||0)+1});
   const sel=j=>ph=='night'?(my=='mafia'?(st.mv||{})[me]===j:my=='doctor'?st.heal===j:my=='sheriff'?st.check===j:false):ph=='vote'?(st.votes||{})[me]===j:false;
-  const card=(p,j)=>{const t=mfCan(j),r=p.role?MF_ROLE[p.role]:null;
-    return `<div class="mfc ${p.alive?'':'dead'} ${t?'can':''} ${sel(j)?'sel':''} ${p.role=='mafia'&&p.alive&&my=='mafia'&&j!=me?'mate':''} ${j==me?'me':''}" id="seat-${j}" onclick="mfTap(${j})">${av({...p,n:''})}${cnt[j]?`<b class="vc">${ph=='night'?'🔪':'🗳'} ${cnt[j]}</b>`:''}${st.checks&&st.checks[j]!==undefined?`<b class="chk2 ${st.checks[j]?'bad':'ok'}">${st.checks[j]?'✖':'✔'}</b>`:''}<div class="nm">${esc(p.name)}${j==me?' (вы)':''}</div><div class="mfr">${!p.alive?'✝ '+(r?r.n:''):r?r.ic+' '+r.n:p.bot?'🤖 бот':p.off?'📵 нет связи':'&nbsp;'}</div></div>`};
+  const card=(p,j)=>{const t=mfCan(j),r=p.role?MF_ROLE[p.role]:null,sl=sel(j),fate=p.fate=='vote'?'Изгнан':p.fate=='left'?'Ушёл':'Убит';
+    const mk=sl&&ph=='night'?(my=='mafia'?'<i class="mk">'+MF_MK.cross+'</i>':my=='doctor'?'<i class="mk heal">'+MF_MK.heal+'</i>':my=='sheriff'?'<i class="mk look">'+MF_MK.look+'</i>':''):'';
+    return `<div class="mfc ${p.alive?'':'dead'} ${t?'can':''} ${sl?'sel':''} ${p.role=='mafia'&&p.alive&&my=='mafia'&&j!=me?'mate':''} ${j==me?'me':''}" style="--r:${(((j*37)%7)-3)*.7}deg" id="seat-${j}" onclick="mfTap(${j})"><i class="pin"></i><div class="ph">${av({...p,n:''})}${mk}${p.alive?'':`<b class="dst">${fate}</b>`}</div>${cnt[j]?`<b class="vc">${cnt[j]}</b>`:''}${st.checks&&st.checks[j]!==undefined?`<b class="chk2 ${st.checks[j]?'bad':'ok'}">${st.checks[j]?'Мафия':'Чист'}</b>`:''}<div class="lbl">${esc(p.name)}${j==me?' · вы':''}</div><div class="mfr">${r?mfArt(p.role)+r.n:p.bot?'🤖 бот':p.off?'📵 нет связи':'&nbsp;'}</div></div>`};
   const aliveN=P.filter(p=>p.alive&&!p.left).length,readyN=st.ready.filter(j=>P[j]&&P[j].alive).length,iReady=st.ready.includes(me);
   const last=[...st.log].reverse().find(m=>m.n<0&&m.ch=='all'),unread=chatOpen?0:st.logN-logSeen,rr=(st.rres||[]).find(x=>x.i==me),side=my=='mafia'?'mafia':'town';
   let act='';
   if(st.alive&&ph=='day')act=iReady?`<div class="mfann">Вы готовы к голосованию (${readyN}/${aliveN})</div>`:`<button class="btn" onclick="send({t:'ready'})">Готов к голосованию (${readyN}/${aliveN})</button>`;
   else if(st.alive&&ph=='vote')act=`<button class="btn ghost" onclick="send({t:'vote',target:null})">Воздержаться</button>`;
-  const ov=st.over?`<div class="res"><div class="box" style="max-width:92vw"><div class="big">${st.won==side?'🏆':'💀'}</div><h2>${st.won=='mafia'?'Победила мафия':'Победили мирные'}</h2><p style="margin:-6px 0 8px;opacity:.85">${st.won==side?'Ваша команда победила':'Ваша команда проиграла'}</p><div class="top10" style="max-height:30vh">${P.map(p=>`<div class="r"><span>${MF_ROLE[p.role||'civ'].ic} ${esc(p.name)}${p.left?' 🚪':''}</span><b>${p.role?MF_ROLE[p.role].n:''}</b></div>`).join('')}</div>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}" style="margin-top:10px">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:2px 0 12px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:'<div style="height:12px"></div>'}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё раз</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+  const ov=st.over?`<div class="res"><div class="dossier"><div class="tabl">Дело № ${esc(st.room)} · ${st.day} дн.</div><div class="stamp red ds">Закрыто</div><h2>${st.won=='mafia'?'Победила мафия':'Победили мирные'}</h2><p class="sub2">${st.won==side?'Ваша команда победила':'Ваша команда проиграла'}</p><div class="dlist">${P.map(p=>`<div class="r ${p.alive?'':'x'} ${p.role=='mafia'?'mf':''}"><span style="flex:none;width:22px;height:26px">${mfArt(p.role||'civ')}</span><span>${esc(p.name)}${p.left?' 🚪':''}</span><b>${p.role?MF_ROLE[p.role].n:''}</b></div>`).join('')}</div>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}" style="margin-top:10px">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:2px 0 12px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:'<div style="height:12px"></div>'}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё раз</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
   const phm=MF_PH[ph]||['',''];
   a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div>
     <div class="chip mfph">${phm[0]} ${phm[1]}${st.day?' '+st.day:''}${st.over?'':` · <span class="mft" data-e="${Date.now()+st.left}">${fmtT(st.left)}</span>`}</div></div>
-  <div class="mfrole" onclick="mfRoleCard()">${MF_ROLE[my].ic} <b>${MF_ROLE[my].n}</b>${st.alive?'':' · вы выбыли'}</div>
+  <div class="mfrole" onclick="mfRoleCard()">${mfArt(my)} <b>${MF_ROLE[my].n}</b>${st.alive?'':' · вы выбыли'}</div>
   <div class="mfgrid">${P.map(card).join('')}</div>
   <div class="mfann">${last?esc(last.text):''}</div><div class="msg">${mfHint()}</div>${act?`<div class="row">${act}</div>`:''}
   <div class="bar"><div style="flex:1"></div><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div>${ov}`}
 setInterval(()=>document.querySelectorAll('.mft').forEach(e=>e.textContent=fmtT(+e.dataset.e-Date.now())),500);
-if(chGame=='mafia'){const d=document.createElement('div');d.id='mfbg';d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i>';document.body.prepend(d);document.body.classList.add('mf-night')}
+if(chGame=='mafia'){mfScene();document.body.classList.add('mf-night')}
 /*ENDMF*/
 /*BILL*/
 // Бильярд: прицел сверху, но всё объёмное. Стол строится в 3D (сукно, резиновые борта, ореховая рама, глубокие лузы)
@@ -1316,7 +1408,7 @@ const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone
 
 function entry(){
   const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
-  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:center;gap:18px">${['🎩','🕵️','🔪'].map((g,i)=>`<span style="font-size:${i==1?76:58}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 6px 14px #000a)">${g}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
+  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
   <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div>
   <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
   <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">

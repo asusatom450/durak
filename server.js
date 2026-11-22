@@ -550,7 +550,7 @@ function mfStart(R) {
   for (let k = 0; k < mc; k++) roles.push('mafia');
   roles.push('doctor', 'sheriff'); while (roles.length < n) roles.push('civ');
   for (let k = n - 1; k > 0; k--) { const j = Math.random() * (k + 1) | 0; [roles[k], roles[j]] = [roles[j], roles[k]]; }
-  R.mf = { roles, alive: roles.map(() => true), day: 0, phase: 'night', end: 0, t0: 0, dur: 0, allAt: 0, nv: {}, heal: null, lastHeal: -1, check: null, checks: {}, ready: {}, votes: {}, won: null };
+  R.mf = { roles, alive: roles.map(() => true), day: 0, phase: 'night', end: 0, t0: 0, dur: 0, allAt: 0, nv: {}, heal: null, lastHeal: -1, check: null, checks: {}, ready: {}, votes: {}, won: null, fate: {} };
   R.started = true; R.over = false; R.rres = null; R.log = [];
   mfSys(R, `🎭 Игра началась: игроков ${n}, мафии ${mc}`);
   mfNight(R, 1);
@@ -563,7 +563,8 @@ function mfNight(R, day) {
   const mf = R.mf; mf.phase = 'night'; mf.day = day; mf.nv = {}; mf.heal = null; mf.check = null; mf.ready = {}; mf.votes = {};
   mfSched(R, MF.night); mfSys(R, `🌙 Ночь ${day}. Город засыпает, просыпается мафия…`);
 }
-function mfKill(R, i, how) { R.mf.alive[i] = false; mfSys(R, `${how} ${R.players[i].name}: ${MF_RN[R.mf.roles[i]]}`); }
+// fate: как выбыл игрок (kill — ночью, vote — изгнан городом, left — ушёл), для карточек и утренней газеты
+function mfKill(R, i, how, fate) { R.mf.alive[i] = false; R.mf.fate[i] = fate; mfSys(R, `${how} ${R.players[i].name}: ${MF_RN[R.mf.roles[i]]}`); }
 function mfEnd(R, w) {
   const mf = R.mf; mf.phase = 'over'; mf.won = w; R.over = true;
   mfSys(R, w == 'mafia' ? '🔪 Победила мафия!' : '🏆 Победили мирные жители!');
@@ -585,7 +586,7 @@ function mfDawn(R) {
   mfAlive(R).filter(i => mf.roles[i] == 'mafia').forEach(i => { const t = mf.nv[i]; if (t != null && mf.alive[t]) cnt[t] = (cnt[t] || 0) + 1; });
   const tie = mfTop(cnt), target = tie.length ? rnd(tie) : null;
   mf.lastHeal = mf.heal == null ? -1 : mf.heal; mf.phase = 'day'; mf.ready = {}; mf.votes = {};
-  if (target != null && target !== mf.heal) mfKill(R, target, `☀️ День ${mf.day}. Ночью убит`);
+  if (target != null && target !== mf.heal) mfKill(R, target, `☀️ День ${mf.day}. Ночью убит`, 'kill');
   else mfSys(R, `☀️ День ${mf.day}. Этой ночью никто не погиб.`);
   if (mfWinCheck(R)) return;
   mfSched(R, MF.day); mfSys(R, '💬 Обсуждение: кто из вас мафия?');
@@ -598,7 +599,7 @@ function mfAdvance(R) {
     const cnt = {};
     Object.entries(mf.votes).forEach(([v, t]) => { if (t != null && mf.alive[+v] && mf.alive[t]) cnt[t] = (cnt[t] || 0) + 1; });
     const tie = mfTop(cnt);
-    if (tie.length == 1) mfKill(R, tie[0], '⚖️ Город изгнал'); else mfSys(R, '⚖️ Мнения разошлись: никого не изгнали.');
+    if (tie.length == 1) mfKill(R, tie[0], '⚖️ Город изгнал', 'vote'); else mfSys(R, '⚖️ Мнения разошлись: никого не изгнали.');
     if (mfWinCheck(R)) return;
     mfNight(R, mf.day + 1);
   }
@@ -661,7 +662,7 @@ function mfDrop(R, p) {
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false;
   if (!R.started || R.over || !R.mf || !R.mf.alive[i]) return;
-  R.mf.alive[i] = false; mfSys(R, `🚪 ${p.name} покинул игру: ${MF_RN[R.mf.roles[i]]}`);
+  R.mf.alive[i] = false; R.mf.fate[i] = 'left'; mfSys(R, `🚪 ${p.name} покинул игру: ${MF_RN[R.mf.roles[i]]}`);
   mfWinCheck(R);
 }
 function mfSettle(R) {
@@ -716,7 +717,7 @@ function mfState(R, i) {
     myRole: my, alive: aliveMe, won: mf ? mf.won : null, need: 5,
     players: R.players.map((p, j) => ({
       name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
-      alive: mf ? mf.alive[j] : true,
+      alive: mf ? mf.alive[j] : true, fate: mf && mf.fate ? mf.fate[j] || null : null,
       role: mf && (ghost || j === i || (mafiaMe && mf.roles[j] == 'mafia') || !mf.alive[j]) ? mf.roles[j] : null,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null
     })),
