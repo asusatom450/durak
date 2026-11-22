@@ -634,7 +634,7 @@ function blLobby(a){const P=st.players;
 function drawBill(a){
   if(st.status=='lobby'){blLobby(a);blView=null;blCtlKey='';blAnim=null;return}
   if(!$('#blc'))blBuild(a);
-  blCueOv=null;
+  if(blDrag!='cue')blCueOv=null;   // пока игрок тащит биток, новое состояние (например, сообщение в чате) не сбрасывает его
   if(blAnim)blPend=st;else{blView=st;blPend=null;blHud();blSyncAim()}
   blTop();blDirty=1}
 /*ENDBL*/

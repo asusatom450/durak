@@ -420,9 +420,11 @@ function chEnd(R, res) { if (R.over) return; R.over = true; R.result = res; R.dr
 function chMove(R, i, m) {
   const c = R.col[i]; if (R.ch.turn() !== c) return;
   const promo = ['q', 'r', 'b', 'n'].includes(m.promo) ? m.promo : undefined;
+  // время проверяем до хода: ход после падения флага на доску не попадает
+  const now = Date.now();
+  if (R.cl[c] - (now - R.cl.since) <= 0) { R.cl[c] = 0; return chEnd(R, { winner: chOther(c), reason: 'time' }); }
   let mv; try { mv = R.ch.move({ from: m.from, to: m.to, promotion: promo }); } catch { return; }
-  const now = Date.now(); R.cl[c] -= now - R.cl.since; R.cl.since = now;
-  if (R.cl[c] <= 0) { R.cl[c] = 0; return chEnd(R, { winner: chOther(c), reason: 'time' }); }
+  R.cl[c] -= now - R.cl.since; R.cl.since = now;
   R.last = { from: mv.from, to: mv.to }; R.draw = null; R.mv++;
   if (R.ch.isCheckmate()) chEnd(R, { winner: c, reason: 'mate' });
   else if (R.ch.isStalemate()) chEnd(R, { winner: null, reason: 'stalemate' });
@@ -608,21 +610,41 @@ function mfAllDone(R) {
   if (mf.phase == 'vote') return al.every(i => i in mf.votes);
   return false;
 }
+// Боты. Раньше мафиози голосовали днём единым блоком, а мирные наугад, и мафия выигрывала почти всегда.
+// Теперь: комиссар-бот раскрывается и называет найденную мафию, мирные боты идут за ним,
+// иногда догадываются сами; мафия днём голосует вразнобой, а ночью охотится на раскрытого комиссара.
+const MF_FOLLOW = .4, MF_TRUST = .85, MF_GUESS = .4;
 function mfBots(R) {
   const mf = R.mf, now = Date.now(); let ch = false;
   R.players.forEach((p, i) => {
     if (!p.bot || !mf.alive[i] || p.botDone || now < p.botAt) return;
     p.botDone = true; ch = true;
     const alive = mfAlive(R), role = mf.roles[i], others = alive.filter(j => j != i), nm = others.filter(j => mf.roles[j] != 'mafia');
+    const claim = mf.claim != null && mf.alive[mf.claim] ? mf.claim : null, claimBy = mf.claimBy != null && mf.alive[mf.claimBy] ? mf.claimBy : null;
     if (mf.phase == 'night') {
-      if (role == 'mafia') { const mate = Object.values(mf.nv).find(t => t != null && mf.alive[t]); mf.nv[i] = mate != null ? mate : rnd(nm); }
-      else if (role == 'doctor') mf.heal = rnd(alive.filter(j => j != mf.lastHeal));
+      if (role == 'mafia') { const mate = Object.values(mf.nv).find(t => t != null && mf.alive[t]); mf.nv[i] = mate != null ? mate : claimBy != null ? claimBy : rnd(nm); }
+      else if (role == 'doctor') mf.heal = claimBy != null && claimBy !== mf.lastHeal && Math.random() < .7 ? claimBy : rnd(alive.filter(j => j != mf.lastHeal));
       else if (role == 'sheriff') { const pool = others.filter(j => mf.checks[j] === undefined), t = rnd(pool.length ? pool : others); mf.check = t; mf.checks[t] = mf.roles[t] == 'mafia'; }
-    } else if (mf.phase == 'day') mf.ready[i] = true;
-    else if (mf.phase == 'vote') {
+    } else if (mf.phase == 'day') {
+      mf.ready[i] = true;
+      if (role == 'sheriff') {   // раскрывается, если знает живую мафию
+        const t = others.find(j => mf.checks[j] === true);
+        if (t !== undefined && claim !== t) { mf.claim = t; mf.claimBy = i; mfPush(R, { n: i, name: p.name, text: `🕵️ Я комиссар! ${R.players[t].name} — мафия`, ch: 'all' }); }
+      }
+    } else if (mf.phase == 'vote') {
       let t;
-      if (role == 'mafia') { const mate = Object.entries(mf.votes).find(([v, x]) => x != null && mf.roles[+v] == 'mafia' && mf.alive[x] && mf.roles[x] != 'mafia'); t = mate ? mate[1] : rnd(nm); }
-      else { const known = role == 'sheriff' ? others.find(j => mf.checks[j] === true) : undefined; t = known !== undefined ? known : (Math.random() < .12 ? null : rnd(others)); }
+      if (role == 'mafia') {
+        const mate = Object.entries(mf.votes).find(([v, x]) => x != null && mf.roles[+v] == 'mafia' && mf.alive[x] && mf.roles[x] != 'mafia');
+        if (claim != null && mf.roles[claim] == 'mafia' && claimBy != null) t = claimBy;   // защищают своего: голосуют против обвинителя
+        else t = mate && Math.random() < MF_FOLLOW ? mate[1] : rnd(nm);
+      } else {
+        const known = role == 'sheriff' ? others.find(j => mf.checks[j] === true) : undefined;
+        if (known !== undefined) t = known;
+        else if (claim != null && claim !== i && Math.random() < MF_TRUST) t = claim;
+        else if (Math.random() < .1) t = null;
+        else if (Math.random() < MF_GUESS) t = rnd(others.filter(j => mf.roles[j] == 'mafia'));
+        else t = rnd(others);
+      }
       mf.votes[i] = t == undefined ? null : t;
     }
   });
@@ -807,8 +829,8 @@ function bwBot(R) {   // у каждого компьютера своя ман�
     style: { hand, s: .42 + Math.random() * .22, p: .55 + Math.random() * .12 } };
 }
 function bwStart(R) {
-  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
-  R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
+  R.players = R.players.filter(p => p.bot || p.ws);   // вышедший кнопкой, но оставшийся на связи играет снова
+  R.players.forEach(p => { p.off = false; p.left = false; clearTimeout(p.tm); });
   if (!R.players.length) { R.started = false; R.over = false; return; }
   const n = R.players.length, z = () => R.players.map(() => 0);
   R.bw = { cur: 0, frame: 0, fr: R.players.map(() => Array.from({ length: 10 }, () => [])), fl: R.players.map(() => []), sp: R.players.map(() => []),
@@ -986,16 +1008,38 @@ function send(R) {
 }
 const err = (ws, m) => ws.send(JSON.stringify({ err: m }));
 
+// После конца партии комната возвращается в лобби, чтобы мог зайти новый игрок
+function toLobby(R) {
+  R.started = false; R.over = false; R.mf = null; R.rres = null; R.result = null; R.mv++;
+  R.players = R.players.filter(p => p.bot || p.ws);   // кто на связи, остаётся, даже если выходил из прошлой партии
+  R.players.forEach(p => { p.off = false; p.left = false; clearTimeout(p.tm); p.lc = 0; });
+}
 wss.on('connection', ws => {
   ws.send(JSON.stringify({ ev: 'stations', list: STATIONS }));
-  ws.on('message', async raw => {
+  // Любая ошибка при разборе сообщения не должна ронять сервер: иначе пропадают все комнаты
+  ws.on('message', raw => onMessage(ws, raw).catch(e => console.error('message:', e && e.stack || e)));
+  ws.on('close', () => { try { onClose(ws); } catch (e) { console.error('close:', e && e.stack || e); } });
+});
+async function onMessage(ws, raw) {
     let m; try { m = JSON.parse(raw); } catch { return; }
+    if (!m || typeof m !== 'object') return;
     if (m.t == 'join') {
       const code = String(m.room || '').toUpperCase().slice(0, 8);
       if (!code) return err(ws, 'Введите код комнаты');
       if (rooms[code] && rooms[code].game !== gameOf(m)) return err(ws, 'Это комната для ' + GN[rooms[code].game]);
       const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: gameOf(m) });
-      const A = await auth(m, R.game), uid = A.uid;
+      let A;
+      try { A = await auth(m, R.game); }
+      catch (e) {   // база не ответила: просим войти ещё раз, пустую комнату убираем
+        console.error('auth:', e.message);
+        if (!R.players.length && rooms[code] === R) delete rooms[code];
+        return err(ws, 'Не удалось войти, попробуйте ещё раз');
+      }
+      if (rooms[code] !== R) {   // пока проверяли вход, последний игрок вышел и комнату убрали: возвращаем её
+        if (rooms[code]) return err(ws, 'Комната закрылась, попробуйте ещё раз');
+        rooms[code] = R;
+      }
+      const uid = A.uid;
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) {
         if (old.left) return err(ws, 'Вы покинули эту партию. Дождитесь ее окончания.');
@@ -1004,6 +1048,7 @@ wss.on('connection', ws => {
         if (o && o !== ws) o.close();
         return send(R);
       }
+      if (R.started && R.over) toLobby(R);
       if (R.started) return err(ws, 'Игра уже идет');
       if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : 6)) return err(ws, 'Комната заполнена');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
@@ -1039,17 +1084,19 @@ wss.on('connection', ws => {
     else if (m.t == 'again' && R.over) start(R);
     else if (R.started && !R.over) {
       if (m.t == 'play') {
+        if (!Number.isInteger(m.i)) return;   // номер карты только целым числом: иначе hand["__proto__"] и т. п.
         const c = R.players[i].hand[m.i]; if (!c) return;
         if (i == R.def) {
-          const oi = (R.table[m.to] && !R.table[m.to].d && beats(R, R.table[m.to].a, c)) ? m.to : R.table.findIndex(t => !t.d && beats(R, t.a, c));
+          const to = Number.isInteger(m.to) ? m.to : -1;
+          const oi = (R.table[to] && !R.table[to].d && beats(R, R.table[to].a, c)) ? to : R.table.findIndex(t => !t.d && beats(R, t.a, c));
           if (oi >= 0) defend(R, i, m.i, oi);
         } else if (canAtk(R, i, c)) attack(R, i, m.i);
       } else if (m.t == 'take' && i == R.def && open(R)) take(R, i);
       else if (m.t == 'done' && i != R.def && R.table.length && !open(R)) endRound(R, false);
     }
     send(R);
-  });
-  ws.on('close', () => {
+}
+function onClose(ws) {
     const R = ws.R, p = ws.p; if (!R || !p || p.ws !== ws) return;
     const i = R.players.indexOf(p); if (i < 0) return;
     p.ws = null;
@@ -1063,10 +1110,13 @@ wss.on('connection', ws => {
       if (!R.started || R.over) delete rooms[R.code];
       else R.gc = setTimeout(() => { if (!R.players.some(q => q.ws)) { clearTimeout(R.tm); delete rooms[R.code]; } }, GRACE + 30000);
     } else send(R);
-  });
-});
+}
 
-setInterval(() => Object.values(rooms).forEach(afkTick), 1000);
+// Ошибка в одной комнате не останавливает таймеры остальных
+setInterval(() => Object.values(rooms).forEach(R => { try { afkTick(R); } catch (e) { console.error('tick', R.code, e && e.stack || e); } }), 1000);
+// Последняя страховка: непойманная ошибка (например, в таймере бота) пишется в лог, а сервер продолжает работать
+process.on('unhandledRejection', e => console.error('unhandledRejection:', e && e.stack || e));
+process.on('uncaughtException', e => console.error('uncaughtException:', e && e.stack || e));
 srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
