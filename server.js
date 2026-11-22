@@ -2,6 +2,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const db = require('./db');
 const BL = require('./billiards.js');
+const BW = require('./bowling.js');   // боулинг: физика и счёт, этот же файл грузит браузер
 const { Chess } = require('./chess-lib.js');   // правила шахмат: chess.js, положен в проект целиком
 
 // ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
@@ -14,6 +15,7 @@ const KB_D = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть в дур
 const KB_M = APP_URL ? { inline_keyboard: [[{ text: '🔪 Играть в мафию', web_app: { url: APP_URL + '/mafia' } }], [{ text: '📖 Правила', callback_data: 'rules_mafia' }]] } : undefined;
 const KB_B = APP_URL ? { inline_keyboard: [[{ text: '🎱 Играть в бильярд', web_app: { url: APP_URL + '/billiards' } }], [{ text: '📖 Правила', callback_data: 'rules_billiards' }]] } : undefined;
 const KB_C = APP_URL ? { inline_keyboard: [[{ text: '♞ Играть в шахматы', web_app: { url: APP_URL + '/chess' } }], [{ text: '📖 Правила', callback_data: 'rules_chess' }]] } : undefined;
+const KB_W = APP_URL ? { inline_keyboard: [[{ text: '🎳 Играть в боулинг', web_app: { url: APP_URL + '/bowling' } }], [{ text: '📖 Правила', callback_data: 'rules_bowling' }]] } : undefined;
 const WAIT = '<i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>';
 const CARD_D = `🃏 <b>ПОДКИДНОЙ ДУРАК</b>
 𝗢𝗡𝗟𝗜𝗡𝗘 · 𝟮–𝟲 𝗣𝗟𝗔𝗬𝗘𝗥𝗦
@@ -117,6 +119,36 @@ const RULES_B = `📖 <b>ПРАВИЛА БИЛЬЯРДА</b>
 <b>Как играть:</b> ведите пальцем по столу, чтобы прицелиться, кнопки ◀ ▶ для точной наводки, ползунок задает силу, кнопка «Удар».
 
 Вызывать лузу не нужно. Рейтинг считается по системе Эло, партии с компьютером рейтинг не меняют. Если соперник не бьет 60 секунд, шар в руке переходит к вам, три раза подряд означает поражение.`;
+const CARD_W = `🎳 <b>БОУЛИНГ</b>
+𝗧𝗘𝗡 𝗣𝗜𝗡 · 𝟭–𝟰 𝗣𝗟𝗔𝗬𝗘𝗥𝗦
+
+<i>Десять кеглей, десять фреймов: выбирайте шар, закручивайте и выбивайте страйки.</i>
+
+<blockquote>🎳 Живая физика шара и разлёт кеглей
+🌀 Подкрутка, сила броска и шары разного веса
+📺 Табло над дорожкой, как в настоящем клубе
+👥 До 4 игроков, можно с ботами или в одиночку
+🏅 Свой рейтинг и ранги: от Новичка до Легенды 300</blockquote>
+
+${WAIT}`;
+const RULES_W = `📖 <b>ПРАВИЛА БОУЛИНГА</b>
+𝗕𝗢𝗪𝗟𝗜𝗡𝗚
+
+<blockquote>🎳 Игра из 10 фреймов. В каждом фрейме два броска, чтобы сбить 10 кеглей.
+❌ <b>Страйк:</b> все 10 кеглей первым броском. Очки: 10 + кегли за два следующих броска.
+➗ <b>Спэр:</b> все кегли за два броска. Очки: 10 + кегли за следующий бросок.
+🔟 <b>10-й фрейм:</b> после страйка или спэра даётся ещё бросок, всего до трёх.</blockquote>
+
+Максимум 300 очков: 12 страйков подряд.
+
+<b>Как бросать</b>
+• Двигайте шар внизу экрана: откуда бросать.
+• Коснитесь дорожки: куда целиться. Ориентируйтесь на стрелки.
+• Ползунок подкрутки: шар заворачивает в конце дорожки.
+• Зажмите «Бросок» и отпустите: сила зависит от момента. Пунктир показывает, куда пойдёт шар.
+💡 Лучше всего попадать в «карман»: между 1-й и 3-й кеглей (при подкрутке вправо между 1-й и 2-й).
+
+<b>Рейтинг:</b> побеждает больший счёт. Игра с людьми меняет рейтинг сильнее, с компьютером слабее, одиночная тренировка не меняет. На бросок 45 секунд: не успели, бросок не засчитан; три раза подряд, и вы выбываете.`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 𝗣𝗢𝗗𝗞𝗜𝗗𝗡𝗢𝗬 𝗗𝗨𝗥𝗔𝗞
 
@@ -133,7 +165,8 @@ const TIPS = {
   tip_durak: '🃏 Колода 36 карт, по 6 каждому, козырь по последней карте. Бейте старшей картой той же масти или козырем, подкидывайте карты того же достоинства. Кто остался с картами последним, тот дурак.',
   tip_chess: '♞ Мат королю выигрывает партию. Есть рокировка, взятие на проходе и превращение пешки. Ничья: пат, повтор, 50 ходов. Упало время: поражение. Нажмите фигуру, затем клетку с точкой.',
   tip_mafia: '🔪 Ночью мафия убивает, доктор лечит, комиссар проверяет. Днем город обсуждает и голосует. Мирные побеждают, изгнав всю мафию, мафия: когда ее не меньше остальных.',
-  tip_billiards: '🎱 Забейте все шары своей группы (цельные 1–7 или полосатые 9–15), затем восьмерку. Фол: биток в лузе, нет касания или борта. После фола шар в руке у соперника.'
+  tip_billiards: '🎱 Забейте все шары своей группы (цельные 1–7 или полосатые 9–15), затем восьмерку. Фол: биток в лузе, нет касания или борта. После фола шар в руке у соперника.',
+  tip_bowling: '🎳 10 фреймов по 2 броска. Страйк: 10 + два следующих броска, спэр: 10 + следующий. Цельтесь в «карман» между 1-й и 3-й кеглей. Зажмите «Бросок» и отпустите.'
 };
 // Меню игр на /start: одна картинка с панелью на каждую игру + кнопки. Правила показываются всплывающим окошком (как подсказка).
 const MENU_CAP = `<b>ИГРОВОЙ КЛУБ</b>
@@ -144,7 +177,8 @@ const MENU_KB = APP_URL ? { inline_keyboard: [
   [{ text: '🃏 Дурак', web_app: { url: APP_URL } }, { text: '📖 Правила', callback_data: 'tip_durak' }],
   [{ text: '♞ Шахматы', web_app: { url: APP_URL + '/chess' } }, { text: '📖 Правила', callback_data: 'tip_chess' }],
   [{ text: '🔪 Мафия', web_app: { url: APP_URL + '/mafia' } }, { text: '📖 Правила', callback_data: 'tip_mafia' }],
-  [{ text: '🎱 Бильярд', web_app: { url: APP_URL + '/billiards' } }, { text: '📖 Правила', callback_data: 'tip_billiards' }]] } : undefined;
+  [{ text: '🎱 Бильярд', web_app: { url: APP_URL + '/billiards' } }, { text: '📖 Правила', callback_data: 'tip_billiards' }],
+  [{ text: '🎳 Боулинг', web_app: { url: APP_URL + '/bowling' } }, { text: '📖 Правила', callback_data: 'tip_bowling' }]] } : undefined;
 let MENU_ID = null;   // file_id картинки: после первой отправки Telegram хранит ее у себя
 async function sendMenu(chat) {
   try {
@@ -165,6 +199,10 @@ async function sendMenu(chat) {
   }
 }
 const srv = http.createServer((q, r) => {
+  if (q.url.split('?')[0] === '/bowling.js') {   // физика и счёт боулинга нужны и браузеру (прицел, табло)
+    r.writeHead(200, { 'content-type': 'application/javascript;charset=utf-8', 'cache-control': 'no-cache' });
+    return r.end(fs.readFileSync(path.join(__dirname, 'bowling.js')));
+  }
   if (q.url.startsWith('/api/')) {
     const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
     (async () => {
@@ -191,6 +229,7 @@ const srv = http.createServer((q, r) => {
           if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
           else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
           else if (cb.data == 'rules_billiards') msg(ch, RULES_B, KB_B);
+          else if (cb.data == 'rules_bowling') msg(ch, RULES_W, KB_W);
           else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
         } else if (m && m.text) {
           const t = m.text, id = m.chat.id;
@@ -199,7 +238,8 @@ const srv = http.createServer((q, r) => {
           else if (/^\/chess/.test(t)) msg(id, CARD_C, KB_C);
           else if (/^\/mafia/.test(t)) msg(id, CARD_M, KB_M);
           else if (/^\/billiards/.test(t)) msg(id, CARD_B, KB_B);
-          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B));
+          else if (/^\/bowling/.test(t)) msg(id, CARD_W, KB_W);
+          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B)).then(() => msg(id, RULES_W, KB_W));
         }
       } catch {}
     });
@@ -210,7 +250,7 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv, perMessageDeflate: { threshold: 1024 } });
 const rooms = {};
-const GAMES = ['durak', 'chess', 'mafia', 'billiards'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии', billiards: 'бильярда' };
+const GAMES = ['durak', 'chess', 'mafia', 'billiards', 'bowling'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии', billiards: 'бильярда', bowling: 'боулинга' };
 const gameOf = m => (GAMES.includes(m.game) ? m.game : 'durak');
 // Радио: каждый телефон качает поток сам, через сервер трафик не идет. Список можно менять здесь, без правки приложения.
 const STATIONS = [
@@ -313,6 +353,7 @@ const take = (R, i) => endRound(R, true);
 function drop(R, p) { R.mv++; if (R.game === 'chess') return chDrop(R, p);
   if (R.game === 'mafia') return mfDrop(R, p);
   if (R.game === 'billiards') return blDrop(R, p);
+  if (R.game === 'bowling') return bwDrop(R, p);
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -330,6 +371,7 @@ function afkTick(R) {
   if (R.game === 'chess') return chTick(R);
   if (R.game === 'mafia') return mfTick(R);
   if (R.game === 'billiards') return blTick(R);
+  if (R.game === 'bowling') return bwTick(R);
   if (!R.started || R.over) { R.idleKey = null; return; }
   const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
   if (R.idleKey !== key) { R.idleKey = key; R.idleSince = Date.now(); R.warned = R.fined = false; return; }
@@ -754,6 +796,147 @@ function blState(R, i) {
   };
 }
 
+// ================= БОУЛИНГ =================
+// Игроки бросают по очереди, фрейм за фреймом. Бросок считает сервер и рассылает кадры анимации всем.
+const BW_MS = +process.env.BW_ROLL_MS || 45000, BW_MAX = 4;
+const BW_BOTN = ['Кегельбот', 'Страйкер', 'Хук', 'Спэр'];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function bwBot(R) {   // у каждого компьютера своя манера: рука, подкрутка, сила
+  const hand = Math.random() < .8 ? 1 : -1;
+  return { name: BW_BOTN[R.players.length % BW_BOTN.length], hand: [], bot: true, ws: null, ball: Math.random() * BW.BALLS.length | 0,
+    style: { hand, s: .42 + Math.random() * .22, p: .55 + Math.random() * .12 } };
+}
+function bwStart(R) {
+  R.players = R.players.filter(p => p.bot || (p.ws && !p.left));
+  R.players.forEach(p => { p.off = false; clearTimeout(p.tm); });
+  if (!R.players.length) { R.started = false; R.over = false; return; }
+  const n = R.players.length, z = () => R.players.map(() => 0);
+  R.bw = { cur: 0, frame: 0, fr: R.players.map(() => Array.from({ length: 10 }, () => [])), fl: R.players.map(() => []), sp: R.players.map(() => []),
+    pins: BW.fullRack(), seq: 0, end: Date.now() + BW_MS, over: false, to: z(), streak: z(), last: null, win: null, tot: null, v: 0 };
+  R.started = true; R.over = false; R.rres = null; R.animUntil = 0; R.mv++;
+  sys(R, n === 1 ? '🎳 Тренировка началась' : `🎳 Игра началась. Первым бросает ${R.players[0].name}`);
+}
+function bwNext(R) {   // следующий игрок; после последнего начинается новый фрейм
+  const bw = R.bw, n = R.players.length, ok = j => !R.players[j].left;
+  bw.pins = BW.fullRack();
+  for (let j = bw.cur + 1; j < n; j++) if (ok(j)) { bw.cur = j; return; }
+  bw.frame++;
+  if (bw.frame < 10) for (let j = 0; j < n; j++) if (ok(j)) { bw.cur = j; return; }
+  bw.over = true;
+}
+// бросок игрока i; th = null значит «время вышло»: бросок не засчитан, кегли стоят
+function bwRoll(R, i, th) {
+  const bw = R.bw;
+  if (!bw || bw.over || R.over || bw.cur !== i) return false;
+  if (th && Date.now() < (R.animUntil || 0) - 300) return false;
+  const p = R.players[i], f = bw.frame, rolls = bw.fr[i][f], full = bw.pins.length === 10;
+  let res = null;
+  if (th) {
+    const x = +th.x, a = +th.a, pw = +th.p, s = +th.s;
+    if (![x, a, pw, s].every(Number.isFinite)) return false;
+    const lb = BW.lbOf(p.ball), g = p.bot ? 0 : 1;   // у человека небольшой разброс, как у живой руки
+    const real = { x: clamp(x, -40, 40), a: clamp(a, -.2, .2) + BW.gauss() * .001 * g, p: clamp(clamp(pw, 0, 1) + BW.gauss() * .008 * g, 0, 1), s: clamp(s, -1, 1) + BW.gauss() * .03 * g, lb };
+    res = BW.simulate(bw.pins, real);
+    bw.to[i] = 0; bw.v = Math.round(BW.speedOf(real.p, lb) * .36) / 10;
+  } else bw.fl[i].push(f + ':' + rolls.length);
+  const standing = res ? res.standing : bw.pins, n = res ? res.knocked : 0;
+  let kind = 'pins';
+  if (!res) kind = 'foul';
+  else if (res.gutter && !n) kind = 'gutter';
+  else if (!standing.length) kind = full ? 'strike' : 'spare';
+  else if (full && BW.isSplit(standing.map(q => q.id))) kind = 'split';
+  else if (!n) kind = 'miss';
+  if (kind === 'split') bw.sp[i].push(f + ':' + rolls.length);
+  rolls.push(n);
+  bw.streak[i] = kind === 'strike' ? bw.streak[i] + 1 : 0;
+  bw.seq++; R.mv++;
+  bw.last = { seq: bw.seq, by: i, n, kind, streak: bw.streak[i], left: standing.map(q => q.id), frame: f, roll: rolls.length, v: res ? bw.v : 0 };
+  bw.pins = standing;
+  if (BW.frameDone(f, rolls)) bwNext(R);
+  else if (!bw.pins.length) bw.pins = BW.fullRack();   // 10-й фрейм: после страйка или спэра новая расстановка
+  R.animUntil = Date.now() + (res ? res.dur * 1000 + 1900 : 1600); bw.end = R.animUntil + BW_MS;
+  if (res) bcast(R, { ev: 'roll', seq: bw.seq, by: i, ids: res.ids, frames: res.frames, events: res.events, hit: res.hit, gut: res.gutter, dur: res.dur, s: clamp(+th.s, -1, 1), v: bw.v });
+  if (bw.over) bwEnd(R);
+  return true;
+}
+function bwEnd(R) {
+  const bw = R.bw, P = R.players; bw.over = true; R.over = true; R.rres = [];
+  const tot = P.map((_, j) => BW.total(bw.fr[j])), alive = P.map((_, j) => j).filter(j => !P[j].left);
+  const top = alive.length ? Math.max(...alive.map(j => tot[j])) : -1;
+  bw.tot = tot; bw.win = alive.filter(j => tot[j] === top);
+  // рейтинг по Эло: каждый с каждым по итоговому счёту; с людьми K=32, с компьютером и гостями K=10 (у них 1000)
+  const R0 = P.map(p => (p.prof ? p.prof.rating : 1000)), multi = P.length > 1;
+  P.forEach((p, i) => {
+    if (!p.prof) return;
+    const pr = p.prof, before = pr.rating, done = BW.frameDone(9, bw.fr[i][9]) && !p.left;
+    const nb = done && tot[i] > (pr.best || 0); if (nb) pr.best = tot[i];
+    if (!multi) { db.saveUser(pr); R.rres.push({ i, d: 0, before, after: before, best: pr.best || 0, nb }); return; }
+    let d = 0;
+    P.forEach((q, j) => {
+      if (j === i) return;
+      const S = p.left ? 0 : q.left ? 1 : tot[i] > tot[j] ? 1 : tot[i] < tot[j] ? 0 : .5, K = q.prof && !q.bot ? 32 : 10;
+      d += K * (S - 1 / (1 + Math.pow(10, (R0[j] - R0[i]) / 400)));
+    });
+    pr.rating = Math.max(100, before + Math.round(d / (P.length - 1))); pr.games++;
+    if (bw.win.includes(i)) { pr.wins++; pr.streak = (pr.streak || 0) + 1; } else { pr.losses++; pr.streak = 0; }
+    db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating, best: pr.best || 0, nb });
+  });
+  if (multi && bw.win.length) sys(R, `🏆 ${bw.win.map(j => P[j].name).join(', ')}: ${top} очков`);
+  else if (!multi) sys(R, `🎳 Тренировка окончена: ${tot[0]} очков`);
+}
+function bwDrop(R, p, why) {
+  if (p.left) return; p.left = true; p.off = false;
+  sys(R, p.name + ' ' + (why || 'покинул игру'));
+  if (!R.started || R.over || !R.bw) return;
+  const bw = R.bw, i = R.players.indexOf(p), rest = R.players.filter(q => !q.left);
+  if (!rest.some(q => !q.bot) || (R.players.length > 1 && rest.length < 2)) return bwEnd(R);
+  if (bw.cur === i) { bwNext(R); bw.end = Math.max(Date.now(), R.animUntil || 0) + BW_MS; R.mv++; if (bw.over) bwEnd(R); }
+}
+function bwMsg(R, i, m) {
+  const p = R.players[i];
+  if (m.t == 'ball') { const b = +m.id; if (Number.isInteger(b) && b >= 0 && b < BW.BALLS.length) p.ball = b; return; }
+  if (!R.started) {
+    if (m.t == 'bot' && R.players.length < BW_MAX) R.players.push(bwBot(R));
+    else if (m.t == 'start' && R.players.length >= 1) bwStart(R);
+    return;
+  }
+  if (R.over) { if (m.t == 'again') bwStart(R); return; }
+  if (m.t == 'roll') bwRoll(R, i, m);
+  else if (m.t == 'resign') bwDrop(R, p, R.players.length > 1 ? 'вышел из игры' : 'закончил тренировку');
+}
+function bwTick(R) {
+  if (!R.started || R.over || !R.bw) return;
+  const bw = R.bw, now = Date.now(), i = bw.cur, p = R.players[i];
+  if (!p || p.bot || p.off || p.left || now < bw.end) return;
+  bw.to[i]++;
+  if (bw.to[i] >= 3) bwDrop(R, p, 'не бросает и выбывает из игры');
+  else { sys(R, `⏱ ${p.name}: время вышло, бросок не засчитан`); bwRoll(R, i, null); }
+  send(R);
+}
+function bwSchedule(R) {
+  if (!R.started || R.over || !R.bw) return;
+  const bw = R.bw, p = R.players[bw.cur]; if (!p || !p.bot || p.left) return;
+  const key = bw.seq, wait = Math.max(0, (R.animUntil || 0) - Date.now());
+  R.tm = setTimeout(() => {
+    if (!R.started || R.over || R.bw !== bw || bw.seq !== key || R.players[bw.cur] !== p) return;
+    bwRoll(R, bw.cur, BW.botPlan(bw.pins, BW.lbOf(p.ball), p.style)); send(R);
+  }, wait + 900 + Math.random() * 900);
+}
+function bwState(R, i) {
+  const bw = R.bw, now = Date.now(), playing = R.started && !R.over;
+  return {
+    game: 'bowling', room: R.code, you: i, host: true, started: R.started, over: R.over, status: playing ? 'play' : (R.over ? 'over' : 'lobby'),
+    cur: bw ? bw.cur : 0, frame: bw ? bw.frame : 0, fr: bw ? bw.fr : [], fl: bw ? bw.fl : [], sp: bw ? bw.sp : [],
+    pins: bw ? bw.pins.map(q => [q.id, q.x, q.y]) : [], seq: bw ? bw.seq : 0, left: bw && playing ? Math.max(0, bw.end - now) : 0, rollMs: BW_MS,
+    last: bw ? bw.last : null, win: bw && bw.over ? bw.win : null, tot: bw && bw.over ? bw.tot : null, rres: R.rres || null, max: BW_MAX,
+    players: R.players.map(p => ({
+      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0, ball: p.ball || 0,
+      prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak || 0, since: p.prof.since, best: p.prof.best || 0 } : null
+    })),
+    log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
+  };
+}
+
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
   for (let i = 0; i < R.players.length; i++) {
@@ -778,6 +961,7 @@ function stateFor(R, i) {
   if (R.game === 'chess') return chState(R, i);
   if (R.game === 'mafia') return mfState(R, i);
   if (R.game === 'billiards') return blState(R, i);
+  if (R.game === 'bowling') return bwState(R, i);
   return {
     game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
@@ -796,6 +980,7 @@ function send(R) {
   if (R.game === 'chess') return chSchedule(R);
   if (R.game === 'mafia') return;
   if (R.game === 'billiards') return blSchedule(R);
+  if (R.game === 'bowling') return bwSchedule(R);
   if (R.started && !R.over && R.players.some(p => p.bot))
     R.tm = setTimeout(() => { if (botStep(R)) send(R); }, 900);
 }
@@ -820,9 +1005,10 @@ wss.on('connection', ws => {
         return send(R);
       }
       if (R.started) return err(ws, 'Игра уже идет');
-      if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : 6)) return err(ws, 'Комната заполнена');
+      if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : 6)) return err(ws, 'Комната заполнена');
       const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
       ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
+      if (R.game === 'bowling') ws.p.ball = R.players.length % BW.BALLS.length;   // у каждого свой шар по умолчанию
       ws.R = R; R.players.push(ws.p);
       return send(R);
     }
@@ -846,6 +1032,7 @@ wss.on('connection', ws => {
     if (R.game === 'chess') { chMsg(R, i, m); return send(R); }
     if (R.game === 'mafia') { mfMsg(R, i, m); return send(R); }
     if (R.game === 'billiards') { blMsg(R, i, m); return send(R); }
+    if (R.game === 'bowling') { bwMsg(R, i, m); return send(R); }
     if (m.t == 'bot' && !R.started && R.players.length < 6)
       R.players.push({ name: BOTN[R.players.length % BOTN.length], hand: [], bot: true, ws: null });
     else if (m.t == 'start' && !R.started && R.players.length >= 2) start(R);
@@ -884,15 +1071,15 @@ srv.listen(process.env.PORT || 3000, () => {
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
-    tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'rules', description: 'Правила игр' }] });
-    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия и бильярд онлайн
+    tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'bowling', description: 'Боулинг' }, { command: 'rules', description: 'Правила игр' }] });
+    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия, бильярд и боулинг онлайн
 
 Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, отдельный рейтинг с рангами в каждой игре.
 
 Нажмите Start и выберите игру.
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
-    tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия и бильярд онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
+    tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия, бильярд и боулинг онлайн: друзья, боты, чат, рейтинг. Первый вход до 60 сек ⏳' });
     tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
   }
 });
