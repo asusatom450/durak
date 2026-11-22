@@ -758,7 +758,7 @@ function blShot(R, i, a, p) {
   p = Math.max(.03, Math.min(1, p));
   const sim = BL.simulate(bl.balls, a, p, true), out = BL.judge(bl, sim);
   BL.apply(bl, sim, out);
-  bl.to[i] = 0; bl.seq++; R.mv++;
+  bl.to[i] = 0; bl.seq++; R.mv++; bl.last.seq = bl.seq;
   R.animUntil = Date.now() + sim.dur * 1000 + 700; bl.end = R.animUntil + BL_MS;
   bcast(R, { ev: 'shot', seq: bl.seq, frames: sim.frames, events: sim.events, by: i });
   if (bl.over) blEnd(R);
@@ -783,7 +783,7 @@ function blTick(R) {
   if (!p || p.bot || p.off || p.left || now < bl.end) return;
   bl.to[i]++;
   if (bl.to[i] >= 3) { bl.winner = 1 - i; bl.reason = p.name + ' не ходит (вышло время)'; blEnd(R); }
-  else { bl.turn = 1 - i; bl.hand = true; bl.msg = `${p.name} не успел ударить: шар в руке у соперника`; bl.end = now + BL_MS; R.mv++; }
+  else { bl.turn = 1 - i; bl.hand = true; bl.msg = `${p.name} не успел ударить: шар в руке у соперника`; bl.end = now + BL_MS; R.mv++; bl.seq++; bl.last = { by: i, time: true, seq: bl.seq }; }
   send(R);
 }
 function blDrop(R, p) {
@@ -808,7 +808,7 @@ function blState(R, i) {
     game: 'billiards', room: R.code, you: i, host: true, started: R.started, over: R.over, status: playing ? 'play' : (R.over ? 'over' : 'lobby'),
     turn: bl ? bl.turn : 0, groups: bl ? bl.groups : [null, null], open: bl ? bl.open : true, hand: bl ? bl.hand : false, shots: bl ? bl.shots : 0,
     balls: bl ? bl.balls.filter(o => o.on).map(o => [o.id, Math.round(o.x * 10) / 10, Math.round(o.y * 10) / 10]) : [],
-    msg: bl ? bl.msg : '', seq: bl ? bl.seq : 0, left: bl ? Math.max(0, bl.end - now) : 0, shotMs: BL_MS,
+    msg: bl ? bl.msg : '', seq: bl ? bl.seq : 0, last: bl ? bl.last || null : null, left: bl ? Math.max(0, bl.end - now) : 0, shotMs: BL_MS,
     winner: bl && bl.over ? bl.winner : null, reason: bl && bl.over ? bl.reason : '', rres: R.rres || null,
     players: R.players.map(p => ({
       name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,

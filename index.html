@@ -262,18 +262,38 @@ body.billiards{--gold:#f0b441;color:#f6ead7;background:radial-gradient(ellipse 7
 .blbar>div:first-child,.blbar>div:last-child{flex:1;min-width:0}
 .blmid{width:56px;text-align:center}
 .billiards .mft{font:400 16px 'Russo One',sans-serif;color:#ffcf7a}
-.blp{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:12px;background:#1a0d05cc;border:1px solid #ffffff22;transition:.3s}
-.blp.act{border-color:#f0b441;box-shadow:0 0 16px #f0b44188}
+.blp{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:12px;background:linear-gradient(#3a1f0d,#1d0e05);border:1px solid #c9953a55;box-shadow:inset 0 1px 0 #ffffff12,0 4px 12px #0006;transition:.3s}
+.blp.act{border-color:#f0b441;box-shadow:inset 0 1px 0 #ffffff1c,0 0 0 1px #f0b44166,0 0 18px #f0b44166}
 .blp .av{width:34px;height:34px;flex:none}.blp .bli{min-width:0}.blp .nm{font-size:12px;max-width:100%}
 .blm{display:flex;align-items:center;min-height:13px}.blopen{font-size:10.5px;opacity:.7}
-.mb{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:2px;background:var(--c);box-shadow:inset -1px -2px 3px #0007}
-.mb.st{background:linear-gradient(#f6f3ea 0 28%,var(--c) 28% 72%,#f6f3ea 72%)}.mb.out{opacity:.16}
+.mb{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:2px;background:radial-gradient(circle at 35% 30%,#fffc 0 12%,#fff0 45%),var(--c);box-shadow:inset -1px -2px 3px #0008}
+.mb.st{background:radial-gradient(circle at 35% 30%,#fffc 0 12%,#fff0 45%),linear-gradient(#f6f3ea 0 28%,var(--c) 28% 72%,#f6f3ea 72%)}.mb.out{opacity:.16}
 .blwrap{flex:1;min-height:0;position:relative}
 .blwrap canvas{position:absolute;inset:0;touch-action:none;display:block}
 .blmsg{text-align:center;font-size:13px;min-height:30px;display:flex;flex-direction:column;justify-content:center}
 .blres{color:#ffd88f;font-weight:700}
+.blring{position:relative;width:46px;height:46px;margin:0 auto}.blring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.blring circle{fill:none;stroke-width:3.5;stroke:#ffffff1c}.blring #blrg{stroke:#f0b441;stroke-dasharray:100;stroke-linecap:round;filter:drop-shadow(0 0 3px #f0b44199);transition:stroke .3s}
+.blring.low #blrg{stroke:#e8553b;filter:drop-shadow(0 0 3px #e8553b)}.blring .mft{position:absolute;inset:0;display:grid;place-items:center;font-size:12px}
+.bl3d{position:absolute;top:8px;right:8px;z-index:4;height:30px;padding:0 12px;border-radius:15px;border:1px solid #f0b44199;background:#1a0d05d9;color:#ffd88f;font:400 12px 'Russo One',Manrope,sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 12px #0008}
+.bl3d.on{background:linear-gradient(#ffd27a,#d9962a);color:#2b1704}
+.blann{position:absolute;inset:0;display:grid;place-items:start center;padding-top:12%;pointer-events:none;z-index:3}
+.blann .pl{position:relative;min-width:190px;max-width:86%;padding:12px 28px 13px;border-radius:10px;text-align:center;background:linear-gradient(#fbe3a6,#dca646 44%,#a9741c 56%,#e6b85c);box-shadow:inset 0 1px 0 #fff9,inset 0 -2px 0 #0004,0 0 0 2px #5a3510,0 0 0 4px #c9953a,0 16px 32px #000c,0 0 44px #f0b44166;animation:blpl 2s cubic-bezier(.2,1.2,.3,1) forwards;transform-origin:50% -60px}
+.blann .pl::before,.blann .pl::after{content:'';position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff8,#7a4a12 70%)}
+.blann .pl::before{left:9px}.blann .pl::after{right:9px}
+.blann .t{font:400 30px/1 'Russo One',Manrope,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#3b2306;text-shadow:0 1px 0 #ffeec4,0 -1px 0 #7a4c14}
+.blann .s{font:800 11.5px Manrope,sans-serif;color:#4a2c0a;margin-top:6px;letter-spacing:.4px;text-transform:uppercase}
+.blann .pl.red{background:linear-gradient(#ffc2b0,#d9573c 44%,#a3301a 56%,#e57356);box-shadow:inset 0 1px 0 #fff9,inset 0 -2px 0 #0004,0 0 0 2px #4a1208,0 0 0 4px #c9953a,0 16px 32px #000c,0 0 44px #e8553b66}
+.blann .pl.red .t{color:#2e0703;text-shadow:0 1px 0 #ffd4c8}.blann .pl.red .s{color:#3a0b05}
+.blann .pl.dark{background:linear-gradient(#3a3a3a,#111 50%,#000 56%,#2a2a2a)}.blann .pl.dark .t{color:#ffd88f;text-shadow:0 0 12px #f0b44188}.blann .pl.dark .s{color:#f6ead7}
+.blann .pl.info{background:linear-gradient(#f3e6c8,#cdb17a 44%,#a08550 56%,#d8c193)}
+@keyframes blpl{0%{transform:translateY(-140%) rotate(-9deg);opacity:0}14%{transform:translateY(0) rotate(5deg);opacity:1}24%{transform:rotate(-3deg)}34%{transform:rotate(1.4deg)}42%,82%{transform:none;opacity:1}100%{transform:translateY(-30%);opacity:0}}
 .blctl{display:flex;gap:8px;align-items:center;min-height:48px}
-.blctl input[type=range]{flex:1;padding:0;accent-color:#f0b441;height:30px;background:none}
+.blctl input[type=range]{flex:1;min-width:0;padding:0;height:30px;background:none;border:0;-webkit-appearance:none;appearance:none}
+.blctl input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#3a6fd0 0 2%,#f6f0e2 2% 8%,#ead09a 8%,#c58a46 55%,#e2bd62 57% 59%,#2c1408 60%,#5c2611 85%,#140701);box-shadow:inset 0 1px 2px #0008}
+.blctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#d9a441 55%,#7a4a12);box-shadow:0 2px 6px #000a}
+.blctl input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#3a6fd0 0 2%,#f6f0e2 2% 8%,#ead09a 8%,#c58a46 55%,#e2bd62 57% 59%,#2c1408 60%,#5c2611 85%,#140701)}
+.blctl input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#d9a441 55%,#7a4a12);box-shadow:0 2px 6px #000a}
 /* ===== тема боулинга: ночной клуб, неон, табло-монитор над дорожкой ===== */
 body.bowling{--gold:#3ee6ff;color:#eef0ff;background:radial-gradient(ellipse 80% 45% at 50% -5%,#7b3cff66,transparent 70%),radial-gradient(ellipse 60% 40% at 100% 100%,#ff4fb02e,transparent 70%),radial-gradient(ellipse 60% 40% at 0% 92%,#20d3ff24,transparent 70%),linear-gradient(#120b30,#06040f)}
 .bowling h1{font:900 italic 46px/1.05 'Exo 2','Manrope',sans-serif;letter-spacing:1px;text-transform:uppercase;background:linear-gradient(90deg,#3ee6ff,#a78bfa 50%,#ff4fb0);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 16px #7b3cff99)}
@@ -525,12 +545,21 @@ setInterval(()=>document.querySelectorAll('.mft').forEach(e=>e.textContent=fmtT(
 if(chGame=='mafia'){const d=document.createElement('div');d.id='mfbg';d.innerHTML='<i class="n"></i><i class="d"></i><i class="v"></i>';document.body.prepend(d);document.body.classList.add('mf-night')}
 /*ENDMF*/
 /*BILL*/
+// Бильярд: прицел сверху, но всё объёмное. Стол строится в 3D (сукно, резиновые борта, ореховая рама, глубокие лузы)
+// и рисуется через камеру: сверху, с наклоном во время удара или из-за кия (кнопка «3D»).
+// Шары катятся по-настоящему: у каждого своя ориентация, каждый пиксель шара считается со светом лампы над столом.
 const BL_RANKS=[{n:'Новичок',min:0,c:['#ffe27a','#d9a400'],g:'1'},{n:'Любитель',min:1000,c:['#7fb2ff','#1b4fa8'],g:'2'},{n:'Разрядник',min:1150,c:['#ff8a82','#b3201f'],g:'3'},{n:'Кандидат',min:1300,c:['#cba4ff','#6a2fb8'],g:'4'},{n:'Мастер',min:1500,c:['#ffb878','#d9660c'],g:'5'},{n:'Чемпион',min:1800,c:['#7a7a7a','#0b0b0b'],g:'8'}];
 const BL_COL={1:'#f4c20d',2:'#1e5bd8',3:'#d62d20',4:'#6a2f9a',5:'#f2801a',6:'#1f8a4c',7:'#8a2020',8:'#1a1a1a'},BW=500,BLL=800,BR=16,BL_PK=[[0,0,36],[500,0,36],[0,800,36],[500,800,36],[0,400,32],[500,400,32]];
 const blCol=id=>BL_COL[id>8?id-8:id];
-let blView=null,blPend=null,blAnim=null,blAim=-Math.PI/2,blPow=55,blRaf=0,blDirty=1,blDrag=null,blCueOv=null,blWait=0,blStrike=0,blCtlKey='',blOvKey='',blLay=null,blBg=null,blSeqAim=-1,blNudgeT=0,blInvalid=0,blOverSnd=false;
+const BL_RW=44,BL_CU=13,BL_RZ=22,BL_LAMP=[250,400,560];   // ширина борта, ширина резины, высота борта, лампа над серединой стола
+const blRng=s=>()=>(s=(s*1664525+1013904223)>>>0)/4294967296;
+const blRM=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}})();
+let blView=null,blPend=null,blAnim=null,blAim=-Math.PI/2,blPow=55,blRaf=0,blDirty=1,blDrag=null,blCueOv=null,blWait=0,blStrike=0,blCtlKey='',blOvKey='',blLay=null,blSeqAim=-1,blNudgeT=0,blInvalid=0,blOverSnd=false;
+let blOverAt=0,bl3d=false,blCam=null,blT0=0,blRot={},blRotV={},blPos={},blDrops=[],blAnnSeq=-1,blSprC={},blSprK={},blDecC={},blNoise=null,blDragX=0,blEndT=0,blShotMs=60000;
+try{bl3d=localStorage.bl3d=='1'}catch(e){}
 const blMine=()=>!!blView&&blView.status=='play'&&blView.turn==blView.you&&!blAnim&&!blWait;
 function blCue(){if(blCueOv)return blCueOv;const c=blView&&blView.balls.find(b=>b[0]==0);return c?{x:c[1],y:c[2]}:null}
+const blIs3d=()=>bl3d&&!!blView&&blView.status=='play'&&!!blCue();
 const mb=(id,out)=>`<i class="mb ${id>8?'st':''} ${out?'out':''}" style="--c:${blCol(id)}"></i>`;
 function blChip(j,v){const p=v.players[j],g=v.groups[j];let m='<span class="blopen">Стол открыт</span>';
   if(g){const ids=g=='solid'?[1,2,3,4,5,6,7]:[9,10,11,12,13,14,15],on=id=>v.balls.some(b=>b[0]==id),left=ids.filter(on).length;
@@ -539,91 +568,235 @@ function blChip(j,v){const p=v.players[j],g=v.groups[j];let m='<span class="blop
 function blTop(){const el=$('#bltop');if(!el)return;const unread=chatOpen?0:st.logN-logSeen;
   el.innerHTML=`<div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div><div style="display:flex;gap:6px"><button class="ico" onclick="blResign()">🏳</button><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div>`}
 function blResign(){const f=()=>send({t:'resign'});tg&&tg.showConfirm?tg.showConfirm('Сдаться?',ok=>ok&&f()):confirm('Сдаться?')&&f()}
+function bl3dToggle(){bl3d=!bl3d;try{localStorage.bl3d=bl3d?'1':'0'}catch(e){}hap('light');blCtlKey='';blHud();blDirty=1}
 function blHud(){const v=blView;if(!v||!$('#blopp'))return;const me=v.you;
   $('#blopp').innerHTML=blChip(1-me,v);$('#blme').innerHTML=blChip(me,v);
-  $('#blmid').innerHTML=v.status=='play'?`<span class="mft" data-e="${Date.now()+v.left}">${fmtT(v.left)}</span>`:'';
-  let hint='';if(v.status=='play'){if(v.turn!=me)hint=v.players[v.turn].bot?'Ходит компьютер…':'Ход соперника…';else hint=v.hand?'🖐 Шар в руке: перетащите биток куда нужно':v.shots==0?'Разбейте пирамиду':'Ваш удар: ведите пальцем по столу'}
+  blEndT=Date.now()+v.left;blShotMs=v.shotMs||60000;
+  $('#blmid').innerHTML=v.status=='play'?`<div class="blring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle id="blrg" cx="20" cy="20" r="17" pathLength="100"/></svg><span class="mft" data-e="${blEndT}">${fmtT(v.left)}</span></div>`:'';
+  let hint='';if(v.status=='play'){if(v.turn!=me)hint=v.players[v.turn].bot?'Ходит компьютер…':'Ход соперника…';
+    else hint=v.hand?(blIs3d()?'🖐 Шар в руке: переставить биток можно в виде сверху':'🖐 Шар в руке: перетащите биток куда нужно'):blIs3d()?'Вид из-за кия: ведите пальцем влево-вправо, чтобы повернуть кий':v.shots==0?'Разбейте пирамиду':'Ваш удар: ведите пальцем по столу'}
   $('#blmsg').innerHTML=`${v.msg&&v.shots>0?`<div class="blres">${esc(v.msg)}</div>`:''}<div>${hint}</div>`;
+  const b3=$('#bl3d');if(b3){b3.classList.toggle('on',bl3d);b3.textContent=bl3d?'Сверху':'3D'}
   const key=v.status+':'+blMine()+':'+v.hand;
-  if(key!=blCtlKey){blCtlKey=key;$('#blctl').innerHTML=blMine()?`<button class="ico" onpointerdown="blNudgeStart(-1)" onpointerup="blNudgeStop()" onpointerleave="blNudgeStop()" onpointercancel="blNudgeStop()">◀</button><button class="ico" onpointerdown="blNudgeStart(1)" onpointerup="blNudgeStop()" onpointerleave="blNudgeStop()" onpointercancel="blNudgeStop()">▶</button><input type="range" id="blpow" min="5" max="100" value="${blPow}" oninput="blPow=+this.value;blDirty=1"><button class="btn" onclick="blShoot()">Удар</button>`:''}
-  const rr=(v.rres||[]).find(x=>x.i==me),ok=v.status+':'+v.winner+':'+(v.rres?1:0);
+  if(key!=blCtlKey){blCtlKey=key;$('#blctl').innerHTML=blMine()?`<button class="ico" onpointerdown="blNudgeStart(-1)" onpointerup="blNudgeStop()" onpointerleave="blNudgeStop()" onpointercancel="blNudgeStop()">◀</button><button class="ico" onpointerdown="blNudgeStart(1)" onpointerup="blNudgeStop()" onpointerleave="blNudgeStop()" onpointercancel="blNudgeStop()">▶</button><input type="range" id="blpow" min="5" max="100" value="${blPow}" oninput="blPow=+this.value;blDirty=1" aria-label="Сила удара"><button class="btn" onclick="blShoot()">Удар</button>`:''}
+  // окно итогов чуть позже, чтобы успела качнуться табличка «Восьмёрка!»
+  if(v.status!='over')blOverAt=0;else if(!blOverAt){blOverAt=Date.now()+(v.last&&v.last.end?1700:0);setTimeout(()=>{blOvKey='';blHud()},blOverAt-Date.now()+30)}
+  const ovOn=v.status=='over'&&Date.now()>=blOverAt,rr=(v.rres||[]).find(x=>x.i==me),ok=v.status+':'+v.winner+':'+(v.rres?1:0)+':'+ovOn;
   if(ok!=blOvKey){blOvKey=ok;
-    $('#blov').innerHTML=v.status=='over'?`<div class="res"><div class="box"><div class="big">${v.winner==me?'🏆':'😔'}</div><h2>${v.winner==me?'Победа':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${esc(v.reason)}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
-    if(v.status=='over'&&!blOverSnd){blOverSnd=true;snd(v.winner==me?'win':'lose',.4)}if(v.status!='over')blOverSnd=false}}
+    $('#blov').innerHTML=ovOn?`<div class="res"><div class="box"><div class="big">${v.winner==me?'🏆':'😔'}</div><h2>${v.winner==me?'Победа':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${esc(v.reason)}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+    if(ovOn&&!blOverSnd){blOverSnd=true;snd(v.winner==me?'win':'lose',.4)}if(v.status!='over')blOverSnd=false}}
 function blNudge(d){if(!blMine())return;blAim+=d*.0032;blDirty=1}
 function blNudgeStart(d){blNudge(d);clearInterval(blNudgeT);blNudgeT=setInterval(()=>blNudge(d),70)}
 function blNudgeStop(){clearInterval(blNudgeT)}
 function blShoot(){if(!blMine()||!blCue())return;blWait=1;blStrike=performance.now();blCtlKey='';blHud();send({t:'shot',a:blAim,p:blPow/100});setTimeout(()=>{if(blWait&&!blAnim){blWait=0;blCtlKey='';blHud();blDirty=1}},3000);blDirty=1}
-function blOnShot(m){blWait=0;blCtlKey='';const now=performance.now();blAnim={t0:now+170,frames:m.frames,n:m.frames.length};
+function blOnShot(m){blWait=0;blCtlKey='';const now=performance.now(),v=blView,c=blCue();
+  blAnim={t0:now+170,frames:m.frames,n:m.frames.length,gone:new Set(),cam3:bl3d&&v&&m.by==v.you&&c?blCam3(c,blAim,.8,900,300,-.08):null};
   snd('bcue',.12,.9);m.events.forEach(e=>snd({c:'bclick',r:'brail',p:'bpocket'}[e.k],.18+e.t,e.v));blDirty=1}
 function blSyncAim(){const v=blView;if(!v||!blMine())return;
   if(v.seq!=blSeqAim){blSeqAim=v.seq;snd('turn',.1);const c=blCue(),o=v.balls.filter(b=>b[0]);if(c&&o.length){const cx=o.reduce((s,b)=>s+b[1],0)/o.length,cy=o.reduce((s,b)=>s+b[2],0)/o.length;blAim=Math.atan2(cy-c.y,cx-c.x)}blDirty=1}}
+// латунная табличка после удара: забит, фол, шар в руке, восьмёрка
+function blApply(s){const prev=blView;blView=s;blPend=null;
+  if(!prev)blAnnSeq=s.last&&s.last.seq!=null?s.last.seq:-1;
+  else if(s.last&&s.last.seq!=null&&s.last.seq!==blAnnSeq){blAnnSeq=s.last.seq;blAnnounce(s.last,s)}
+  blHud();blSyncAim();blDirty=1}
+function blAnnounce(l,s){const el=$('#blann');if(!el)return;const me=s.you,mine=l.by==me,GNm={solid:'цельные',stripe:'полосатые'};let t='',sub='',cls='';
+  if(l.time){t='Время!';sub=mine?'шар в руке у соперника':'шар в руке у вас';cls='red'}
+  else if(l.end){t='Восьмёрка!';sub=s.winner==me?'победа':'поражение';cls='dark'}
+  else if(l.rerack){t='Перестановка';sub='восьмёрка на разбое';cls='info'}
+  else if(l.foul){t='Фол';sub=l.foul+(mine?'':' · шар в руке у вас');cls='red';if(mine)try{tg.HapticFeedback.notificationOccurred('error')}catch(e){}}
+  else if(l.cont){const n=l.pots.filter(id=>id!=8).length;t=n>1?'Забиты!':'Забит!';sub=l.assign?(mine?'ваши: ':'у соперника: ')+GNm[l.assign]:n>1?n+' шара':'';hap('light')}
+  else return;
+  el.innerHTML=`<div class="pl ${cls}"><div class="t">${t}</div>${sub?`<div class="s">${esc(sub)}</div>`:''}</div>`;
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.innerHTML=''},2000)}
+// ---- камера ----
+function blBasis(c){const ch=Math.cos(c.hd),sh=Math.sin(c.hd),cp=Math.cos(c.pt),sp=Math.sin(c.pt),f=[ch*cp,sh*cp,-sp],r=[-sh,ch,0],u=[f[1]*r[2]-f[2]*r[1],f[2]*r[0]-f[0]*r[2],f[0]*r[1]-f[1]*r[0]];
+  return{f,r,u,cx:c.tx-f[0]*c.dist,cy:c.ty-f[1]*c.dist,cz:c.tz-f[2]*c.dist,F:c.F,w2:blLay.w/2+(c.ox||0),h2:blLay.h/2+(c.oy||0),key:[c.tx,c.ty,c.hd,c.pt,c.dist,c.F].map(v=>v.toFixed(2)).join()}}
+function blPj(B,x,y,z){const dx=x-B.cx,dy=y-B.cy,dz=z-B.cz,zc=dx*B.f[0]+dy*B.f[1]+dz*B.f[2];if(zc<6)return null;const k=B.F/zc;return[B.w2+(dx*B.r[0]+dy*B.r[1])*k,B.h2-(dx*B.u[0]+dy*B.u[1]+dz*B.u[2])*k,k,zc]}
+function blUnproj(B,sx,sy,Z){const xs=(sx-B.w2)/B.F,ys=-(sy-B.h2)/B.F,d=[B.r[0]*xs+B.u[0]*ys+B.f[0],B.r[1]*xs+B.u[1]*ys+B.f[1],B.r[2]*xs+B.u[2]*ys+B.f[2]];
+  if(Math.abs(d[2])<1e-6)return null;const t=(Z-B.cz)/d[2];return t>0?{x:B.cx+d[0]*t,y:B.cy+d[1]*t}:null}
+// вписать стол в холст: подбираем фокус и сдвиг центра кадра
+function blFit(c){const B=blBasis({...c,ox:0,oy:0});let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const [x,y] of [[-BL_RW,-BL_RW],[BW+BL_RW,-BL_RW],[-BL_RW,BLL+BL_RW],[BW+BL_RW,BLL+BL_RW]])for(const z of [BL_RZ,BL_RZ-46]){const p=blPj(B,x,y,z);if(!p)continue;x0=Math.min(x0,p[0]-B.w2);x1=Math.max(x1,p[0]-B.w2);y0=Math.min(y0,p[1]-B.h2);y1=Math.max(y1,p[1]-B.h2)}
+  const k=Math.min((blLay.w-8)/(x1-x0),(blLay.h-8)/(y1-y0));return{...c,F:c.F*k,ox:-(x0+x1)/2*k,oy:-(y0+y1)/2*k}}
+function blCam3(c,ang,pt,dist,ahead,oy){const dx=Math.cos(ang),dy=Math.sin(ang),a=ahead||200;return{tx:c.x+dx*a,ty:c.y+dy*a,tz:BR,hd:ang,pt:pt||.6,dist:dist||620,F:blLay.F3,ox:0,oy:blLay.h*(oy==null?-.2:oy)}}
+function blCamGoal(){
+  if(blAnim){if(blAnim.cam3)return blAnim.cam3;return blRM?blLay.top:blLay.tilt}
+  if(blIs3d()&&blMine())return blCam3(blCue(),blAim);
+  return blLay.top}
+function blCamStep(dt){const G=blCamGoal();if(!blCam){blCam={...G};return true}
+  const k=1-Math.exp(-dt*(blAnim&&!blAnim.cam3?2.6:4.2));let mv=false;
+  for(const p of ['tx','ty','tz','pt','dist','F','ox','oy']){const d=(G[p]||0)-(blCam[p]||0);if(Math.abs(d)>(p=='pt'?1e-4:.02)){blCam[p]=(blCam[p]||0)+d*k;mv=true}else blCam[p]=G[p]||0}
+  const dh=Math.atan2(Math.sin(G.hd-blCam.hd),Math.cos(G.hd-blCam.hd));if(Math.abs(dh)>1e-4){blCam.hd+=dh*k;mv=true}else blCam.hd=G.hd;
+  return mv}
+// ---- геометрия на экране ----
+function blPath(g,B,pts){const cam=pts.map(p=>{const dx=p[0]-B.cx,dy=p[1]-B.cy,dz=p[2]-B.cz;return[dx*B.r[0]+dy*B.r[1],dx*B.u[0]+dy*B.u[1]+dz*B.u[2],dx*B.f[0]+dy*B.f[1]+dz*B.f[2]]});
+  const N=8,o=[];for(let i=0;i<cam.length;i++){const a=cam[i],b=cam[(i+1)%cam.length];if(a[2]>=N)o.push(a);if((a[2]>=N)!=(b[2]>=N)){const t=(N-a[2])/(b[2]-a[2]);o.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,N])}}
+  if(o.length<3)return false;o.forEach((c,i)=>{const x=B.w2+c[0]*B.F/c[2],y=B.h2-c[1]*B.F/c[2];i?g.lineTo(x,y):g.moveTo(x,y)});g.closePath();return true}
+function blPoly(g,B,pts){g.beginPath();return blPath(g,B,pts)}
+function blEll(g,B,x,y,z,rx,ry){const C=blPj(B,x,y,z),X=blPj(B,x+rx,y,z),Y=blPj(B,x,y+(ry||rx),z);if(!C||!X||!Y||C[3]<60)return false;const d=blLay.dpr;
+  g.setTransform((X[0]-C[0])*d,(X[1]-C[1])*d,(Y[0]-C[0])*d,(Y[1]-C[1])*d,C[0]*d,C[1]*d);g.beginPath();g.arc(0,0,1,0,7);return true}
+// круг на плоскости как многоугольник: точная перспектива и отсечение у камеры
+function blCirc(g,B,x,y,z,r,n){n=n||22;const pts=[];for(let i=0;i<n;i++){const a=i/n*6.2832;pts.push([x+Math.cos(a)*r,y+Math.sin(a)*r,z])}g.beginPath();if(!blPath(g,B,pts))return null;const C=blPj(B,x,y,z);return C?{x:C[0],y:C[1],r:Math.max(1,r*C[2])}:{x:0,y:0,r:1}}
+const blRT=g=>g.setTransform(blLay.dpr,0,0,blLay.dpr,0,0);
+function blSeg(g,B,a,b,col,w,dash){const A=blPj(B,...a),Z=blPj(B,...b);if(!A||!Z)return;g.strokeStyle=col;g.lineWidth=w;if(dash)g.setLineDash(dash);g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(Z[0],Z[1]);g.stroke();if(dash)g.setLineDash([])}
+// стороны стола: нормаль наружу, отрезки резины между лузами, трапеция ореховой рамы, ромбы-метки
+const BL_SIDES=(()=>{const W=BW,L=BLL,RW=BL_RW,CU=BL_CU,cg=30,sg=28,m=(RW+CU)/2,R=blRng(4242),gr=()=>Array.from({length:6},(_,i)=>({o:CU+3+i*(RW-CU-6)/5+R()*2,w:Array.from({length:13},()=>(R()-.5)*1.6)}));
+  return[{n:[0,-1],e:[[-RW,0],[W+RW,0]],cush:[[cg,0,W-cg,0]],wood:[[-RW,-RW],[W+RW,-RW],[W+CU,-CU],[-CU,-CU]],dia:[1,2,3].map(i=>[i*W/4,-m]),gr:gr()},
+    {n:[0,1],e:[[-RW,L],[W+RW,L]],cush:[[W-cg,L,cg,L]],wood:[[W+RW,L+RW],[-RW,L+RW],[-CU,L+CU],[W+CU,L+CU]],dia:[1,2,3].map(i=>[i*W/4,L+m]),gr:gr()},
+    {n:[-1,0],e:[[0,-RW],[0,L+RW]],cush:[[0,L-cg,0,L/2+sg],[0,L/2-sg,0,cg]],wood:[[-RW,L+RW],[-RW,-RW],[-CU,-CU],[-CU,L+CU]],dia:[1,2,3,5,6,7].map(i=>[-m,i*L/8]),gr:gr()},
+    {n:[1,0],e:[[W,-RW],[W,L+RW]],cush:[[W,cg,W,L/2-sg],[W,L/2+sg,W,L-cg]],wood:[[W+RW,-RW],[W+RW,L+RW],[W+CU,L+CU],[W+CU,-CU]],dia:[1,2,3,5,6,7].map(i=>[W+m,i*L/8]),gr:gr()}]})();
+function blSide(g,B,S){const RZ=BL_RZ,CU=BL_CU,[nx,ny]=S.n,cam=[B.cx,B.cy];
+  for(const [x1,y1,x2,y2] of S.cush){const tl=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/tl,uy=(y2-y1)/tl,j=CU*.85;
+    if(((cam[0]-x1)*-nx+(cam[1]-y1)*-ny)>0&&blPoly(g,B,[[x1,y1,0],[x2,y2,0],[x2,y2,RZ-3],[x1,y1,RZ-3]])){g.fillStyle='#0c3f68';g.fill()}
+    if(blPoly(g,B,[[x1,y1,RZ-3],[x2,y2,RZ-3],[x2+nx*CU+ux*j,y2+ny*CU+uy*j,RZ],[x1+nx*CU-ux*j,y1+ny*CU-uy*j,RZ]])){g.fillStyle='#17629d';g.fill()}
+    blSeg(g,B,[x1,y1,RZ-3],[x2,y2,RZ-3],'rgba(170,215,255,.4)',1)}
+  if(blPoly(g,B,S.wood.map(p=>[p[0],p[1],RZ]))){const w=S.wood,I=blPj(B,(w[2][0]+w[3][0])/2,(w[2][1]+w[3][1])/2,RZ),O=blPj(B,(w[0][0]+w[1][0])/2,(w[0][1]+w[1][1])/2,RZ);
+    if(I&&O){const gr=g.createLinearGradient(I[0],I[1],O[0],O[1]);gr.addColorStop(0,'#5e2d0f');gr.addColorStop(.2,'#93501f');gr.addColorStop(.45,'#ad6528');gr.addColorStop(.75,'#7f4016');gr.addColorStop(1,'#4b210a');g.fillStyle=gr}else g.fillStyle='#8a4a1c';
+    g.fill();g.save();g.clip();g.lineCap='round';
+    const [[ax,ay],[bx,by]]=S.e;
+    for(const ln of S.gr){g.strokeStyle='rgba(48,18,4,.3)';g.lineWidth=.9;g.beginPath();let on=false;
+      for(let i=0;i<=12;i++){const t=i/12,x=ax+(bx-ax)*t+nx*(ln.o+ln.w[i]),y=ay+(by-ay)*t+ny*(ln.o+ln.w[i]),p=blPj(B,x,y,RZ+.05);if(!p){on=false;continue}on?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]);on=true}g.stroke()}
+    blSeg(g,B,[ax+nx*(CU+3),ay+ny*(CU+3),RZ+.05],[bx+nx*(CU+3),by+ny*(CU+3),RZ+.05],'rgba(255,214,160,.24)',1.3);
+    g.restore()}
+  for(const [x,y] of S.dia){const ux=Math.abs(nx)>0?0:1,uy=1-ux;if(blPoly(g,B,[[x-ux*5,y-uy*5,RZ+.2],[x+nx*2.8,y+ny*2.8,RZ+.2],[x+ux*5,y+uy*5,RZ+.2],[x-nx*2.8,y-ny*2.8,RZ+.2]])){g.fillStyle='#f4ead0';g.fill();g.strokeStyle='rgba(140,95,25,.7)';g.lineWidth=.7;g.stroke()}}}
+function blMkNoise(){const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d'),im=g.createImageData(96,96),R=blRng(77);
+  for(let i=0;i<96*96;i++){const v=R(),k=i*4;im.data[k]=im.data[k+1]=im.data[k+2]=v>.5?255:0;im.data[k+3]=Math.abs(v-.5)*34}g.putImageData(im,0,0);return c}
+// ---- шары: ориентация, катание, попиксельная отрисовка ----
+const blRGBc={};const blRGB=id=>blRGBc[id]||(blRGBc[id]=(h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)])(id?blCol(id):'#f4f1e8'));
+function blDecal(id){if(blDecC[id])return blDecC[id];const N=48,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');
+  g.fillStyle='#000';g.font=`800 ${id>9?22:27}px Manrope,Arial,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(String(id),N/2,N/2+1.5);
+  if(id==6||id==9)g.fillRect(N/2-6,N/2+12,12,2.6);   // черта, чтобы не путать 6 и 9
+  const d=g.getImageData(0,0,N,N).data,m=new Uint8Array(N*N);for(let i=0;i<N*N;i++)m[i]=d[i*4+3];return blDecC[id]={N,m}}
+function blRotApply(id,ax,an){const M=blRot[id],l=Math.hypot(ax[0],ax[1],ax[2])||1,x=ax[0]/l,y=ax[1]/l,z=ax[2]/l,c=Math.cos(an),s=Math.sin(an),t=1-c;
+  const R=[t*x*x+c,t*x*y-s*z,t*x*z+s*y,t*x*y+s*z,t*y*y+c,t*y*z-s*x,t*x*z-s*y,t*y*z+s*x,t*z*z+c],N=[];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)N[i*3+j]=R[i*3]*M[j]+R[i*3+1]*M[3+j]+R[i*3+2]*M[6+j];
+  let a=[N[0],N[3],N[6]],b=[N[1],N[4],N[7]];const la=Math.hypot(...a);a=a.map(v=>v/la);const dt=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];b=b.map((v,i)=>v-dt*a[i]);const lb=Math.hypot(...b);b=b.map(v=>v/lb);
+  const cc=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  blRot[id]=[a[0],b[0],cc[0],a[1],b[1],cc[1],a[2],b[2],cc[2]];blRotV[id]=(blRotV[id]||0)+1}
+function blRotOf(id){if(!blRot[id]){blRot[id]=[1,0,0,0,1,0,0,0,1];blRotApply(id,[Math.random()-.5,Math.random()-.5,Math.random()-.5],Math.random()*6.28)}return blRot[id]}
+function blRoll(id,x,y){blRotOf(id);const p=blPos[id];blPos[id]={x,y};if(!p)return;const dx=x-p.x,dy=y-p.y,d=Math.hypot(dx,dy);if(d>.05&&d<400)blRotApply(id,[-dy,dx,0],d/BR)}
+function blSprite(id,rr,B,L){const M=blRotOf(id),S=Math.ceil(rr*2)+2,key=S+'|'+rr.toFixed(2)+'|'+(blRotV[id]||0)+'|'+B.key+'|'+L[0].toFixed(2)+L[1].toFixed(2);
+  let c=blSprC[id];if(c&&blSprK[id]===key)return c;if(!c||c.width!==S){c=blSprC[id]=document.createElement('canvas');c.width=c.height=S}
+  const g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data,hc=S/2,r=B.r,u=B.u,vx=-B.f[0],vy=-B.f[1],vz=-B.f[2],A=new Float64Array(9);
+  for(let i=0;i<3;i++){const a=M[i],b=M[3+i],e=M[6+i];A[i*3]=r[0]*a+r[1]*b;A[i*3+1]=u[0]*a+u[1]*b+u[2]*e;A[i*3+2]=vx*a+vy*b+vz*e}
+  const lr=L[0]*r[0]+L[1]*r[1],lu=L[0]*u[0]+L[1]*u[1]+L[2]*u[2],lv=L[0]*vx+L[1]*vy+L[2]*vz;let hx=lr,hy=lu,hz=lv+1;const hl=Math.hypot(hx,hy,hz);hx/=hl;hy/=hl;hz/=hl;
+  const base=blRGB(id),stripe=id>8,dec=id?blDecal(id):null,DN=dec?dec.N:0,DM=dec?dec.m:null,lim=1+2.2/rr;
+  for(let py=0;py<S;py++){const ny=-(py+.5-hc)/rr;for(let px=0;px<S;px++){const nx=(px+.5-hc)/rr,q=nx*nx+ny*ny;if(q>=lim)continue;
+    const al=Math.min(1,(1-Math.sqrt(q))*rr+.6);if(al<=0)continue;const nz=q<1?Math.sqrt(1-q):0;
+    const l0=A[0]*nx+A[1]*ny+A[2]*nz,l1=A[3]*nx+A[4]*ny+A[5]*nz,l2=A[6]*nx+A[7]*ny+A[8]*nz;
+    let cr=base[0],cg=base[1],cb=base[2];
+    if(stripe&&(l2>.5||l2<-.5)){cr=244;cg=241;cb=232}
+    if(dec&&(l0>.88||l0<-.88)){const uu=(l0>0?l1:-l1)*2.08,vv=-l2*2.08;if(uu*uu+vv*vv<1){cr=247;cg=244;cb=237;const ix=((uu*.5+.5)*DN)|0,iy=((vv*.5+.5)*DN)|0;if(DM[iy*DN+ix]>110){cr=26;cg=24;cb=22}}}
+    else if(!id&&(l2>.95||l2<-.95)){cr=205;cg=36;cb=40}   // красные точки на битке: видно, как он крутится
+    const dif=Math.max(0,lr*nx+lu*ny+lv*nz),sp=Math.max(0,hx*nx+hy*ny+hz*nz),s2=sp*sp,s4=s2*s2,s8=s4*s4,s16=s8*s8,spec=s16*s16*s16*1.1+s4*s2*.08;
+    const sh=(.27+.8*dif)*(.76+.24*nz),k=(py*S+px)*4,sw=255*spec;
+    d[k]=Math.min(255,cr*sh+sw);d[k+1]=Math.min(255,cg*sh+sw);d[k+2]=Math.min(255,cb*sh+sw);d[k+3]=al*255}}
+  g.putImageData(img,0,0);blSprK[id]=key;return c}
+function blLight(x,y,z){const L=[BL_LAMP[0]-x,BL_LAMP[1]-y,BL_LAMP[2]-z],l=Math.hypot(...L);return L.map(v=>v/l)}
+function blBallDraw(g,B,id,x,y,z,dark){const C=blPj(B,x,y,z);if(!C)return;const rr=BR*C[2],sp=blSprite(id,rr*blLay.dpr,B,blLight(x,y,z)),s=sp.width/blLay.dpr;
+  g.drawImage(sp,C[0]-s/2,C[1]-s/2,s,s);
+  if(dark>0){g.fillStyle=`rgba(0,0,0,${Math.min(.92,dark)})`;g.beginPath();g.arc(C[0],C[1],rr+.5,0,7);g.fill()}}
+function blShadow(g,B,x,y,z){const k=BL_LAMP[2]/(BL_LAMP[2]-z),sx=BL_LAMP[0]+(x-BL_LAMP[0])*k,sy=BL_LAMP[1]+(y-BL_LAMP[1])*k;
+  if(blEll(g,B,sx,sy,0,BR*1.1)){const gr=g.createRadialGradient(0,0,0,0,0,1);gr.addColorStop(0,'rgba(0,8,20,.55)');gr.addColorStop(.55,'rgba(0,8,20,.32)');gr.addColorStop(1,'rgba(0,8,20,0)');g.fillStyle=gr;g.fill()}
+  if(blEll(g,B,x,y,0,BR*.55)){g.fillStyle='rgba(0,0,0,.3)';g.fill()}blRT(g)}
+function blDrop(id,x,y){let best=BL_PK[0],bd=1e9;for(const p of BL_PK){const d=Math.hypot(p[0]-x,p[1]-y);if(d<bd){bd=d;best=p}}blDrops.push({id,x,y,px:best[0],py:best[1],t0:performance.now()})}
 // ---- ввод ----
-function blXY(e){const r=e.target.getBoundingClientRect(),L=blLay;return{x:(e.clientX-r.left-L.ox)/L.s,y:(e.clientY-r.top-L.oy)/L.s}}
+function blXY(e){const r=e.currentTarget.getBoundingClientRect();return blUnproj(blBasis(blCam),e.clientX-r.left,e.clientY-r.top,BR)||{x:-1e4,y:-1e4}}
 function blCanPlace(x,y){for(const b of blView.balls)if(b[0]&&Math.hypot(b[1]-x,b[2]-y)<2*BR+.5)return false;for(const p of BL_PK)if(Math.hypot(p[0]-x,p[1]-y)<p[2]+6)return false;return true}
 function blMoveCue(w){const x=Math.max(BR,Math.min(BW-BR,w.x)),y=Math.max(BR,Math.min(BLL-BR,w.y));if(blCanPlace(x,y)){blCueOv={x,y};blInvalid=0}else blInvalid=1;blDirty=1}
 function blAimTo(w){const c=blCue();if(!c)return;const dx=w.x-c.x,dy=w.y-c.y;if(Math.hypot(dx,dy)>8){blAim=Math.atan2(dy,dx);blDirty=1}}
-function blDown(e){if(!blMine()||!blLay)return;e.target.setPointerCapture(e.pointerId);const w=blXY(e),c=blCue();
+function blDown(e){if(!blMine()||!blLay||!blCam)return;try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
+  if(blIs3d()){blDrag='rot';blDragX=e.clientX;return}
+  const w=blXY(e),c=blCue();
   if(blView.hand&&(!c||Math.hypot(w.x-c.x,w.y-c.y)<BR*2.6)){blDrag='cue';blMoveCue(w)}else if(c){blDrag='aim';blAimTo(w)}}
-function blMoveE(e){if(!blDrag||!blMine())return;const w=blXY(e);blDrag=='cue'?blMoveCue(w):blAimTo(w)}
+function blMoveE(e){if(!blDrag||!blMine())return;if(blDrag=='rot'){blAim+=(e.clientX-blDragX)*.0035;blDragX=e.clientX;blDirty=1;return}const w=blXY(e);blDrag=='cue'?blMoveCue(w):blAimTo(w)}
 function blUp(){if(blDrag=='cue'&&blCueOv)send({t:'place',x:blCueOv.x,y:blCueOv.y});blDrag=null;blInvalid=0;blDirty=1}
 // ---- отрисовка ----
-function blLayout(cv,wrap){const dpr=window.devicePixelRatio||1,w=wrap.clientWidth,h=wrap.clientHeight;if(!w||!h)return;
-  if(!blLay||blLay.w!=w||blLay.h!=h||blLay.dpr!=dpr){const RT=20,s=Math.min((w-2*RT)/BW,(h-2*RT)/BLL);blLay={w,h,dpr,RT,s,ox:(w-BW*s)/2,oy:(h-BLL*s)/2};cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';blBg=null;blDirty=1}}
-function blMakeBg(cv){const L=blLay,c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d');g.scale(L.dpr,L.dpr);
-  const x0=L.ox-L.RT,y0=L.oy-L.RT,w=BW*L.s+2*L.RT,h=BLL*L.s+2*L.RT,X=x=>L.ox+x*L.s,Y=y=>L.oy+y*L.s;
-  g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.roundRect(x0+3,y0+6,w,h,18);g.fill();
-  let gr=g.createLinearGradient(x0,y0,x0+w,y0+h);gr.addColorStop(0,'#8a5127');gr.addColorStop(.5,'#5a3017');gr.addColorStop(1,'#3a1d0d');g.fillStyle=gr;g.beginPath();g.roundRect(x0,y0,w,h,18);g.fill();
-  g.strokeStyle='#ffffff30';g.lineWidth=1;g.beginPath();g.roundRect(x0+.5,y0+.5,w-1,h-1,18);g.stroke();
-  gr=g.createRadialGradient(X(250),Y(BLL*.43),10,X(250),Y(BLL/2),BLL*L.s*.75);gr.addColorStop(0,'#2f95d6');gr.addColorStop(.55,'#1b72ab');gr.addColorStop(1,'#0e4a79');g.fillStyle=gr;g.fillRect(L.ox,L.oy,BW*L.s,BLL*L.s);
-  g.strokeStyle='#06304f';g.lineWidth=3;g.strokeRect(L.ox,L.oy,BW*L.s,BLL*L.s);
-  g.fillStyle='#ead9a6';for(let i=1;i<8;i++){const y=Y(i*BLL/8);[L.ox-L.RT/2,L.ox+BW*L.s+L.RT/2].forEach(x=>{if(i!=4){g.beginPath();g.arc(x,y,2.3,0,7);g.fill()}})}
-  for(let i=1;i<4;i++){const x=X(i*125);[L.oy-L.RT/2,L.oy+BLL*L.s+L.RT/2].forEach(y=>{g.beginPath();g.arc(x,y,2.3,0,7);g.fill()})}
-  g.strokeStyle='#ffffff2a';g.setLineDash([4,6]);g.beginPath();g.moveTo(L.ox,Y(BLL*.75));g.lineTo(L.ox+BW*L.s,Y(BLL*.75));g.stroke();g.setLineDash([]);
-  g.fillStyle='#ffffff40';[[250,BLL*.75],[250,BLL*.3]].forEach(([x,y])=>{g.beginPath();g.arc(X(x),Y(y),2.2,0,7);g.fill()});
-  BL_PK.forEach(([px,py,pr])=>{const r=pr*L.s*.8;const rg=g.createRadialGradient(X(px),Y(py),1,X(px),Y(py),r);rg.addColorStop(0,'#000');rg.addColorStop(.8,'#050505');rg.addColorStop(1,'#1a1208');g.fillStyle=rg;g.beginPath();g.arc(X(px),Y(py),r,0,7);g.fill();g.strokeStyle='#c9a24a';g.lineWidth=2.5;g.stroke()});
-  blBg=c}
-function blBall(g,x,y,r,id){const c=id?blCol(id):'#f6f3ea',stripe=id>8;
-  g.fillStyle='rgba(0,0,0,.38)';g.beginPath();g.ellipse(x+r*.22,y+r*.4,r*.98,r*.82,0,0,7);g.fill();
-  g.save();g.translate(x,y);g.beginPath();g.arc(0,0,r,0,7);g.clip();
-  g.fillStyle=stripe?'#f6f3ea':c;g.fillRect(-r,-r,2*r,2*r);if(stripe){g.fillStyle=c;g.fillRect(-r,-r*.54,2*r,r*1.08)}
-  if(id){g.fillStyle='#fff';g.beginPath();g.arc(0,0,r*.5,0,7);g.fill();g.fillStyle='#111';g.font=`800 ${Math.max(7,r*.8)}px Manrope,Arial,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(id,0,r*.05)}
-  const gr=g.createRadialGradient(-r*.38,-r*.42,r*.04,0,0,r);gr.addColorStop(0,'rgba(255,255,255,.85)');gr.addColorStop(.22,'rgba(255,255,255,.14)');gr.addColorStop(.7,'rgba(0,0,0,.05)');gr.addColorStop(1,'rgba(0,0,0,.5)');g.fillStyle=gr;g.fillRect(-r,-r,2*r,2*r);g.restore()}
+function blLayout(cv,wrap){const dpr=Math.min(2,window.devicePixelRatio||1),w=wrap.clientWidth,h=wrap.clientHeight;if(!w||!h)return;
+  if(!blLay||blLay.w!=w||blLay.h!=h||blLay.dpr!=dpr){blLay={w,h,dpr,F3:Math.min(w*1.2,h*.95)};
+    blLay.top=blFit({tx:BW/2,ty:BLL/2,tz:0,hd:-Math.PI/2,pt:Math.PI/2,dist:2200,F:1000});
+    blLay.tilt=blFit({tx:BW/2,ty:BLL/2,tz:0,hd:-Math.PI/2,pt:1.04,dist:1150,F:1000});
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+'px';cv.style.height=h+'px';blSprC={};blSprK={};blDirty=1}}
 function blBalls(){
   if(blAnim){const t=Math.max(0,(performance.now()-blAnim.t0)/1000*30),i=Math.min(blAnim.n-2,Math.floor(t)),f=Math.min(1,t-i),A=blAnim.frames[i],B=blAnim.frames[i+1],out=[];
-    for(let k=0;k<16;k++){if(A[2*k]<0)continue;const x0=A[2*k]/4,y0=A[2*k+1]/4,gone=B[2*k]<0;out.push({id:k,x:gone?x0:x0+(B[2*k]/4-x0)*f,y:gone?y0:y0+(B[2*k+1]/4-y0)*f,sh:gone?1-.3*f:1})}return out}
+    for(let k=0;k<16;k++){if(A[2*k]<0)continue;const x0=A[2*k]/4,y0=A[2*k+1]/4;
+      if(B[2*k]<0){if(!blAnim.gone.has(k)){blAnim.gone.add(k);blDrop(k,x0,y0)}continue}
+      out.push({id:k,x:x0+(B[2*k]/4-x0)*f,y:y0+(B[2*k+1]/4-y0)*f})}return out}
   const v=blView;if(!v)return[];const o=v.balls.map(b=>({id:b[0],x:b[1],y:b[2]}));
   if(blCueOv){const c=o.find(b=>b.id==0);if(c){c.x=blCueOv.x;c.y=blCueOv.y}else o.push({id:0,x:blCueOv.x,y:blCueOv.y})}return o}
 function blRay(c,ang,balls){const dx=Math.cos(ang),dy=Math.sin(ang);let tm=1e9,hit=null;
   for(const [id,x,y] of balls){if(!id)continue;const fx=x-c.x,fy=y-c.y,b=fx*dx+fy*dy;if(b<=0)continue;const cc=fx*fx+fy*fy-4*BR*BR,d=b*b-cc;if(d<0)continue;const t=b-Math.sqrt(d);if(t>0&&t<tm){tm=t;hit={x,y}}}
   const tw=[];if(dx>1e-6)tw.push((BW-BR-c.x)/dx);if(dx<-1e-6)tw.push((BR-c.x)/dx);if(dy>1e-6)tw.push((BLL-BR-c.y)/dy);if(dy<-1e-6)tw.push((BR-c.y)/dy);const tl=Math.min(...tw);
   return hit&&tm<=tl?{t:tm,hit}:{t:tl,hit:null}}
-function blStick(g,cx,cy,ang,pull,r){g.save();g.translate(cx,cy);g.rotate(ang+Math.PI);const d=r+3+pull,len=Math.min(blLay.h*.55,300*blLay.s);
-  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.moveTo(d,1.4);g.lineTo(d+len,1.2);g.lineTo(d+len,9);g.lineTo(d,4);g.fill();
-  const gr=g.createLinearGradient(d,0,d+len,0);gr.addColorStop(0,'#f1e4be');gr.addColorStop(.05,'#dcb56a');gr.addColorStop(.7,'#b87a3a');gr.addColorStop(1,'#33200f');
-  g.beginPath();g.moveTo(d,-1.7);g.lineTo(d+len,-4.4);g.lineTo(d+len,4.4);g.lineTo(d,1.7);g.closePath();g.fillStyle=gr;g.fill();
-  g.fillStyle='#4aa3ff';g.fillRect(d,-1.7,3.5,3.4);g.restore()}
-function blDraw(cv){const g=cv.getContext('2d'),L=blLay;if(!L)return;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.scale(L.dpr,L.dpr);
-  if(!blBg)blMakeBg(cv);g.drawImage(blBg,0,0,L.w,L.h);
-  const X=x=>L.ox+x*L.s,Y=y=>L.oy+y*L.s,r=BR*L.s,balls=blBalls();
-  for(const b of balls)blBall(g,X(b.x),Y(b.y),r*(b.sh||1),b.id);
-  if(!blMine()||!blView)return;
-  const c=blCue();if(!c)return;const cx=X(c.x),cy=Y(c.y);
-  if(blView.hand){g.strokeStyle=blInvalid?'#ff5a4a':'#ffd88f';g.lineWidth=2;g.setLineDash([5,5]);g.beginPath();g.arc(cx,cy,r*1.9,0,7);g.stroke();g.setLineDash([])}
-  const ray=blRay(c,blAim,blView.balls),ex=c.x+Math.cos(blAim)*ray.t,ey=c.y+Math.sin(blAim)*ray.t;
-  g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=1.6;g.setLineDash([7,6]);g.beginPath();g.moveTo(cx,cy);g.lineTo(X(ex),Y(ey));g.stroke();g.setLineDash([]);
-  g.strokeStyle='rgba(255,255,255,.85)';g.lineWidth=1.5;g.beginPath();g.arc(X(ex),Y(ey),r,0,7);g.stroke();
-  if(ray.hit){const ox=ray.hit.x-ex,oy=ray.hit.y-ey,od=Math.hypot(ox,oy)||1;g.strokeStyle='#ffd25a';g.lineWidth=2;g.beginPath();g.moveTo(X(ray.hit.x),Y(ray.hit.y));g.lineTo(X(ray.hit.x+ox/od*150),Y(ray.hit.y+oy/od*150));g.stroke()}
-  let pull=(8+blPow*.8)*L.s;
-  if(blStrike){const k=(performance.now()-blStrike)/160;if(k>=1)blStrike=0;else pull*=1-k}
-  blStick(g,cx,cy,blAim,pull,r)}
+// кий в перспективе: кожаная наклейка с мелом, белый ферул, клён, латунное соединение, тёмный турняк
+function blStick(g,B,c,ang,pull){const dx=Math.cos(ang),dy=Math.sin(ang),len=560,a0=BR+3+pull,zc=p=>(p[0]-B.cx)*B.f[0]+(p[1]-B.cy)*B.f[1]+(p[2]-B.cz)*B.f[2];
+  const P0=[c.x-dx*a0,c.y-dy*a0,BR+2];let P1=[c.x-dx*(a0+len),c.y-dy*(a0+len),BR+2+len*.09],t1=1;
+  const z0=zc(P0),z1=zc(P1);if(z0<14)return;if(z1<14){t1=(z0-14)/(z0-z1);P1=P0.map((v,i)=>v+(P1[i]-v)*t1)}
+  const A=blPj(B,...P0),Z=blPj(B,...P1);if(!A||!Z)return;
+  const S0=blPj(B,P0[0]+5,P0[1]+7,0),S1=blPj(B,P1[0]+5+len*t1*.06,P1[1]+7+len*t1*.08,0);
+  const quad=(a,z,w0,w1)=>{const ex=z[0]-a[0],ey=z[1]-a[1],el=Math.hypot(ex,ey)||1,nx=-ey/el,ny=ex/el;g.beginPath();g.moveTo(a[0]+nx*w0,a[1]+ny*w0);g.lineTo(z[0]+nx*w1,z[1]+ny*w1);g.lineTo(z[0]-nx*w1,z[1]-ny*w1);g.lineTo(a[0]-nx*w0,a[1]-ny*w0);g.closePath();return[nx,ny]};
+  const w0=A[2]*3.4,w1=Z[2]*(3.4+4.4*t1);
+  if(S0&&S1){quad(S0,S1,S0[2]*4,S1[2]*7);g.fillStyle='rgba(0,0,0,.22)';g.fill()}
+  const gr=g.createLinearGradient(A[0],A[1],Z[0],Z[1]),stops=[[0,'#3a6fd0'],[.012,'#f6f0e2'],[.05,'#f6f0e2'],[.055,'#ead09a'],[.48,'#d6a965'],[.57,'#c58a46'],[.585,'#e2bd62'],[.6,'#d9a441'],[.615,'#2c1408'],[.8,'#5c2611'],[.815,'#efe2bd'],[.83,'#2c1408'],[1,'#140701']];
+  let last='#140701';for(const [p,col] of stops){if(p<=t1)gr.addColorStop(Math.min(1,p/t1),col);else{last=col;break}}if(t1<1)gr.addColorStop(1,last);
+  const [nx,ny]=quad(A,Z,w0,w1);g.fillStyle=gr;g.fill();
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=Math.max(.6,w0*.45);g.beginPath();g.moveTo(A[0]+nx*w0*.35,A[1]+ny*w0*.35);g.lineTo(Z[0]+nx*w1*.35,Z[1]+ny*w1*.35);g.stroke()}
+function blDraw(cv){const Ly=blLay,g=cv.getContext('2d'),B=blBasis(blCam),now=performance.now(),W=BW,L=BLL,RW=BL_RW,RZ=BL_RZ;blRT(g);
+  // зал: тёплый свет лампы, тёмные углы
+  let gr=g.createRadialGradient(Ly.w/2,Ly.h*.45,10,Ly.w/2,Ly.h*.5,Math.max(Ly.w,Ly.h)*.85);gr.addColorStop(0,'#3a2412');gr.addColorStop(.55,'#1e1109');gr.addColorStop(1,'#0a0603');g.fillStyle=gr;g.fillRect(0,0,Ly.w,Ly.h);
+  // корпус стола: видимые боковины
+  for(const [x1,y1,x2,y2,nx,ny] of [[-RW,-RW,W+RW,-RW,0,-1],[W+RW,L+RW,-RW,L+RW,0,1],[-RW,L+RW,-RW,-RW,-1,0],[W+RW,-RW,W+RW,L+RW,1,0]]){
+    if((B.cx-x1)*nx+(B.cy-y1)*ny<=0)continue;
+    if(blPoly(g,B,[[x1,y1,RZ],[x2,y2,RZ],[x2,y2,RZ-46],[x1,y1,RZ-46]])){const A=blPj(B,x1,y1,RZ),Z=blPj(B,x1,y1,RZ-46);if(A&&Z){gr=g.createLinearGradient(A[0],A[1],Z[0],Z[1]);gr.addColorStop(0,'#6a3414');gr.addColorStop(.08,'#d9a441');gr.addColorStop(.13,'#5a2a0e');gr.addColorStop(1,'#1c0c04');g.fillStyle=gr}else g.fillStyle='#3a1a08';g.fill()}}
+  // сукно: цвет, пятно света от лампы, фактура, тень у бортов
+  if(blPoly(g,B,[[0,0,0],[W,0,0],[W,L,0],[0,L,0]])){g.fillStyle='#1767a3';g.fill();
+    const C=blPj(B,W/2,L/2,0);if(C){const rr=C[2]*L*.62;gr=g.createRadialGradient(C[0],C[1],rr*.04,C[0],C[1],rr);gr.addColorStop(0,'rgba(110,200,255,.45)');gr.addColorStop(.5,'rgba(50,140,215,.16)');gr.addColorStop(1,'rgba(0,15,40,.38)');g.fillStyle=gr;g.fill()}
+    if(!blNoise)blNoise=g.createPattern(blMkNoise(),'repeat');g.fillStyle=blNoise;g.fill();
+    g.save();g.clip();g.strokeStyle='rgba(0,10,28,.42)';g.lineWidth=(C?C[2]:.5)*24;g.stroke();g.restore()}
+  blSeg(g,B,[0,L*.75,0],[W,L*.75,0],'rgba(255,255,255,.16)',1,[4,6]);
+  for(const [x,y] of [[W/2,L*.75],[W/2,L*.3]])if(blEll(g,B,x,y,0,2.3)){g.fillStyle='rgba(255,255,255,.35)';g.fill();blRT(g)}
+  // лузы на уровне сукна: глубокая темнота и намёк на сетку
+  for(const [px,py,pr] of BL_PK){const c=blCirc(g,B,px,py,0,pr*.86);if(!c)continue;gr=g.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);gr.addColorStop(0,'#000');gr.addColorStop(.72,'#040201');gr.addColorStop(1,'#1c120a');g.fillStyle=gr;g.fill();
+    for(const q of [.35,.62])if(blCirc(g,B,px,py,0,pr*.86*q,14)){g.strokeStyle='rgba(255,230,190,.07)';g.lineWidth=1;g.stroke()}
+    for(let a=0;a<8;a++)blSeg(g,B,[px,py,0],[px+Math.cos(a*.785)*pr*.78,py+Math.sin(a*.785)*pr*.78,0],'rgba(255,230,190,.07)',1)}
+  // дальние борта
+  const hx=Math.cos(blCam.hd),hy=Math.sin(blCam.hd),far=S=>S.n[0]*hx+S.n[1]*hy>=-.01;
+  for(const S of BL_SIDES)if(far(S))blSide(g,B,S);
+  // шары, тени, падающие в лузы
+  const balls=blBalls();for(const b of balls)blRoll(b.id,b.x,b.y);
+  for(const b of balls)blShadow(g,B,b.x,b.y,BR);
+  const objs=balls.map(b=>({id:b.id,x:b.x,y:b.y,z:BR,dk:0}));
+  blDrops=blDrops.filter(d=>now-d.t0<420);
+  for(const d of blDrops){const p=(now-d.t0)/420,m=Math.min(1,p*1.8);objs.push({id:d.id,x:d.x+(d.px-d.x)*m,y:d.y+(d.py-d.y)*m,z:BR-p*p*BR*2.6,dk:p*.9})}
+  objs.forEach(o=>{const P=blPj(B,o.x,o.y,o.z);o.d=P?P[3]:-1});objs.sort((a,b)=>b.d-a.d);
+  for(const o of objs)if(o.d>0)blBallDraw(g,B,o.id,o.x,o.y,o.z,o.dk);
+  // ближние борта, вырезы луз в раме, латунные уголки
+  for(const S of BL_SIDES)if(!far(S))blSide(g,B,S);
+  g.save();g.beginPath();blPath(g,B,[[-RW,-RW,RZ],[W+RW,-RW,RZ],[W+RW,L+RW,RZ],[-RW,L+RW,RZ]]);blPath(g,B,[[0,0,RZ],[0,L,RZ],[W,L,RZ],[W,0,RZ]]);g.clip('evenodd');
+  for(const [px,py,pr] of BL_PK){const side=py==L/2;let c=blCirc(g,B,px,py,RZ,pr*(side?1.3:1.42));
+    if(c){gr=g.createRadialGradient(c.x,c.y,c.r*.55,c.x,c.y,c.r);gr.addColorStop(0,'#f6d68a');gr.addColorStop(.6,'#c9953a');gr.addColorStop(1,'#6e4612');g.fillStyle=side?'#2a160a':gr;g.fill()}
+    c=blCirc(g,B,px,py,RZ,pr*.86);if(c){gr=g.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);gr.addColorStop(0,'#000');gr.addColorStop(.8,'#050302');gr.addColorStop(1,'#24150b');g.fillStyle=gr;g.fill()}}
+  g.restore();
+  // прицел, шар в руке, кий
+  if(blMine()&&blView){const c=blCue();if(c){
+    if(blView.hand&&!blIs3d()&&blEll(g,B,c.x,c.y,.5,BR*1.9)){blRT(g);g.strokeStyle=blInvalid?'#ff5a4a':'#ffd88f';g.lineWidth=2;g.setLineDash([5,5]);g.stroke();g.setLineDash([])}
+    const ray=blRay(c,blAim,blView.balls),ex=c.x+Math.cos(blAim)*ray.t,ey=c.y+Math.sin(blAim)*ray.t;
+    blSeg(g,B,[c.x,c.y,BR],[ex,ey,BR],'rgba(255,255,255,.75)',1.6,[7,6]);
+    if(blEll(g,B,ex,ey,BR,BR)){blRT(g);g.strokeStyle='rgba(255,255,255,.88)';g.lineWidth=1.5;g.stroke()}
+    if(ray.hit){const ox=ray.hit.x-ex,oy=ray.hit.y-ey,od=Math.hypot(ox,oy)||1;blSeg(g,B,[ray.hit.x,ray.hit.y,BR],[ray.hit.x+ox/od*150,ray.hit.y+oy/od*150,BR],'#ffd25a',2)}
+    let pull=8+blPow*.8;if(blStrike){const k=(now-blStrike)/160;if(k>=1)blStrike=0;else pull*=1-k}
+    blStick(g,B,c,blAim,pull)}}
+  gr=g.createRadialGradient(Ly.w/2,Ly.h/2,Math.min(Ly.w,Ly.h)*.35,Ly.w/2,Ly.h/2,Math.max(Ly.w,Ly.h)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.45)');g.fillStyle=gr;g.fillRect(0,0,Ly.w,Ly.h)}
 function blLoop(){const cv=$('#blc');if(!cv||!document.body.contains(cv)){blRaf=0;return}blRaf=requestAnimationFrame(blLoop);
-  blLayout(cv,$('#blwrap'));
-  if(blAnim){const t=(performance.now()-blAnim.t0)/1000*30;if(t>=blAnim.n-1){blAnim=null;blView=blPend||blView;blPend=null;blCtlKey='';blHud();blTop();blSyncAim()}blDirty=1}
-  if(blStrike)blDirty=1;
+  const now=performance.now(),dt=Math.min(.05,(now-(blT0||now))/1000);blT0=now;
+  blLayout(cv,$('#blwrap'));if(!blLay)return;
+  if(blAnim){const t=(now-blAnim.t0)/1000*30;if(t>=blAnim.n-1){blAnim=null;blCtlKey='';if(blPend)blApply(blPend);else{blHud();blSyncAim()}blTop()}blDirty=1}
+  if(blCamStep(dt))blDirty=1;
+  if(blStrike||blDrops.length)blDirty=1;
+  const rg=$('#blrg');if(rg&&blView&&blView.status=='play'){const left=Math.max(0,blEndT-Date.now());rg.style.strokeDashoffset=(100*(1-left/blShotMs)).toFixed(1);rg.parentNode.parentNode.classList.toggle('low',left<10000)}
   if(blDirty){blDirty=0;blDraw(cv)}}
-function blBuild(a){blCtlKey='';blOvKey='';
-  a.innerHTML=`<div class="top" id="bltop"></div><div class="blbar"><div id="blopp"></div><div class="blmid" id="blmid"></div><div id="blme"></div></div><div class="blwrap" id="blwrap"><canvas id="blc"></canvas></div><div class="blmsg" id="blmsg"></div><div class="blctl" id="blctl"></div><div id="blov"></div>`;
+function blBuild(a){blCtlKey='';blOvKey='';blCam=null;
+  a.innerHTML=`<div class="top" id="bltop"></div><div class="blbar"><div id="blopp"></div><div class="blmid" id="blmid"></div><div id="blme"></div></div><div class="blwrap" id="blwrap"><canvas id="blc"></canvas><div class="blann" id="blann"></div><button class="bl3d" id="bl3d" onclick="bl3dToggle()">3D</button></div><div class="blmsg" id="blmsg"></div><div class="blctl" id="blctl"></div><div id="blov"></div>`;
   const cv=$('#blc');cv.onpointerdown=blDown;cv.onpointermove=blMoveE;cv.onpointerup=blUp;cv.onpointercancel=blUp;
   if(!blRaf)blRaf=requestAnimationFrame(blLoop)}
 function blLobby(a){const P=st.players;
@@ -632,10 +805,10 @@ function blLobby(a){const P=st.players;
   <p class="sub" style="margin-top:14px;padding:0 10px">Американка на 8 шаров. Цельные (1–7) или полосатые (9–15), в конце восьмёрка. На удар 60 секунд.</p><div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${P.length>=2?'disabled':''}>+ Компьютер</button><button class="btn" onclick="send({t:'start'})" ${P.length<2?'disabled':''}>Начать</button></div>`}
 function drawBill(a){
-  if(st.status=='lobby'){blLobby(a);blView=null;blCtlKey='';blAnim=null;return}
+  if(st.status=='lobby'){blLobby(a);blView=null;blCtlKey='';blAnim=null;blDrops=[];return}
   if(!$('#blc'))blBuild(a);
   if(blDrag!='cue')blCueOv=null;   // пока игрок тащит биток, новое состояние (например, сообщение в чате) не сбрасывает его
-  if(blAnim)blPend=st;else{blView=st;blPend=null;blHud();blSyncAim()}
+  if(blAnim)blPend=st;else blApply(st);
   blTop();blDirty=1}
 /*ENDBL*/
 /*BOWL*/

@@ -116,6 +116,8 @@ function judge(bl, sim) {
 const GN = { solid: 'цельные', stripe: 'полосатые' };
 function apply(bl, sim, out) {
   const p = bl.turn;
+  // итог удара для табличек в игре: что забито, фол, кому какие шары
+  bl.last = { by: p, pots: sim.pocketed.slice(), cue: !!sim.cuePocketed, foul: out.foul || null, assign: out.assign || null, cont: !!out.cont, rerack: !!out.rerack, end: !!out.end };
   bl.balls = sim.balls; bl.shots++;
   if (out.rerack) { bl.balls = newBalls(); bl.shots = 0; bl.hand = false; bl.msg = 'Восьмёрка на разбое: пирамида собрана заново'; return; }
   if (out.end) { bl.over = true; bl.winner = out.win; bl.reason = out.reason; bl.msg = out.reason; return; }
