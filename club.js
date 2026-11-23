@@ -53,6 +53,11 @@ const CAT = [
   { id: 'ball_6', kind: 'ball', game: 'bowling', n: 'Галактика', price: 300 },
   { id: 'ball_7', kind: 'ball', game: 'bowling', n: 'Золото', price: 450 },
   { id: 'ball_8', kind: 'ball', game: 'bowling', n: 'Ледник', rank: 400 },
+  { id: 'tile_day', kind: 'tile', game: 'eye', n: 'Солнце', free: true },
+  { id: 'tile_mint', kind: 'tile', game: 'eye', n: 'Мята', price: 150 },
+  { id: 'tile_night', kind: 'tile', game: 'eye', n: 'Ночь', price: 250 },
+  { id: 'tile_candy', kind: 'tile', game: 'eye', n: 'Карамель', price: 350 },
+  { id: 'tile_gold', kind: 'tile', game: 'eye', n: 'Золото', rank: 400 },
   { id: 'frame_gold', kind: 'frame', n: 'Золотая', price: 250 },
   { id: 'frame_neon', kind: 'frame', n: 'Неон', price: 300 },
   { id: 'frame_fire', kind: 'frame', n: 'Пламя', price: 600 },
@@ -60,8 +65,8 @@ const CAT = [
   { id: 'frame_friend', kind: 'frame', n: 'Душа компании', refs: 3 },
   { id: 'frame_champ', kind: 'frame', n: 'Чемпион недели', champ: true }
 ];
-const KIND_N = { back: 'рубашка', board: 'доска', cloth: 'сукно', ball: 'шар', frame: 'рамка' };
-const DEF = { back: 'back_red', board: 'board_ice', cloth: 'cloth_blue', ball: '', frame: '' };
+const KIND_N = { back: 'рубашка', board: 'доска', cloth: 'сукно', ball: 'шар', tile: 'карточки', frame: 'рамка' };
+const DEF = { back: 'back_red', board: 'board_ice', cloth: 'cloth_blue', ball: '', tile: 'tile_day', frame: '' };
 const item = id => CAT.find(x => x.id === id);
 const has = (c, id) => { const it = item(id); return !!it && (!!it.free || c.own.includes(id)); };
 
@@ -71,6 +76,7 @@ const QP = {
   chess: [{ k: 'play', t: 'Сыграйте партию в шахматы', need: 1, r: 25 }, { k: 'win', t: 'Выиграйте партию в шахматы', need: 1, r: 45 }],
   mafia: [{ k: 'play', t: 'Сыграйте 2 партии в мафию', need: 2, r: 30 }, { k: 'win', t: 'Победите в мафии', need: 1, r: 40 }],
   billiards: [{ k: 'pot', t: 'Забейте 6 своих шаров в бильярде', need: 6, r: 30 }, { k: 'win', t: 'Выиграйте партию в бильярд', need: 1, r: 45 }],
+  eye: [{ k: 'play', t: 'Сыграйте 2 партии в «Зоркий глаз»', need: 2, r: 25 }, { k: 'win', t: 'Победите в «Зорком глазе»', need: 1, r: 40 }, { k: 'catch', t: 'Заберите 25 карточек в «Зорком глазе»', need: 25, r: 30 }],
   bowling: [{ k: 'strike', t: 'Выбейте 3 страйка', need: 3, r: 30 }, { k: 'score', t: 'Наберите 120 очков в боулинге', need: 120, r: 40, max: true }, { k: 'play', t: 'Сыграйте партию в боулинг', need: 1, r: 25 }]
 };
 function hash(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -286,7 +292,7 @@ async function notifyAuto(c, text) {
   return ok;
 }
 // позвать в комнату того, с кем уже играли
-const GV = { durak: 'в дурака', chess: 'в шахматы', mafia: 'в мафию', billiards: 'в бильярд', bowling: 'в боулинг' };
+const GV = { durak: 'в дурака', chess: 'в шахматы', mafia: 'в мафию', billiards: 'в бильярд', bowling: 'в боулинг', eye: 'в «Зоркий глаз»' };
 async function call(uid, to, x) {
   const c = await get(uid); if (!c) return { err: 'Звать друзей могут игроки из Telegram' };
   if (!c.recent.some(r => r.u === to)) return { err: 'Позвать можно только тех, с кем вы уже играли' };
@@ -330,7 +336,7 @@ function flushStats() {
   ST = { d: s.d, f: {} };
   return Promise.resolve(db.dinc('stats', s.d, s.f)).catch(e => console.error('stats:', e.message));
 }
-const GI = { durak: '🃏', chess: '♞', mafia: '🔪', billiards: '🎱', bowling: '🎳' };
+const GI = { durak: '🃏', chess: '♞', mafia: '🔪', billiards: '🎱', bowling: '🎳', eye: '👀' };
 async function statsText(onl) {
   await flushStats();
   const d = dayOf(), days = [...Array(7)].map((_, i) => dayAdd(d, -i));

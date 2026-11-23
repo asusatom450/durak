@@ -7,7 +7,7 @@
 //   а когда обгоните его, расти дальше можно только в играх с людьми.
 const ELO = {
   start: 0, floor: 0, kNew: 48, kStd: 32, newGames: 20,
-  bot: { durak: 250, chess: 350, mafia: 250, billiards: 400, bowling: 300 }
+  bot: { durak: 250, chess: 350, mafia: 250, billiards: 400, bowling: 300, eye: 300 }
 };
 const expect = (a, b) => 1 / (1 + Math.pow(10, (b - a) / 400));   // ожидаемый результат (от 0 до 1) игрока a против b
 const kOf = games => (games < ELO.newGames ? ELO.kNew : ELO.kStd);
