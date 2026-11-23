@@ -10,8 +10,11 @@ L.WALL = L.HALF + L.GUT;
 const PINS = [[0, 0], [-1, 1], [1, 1], [-2, 2], [0, 2], [2, 2], [-3, 3], [-1, 3], [1, 3], [3, 3]].map(([c, r]) => [c * L.SP / 2, L.HEAD + r * L.ROW]);
 const BALLS = [
   { n: 'Кобальт', lb: 12 }, { n: 'Лава', lb: 14 }, { n: 'Изумруд', lb: 13 },
-  { n: 'Аметист', lb: 11 }, { n: 'Жемчуг', lb: 15 }, { n: 'Оникс', lb: 16 }
+  { n: 'Аметист', lb: 11 }, { n: 'Жемчуг', lb: 15 }, { n: 'Оникс', lb: 16 },
+  // редкие шары из коллекции клуба: вес как у обычных, отличаются только видом
+  { n: 'Галактика', lb: 14, rare: true }, { n: 'Золото', lb: 15, rare: true }, { n: 'Ледник', lb: 13, rare: true }
 ];
+const BASE = 6;   // обычные шары доступны всем
 const lbOf = id => (BALLS[id] || BALLS[1]).lb;
 const DT = 1 / 600, REC = 20;   // шаг физики и запись кадра (30 в секунду)
 const HK0 = 2, HK = 105;   // подкрутка: слабый снос на масле, сильный крюк на сухом конце дорожки
@@ -216,6 +219,6 @@ function botPlan(stand, lb, style) {
   return { x: best.x, a: best.a + gauss() * .0025 * miss, p: Math.max(0, Math.min(1, best.p + gauss() * .025)), s: best.s + gauss() * .04, lb };
 }
 
-const API = { L, PINS, BALLS, lbOf, speedOf, fullRack, path, xAt, simulate, frameDone, totals, total, isSplit, botPlan, aimFor, gauss };
+const API = { L, PINS, BALLS, BASE, lbOf, speedOf, fullRack, path, xAt, simulate, frameDone, totals, total, isSplit, botPlan, aimFor, gauss };
 if (typeof module === 'object' && module.exports) module.exports = API; else root.BWL = API;
 })(this);

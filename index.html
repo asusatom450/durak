@@ -214,8 +214,8 @@ body.chess{--gold:#7cc4ff;color:#e8f1fb;background:radial-gradient(ellipse 80% 5
 .chess .pb.turn .clk{background:#eaf4ff;color:#0a1a2e}
 .chess .clk{font:800 20px 'JetBrains Mono',ui-monospace,monospace;border-radius:8px}
 .chess .board{border-radius:6px;box-shadow:0 0 0 4px #1a2538,0 0 0 5px #7cc4ff88,0 26px 50px #000c}
-.chess .sq.l{background:#e6ebf0}.chess .sq.d{background:#7389a3}
-.chess .sq.l .co{color:#7389a3}.chess .sq.d .co{color:#e6ebf0}
+.chess .sq.l{background:var(--sql,#e6ebf0)}.chess .sq.d{background:var(--sqd,#7389a3)}
+.chess .sq.l .co{color:var(--sqd,#7389a3)}.chess .sq.d .co{color:var(--sql,#e6ebf0)}
 .chess .sq.lm::before{background:#6cc3ff66}.chess .sq.sel::before{background:#ffd24dcc}
 .chess .dot{background:#0d2742aa}.chess .cap{border-color:#0d2742aa}
 .chess .pz.w{color:#fff;text-shadow:0 0 2px #0b1626,0 0 2px #0b1626,0 0 3px #0b1626,0 2px 3px #0009}
@@ -480,11 +480,89 @@ body.bowling{--gold:#3ee6ff;color:#eef0ff;background:radial-gradient(ellipse 80%
 @keyframes fl{0%{transform:translateY(0) scale(.4);opacity:0}15%{opacity:1;transform:translateY(-12px) scale(1.3)}100%{transform:translateY(-100px) scale(1);opacity:0}}
 @keyframes fade{from{opacity:0}}
 @keyframes bob{to{transform:translateY(-10px) rotate(6deg)}}
+/* ===== клуб: быстрая игра, фишки, задания, коллекция. Цвета и кнопки берутся из темы игры (--gold, .btn, .pc) ===== */
+#app.ent{overflow-y:auto;overflow-x:hidden}
+.clubbar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:2px 0}
+.clubbar:empty{display:none}
+.cb{display:flex;align-items:center;gap:5px;border:1px solid #ffffff2a;background:#0000002e;color:inherit;border-radius:999px;padding:6px 11px 6px 8px;font:700 13px Manrope,sans-serif;cursor:pointer;line-height:1}
+.cb b{font-weight:800;color:var(--gold)}.cb small{opacity:.65;font-size:11px}
+.cchip{width:18px;height:18px;flex:none;vertical-align:-4px}
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;max-width:420px;margin:6px auto 0;padding:12px 18px}
+.qbtn b{font-size:18px;font-weight:inherit}.qbtn small{font-size:11.5px;opacity:.78;font-weight:700;text-transform:none;letter-spacing:0;font-family:Manrope,sans-serif}
+.onl{text-align:center;font-size:12px;opacity:.75;margin:2px 10px 6px;min-height:16px}
+.onl b{color:var(--gold)}
+.onl .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;margin-right:6px;animation:pulse 1s infinite alternate}
+.ef{display:flex;flex-direction:column;gap:7px;width:100%;max-width:420px;margin:0 auto}
+.rmr{display:flex;gap:7px}.rmr input{flex:1;min-width:0}.rmr .btn{flex:none}
+.erow{display:flex;gap:6px;justify-content:center;margin:8px auto 4px;width:100%;max-width:420px}
+.erow .btn{flex:1;min-width:0;padding:10px 4px;font-size:12.5px;position:relative;white-space:nowrap}
+.erow .qdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a5a;box-shadow:0 0 6px #ff5a5a;margin-left:4px;vertical-align:5px}
+.erow .qdot[hidden]{display:none}
+/* поиск соперника */
+.mmv{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding-bottom:40px}
+.mmv h2{margin:10px 0 0;font:800 24px Manrope,sans-serif}
+.mmt{font:800 40px Manrope,sans-serif;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1}
+.mmv .sub{max-width:300px;min-height:40px}
+.radar{position:relative;width:190px;height:190px;display:grid;place-items:center}
+.radar i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold);opacity:0;animation:radar 2.4s infinite}
+.radar i:nth-child(2){animation-delay:.8s}.radar i:nth-child(3){animation-delay:1.6s}
+.radar b{font-size:60px;width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#ffffff30,#0000 60%),#00000045;border:2px solid var(--gold);box-shadow:0 0 34px #0008;font-family:'Segoe UI Symbol','Apple Color Emoji',sans-serif}
+@keyframes radar{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.3);opacity:0}}
+/* всплывающие сообщения клуба */
+#ctoast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(92vw,460px);padding:10px 14px;border-radius:16px;background:#101418f0;border:1px solid var(--gold);box-shadow:0 10px 30px #000a;font:700 13.5px/1.3 Manrope,sans-serif;color:#fff;pointer-events:none}
+#ctoast[hidden]{display:none}#ctoast.go{animation:ctin .45s cubic-bezier(.2,1.3,.4,1)}#ctoast b{color:var(--gold);white-space:nowrap;font-size:15px}
+@keyframes ctin{from{transform:translate(-50%,-30px);opacity:0}}
+/* окна клуба */
+.clubm{max-height:88dvh;overflow-y:auto;text-align:left;scrollbar-width:none}
+.clubm h3{text-align:center}.clubm h4{margin:16px 0 6px;font:800 15px Manrope,sans-serif;text-align:center}
+.clubm>.btn{display:block;margin:6px auto 0}
+.msub{font-size:12px;opacity:.72;text-align:center;margin:2px 0 8px;line-height:1.35}
+.ql{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.qr{display:flex;align-items:center;gap:10px;background:#0000003a;border-radius:14px;padding:9px 11px;cursor:pointer}
+.qr.done{opacity:.66}.qi{font-size:24px;width:30px;text-align:center;flex:none}.qt{flex:1;min-width:0;font-size:13.5px;font-weight:700;line-height:1.25}
+.qt small{font-size:11px;opacity:.65;font-weight:600}.qrw{color:var(--gold);white-space:nowrap;font-size:13px;flex:none}
+.pbar{height:6px;border-radius:4px;background:#0006;overflow:hidden;margin:5px 0 2px}.pbar i{display:block;height:100%;background:var(--gold);border-radius:4px}
+.qbonus{margin-top:8px;text-align:center;font-size:13px;padding:8px;border-radius:12px;border:1px dashed #ffffff40}.qbonus b{color:var(--gold)}.qbonus.done{opacity:.66}
+.stk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:4px 0 6px}
+.sd{background:#0000003a;border-radius:10px;padding:6px 1px;text-align:center;border:1px solid transparent}
+.sd small{display:block;font-size:9.5px;opacity:.6}.sd b{font-size:13px}.sd.past{opacity:.42}.sd.now{border-color:var(--gold);background:#ffffff16}.sd.now b{color:var(--gold)}
+.tgl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;font-size:12.5px;opacity:.85}.tgl input{width:auto;accent-color:var(--gold)}
+.tabs{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0;justify-content:center}
+.tabs button{flex:none;border:1px solid #ffffff2a;background:#0000002e;color:inherit;border-radius:999px;padding:6px 11px;font:700 12.5px Manrope,sans-serif;cursor:pointer}
+.tabs button.on{background:var(--gold);color:#111;border-color:transparent}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ci{background:#0000003a;border-radius:14px;padding:10px 5px 9px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border:1px solid transparent;min-width:0}
+.ci.on{border-color:var(--gold);background:#ffffff10}.cn{font-size:12px;font-weight:800;line-height:1.15}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:10px;box-shadow:none}
+.cs{font-size:11.5px;color:var(--gold);font-weight:800}.cl{font-size:10.5px;opacity:.72;line-height:1.25}
+.pv{display:block;width:56px;height:64px;flex:none}
+.pvb{width:44px;height:64px;background-size:cover;border-radius:5px;box-shadow:0 3px 8px #0008}
+.pvbd{width:60px;height:60px;border-radius:6px;background:conic-gradient(var(--b) 25%,var(--a) 0 50%,var(--b) 0 75%,var(--a) 0) 0 0/30px 30px;box-shadow:0 0 0 3px #00000066}
+.pvc{width:66px;height:46px;margin:9px 0;border-radius:10px;background:radial-gradient(ellipse at 50% 40%,var(--l),var(--t) 72%);box-shadow:0 0 0 5px #6b3a16,0 0 0 6px #d9a441}
+.pvball{width:60px;height:60px}
+.pvf{display:grid;place-items:center;height:64px}.pvf .av{width:44px;height:44px;font-size:18px}
+.wkpr{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;font-size:12px;font-weight:800}.wkpr span{background:#0000003a;border-radius:999px;padding:4px 9px}
+.top10 .r .av{width:28px;height:28px;font-size:12px;border-width:1px;flex:none}.top10 .r.me{outline:1px solid var(--gold)}
+.top10 .r>.btn{flex:none}
+.daily{text-align:center}.dbig{font-size:54px;line-height:1}.dgain{font:900 40px Manrope,sans-serif;color:var(--gold);margin:10px 0 2px}
+.shc{text-align:center}.shc img{width:100%;border-radius:14px;box-shadow:0 10px 30px #000a;margin-bottom:12px;display:block}
+.ovx{margin-top:8px}.ovx .btn{font-size:13px;padding:9px 12px}
+/* рамки аватара из коллекции: их видят все за столом */
+.av[class*=" fr-"]::before{content:'';position:absolute;inset:-6px;border-radius:inherit;padding:3px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.av.fr-frame_gold::before{background:conic-gradient(#fff1b8,#d4a017,#fff1b8,#b8860b,#fff1b8)}
+.av.fr-frame_neon::before{background:conic-gradient(#3ee6ff,#ff4fb0,#8b5cf6,#3ee6ff);filter:drop-shadow(0 0 4px #ff4fb0)}
+.av.fr-frame_fire::before{background:conic-gradient(#ff3d00,#ffb300,#ff6d00,#ffd54f,#ff3d00);animation:frs 1.6s ease-in-out infinite alternate}
+.av.fr-frame_streak::before{background:conic-gradient(#ff8a00,#ffd36b,#ff5a1f,#ffd36b,#ff8a00)}
+.av.fr-frame_friend::before{background:conic-gradient(#34d399,#a7f3d0,#10b981,#a7f3d0,#34d399)}
+.av.fr-frame_champ::before{background:conic-gradient(#fff6c8,#f0b90b,#fff6c8,#c99700,#fff6c8);filter:drop-shadow(0 0 5px #f0b90b)}
+.av.fr-frame_champ::after{content:'👑';position:absolute;top:-16px;left:50%;transform:translateX(-50%) rotate(-10deg);font-size:15px;line-height:1;filter:drop-shadow(0 2px 2px #0008)}
+@keyframes frs{to{filter:hue-rotate(28deg) brightness(1.25) drop-shadow(0 0 5px #ff6d00)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
 <div id="toast" hidden></div>
+<div id="ctoast" hidden></div>
 <div id="net" hidden>Переподключение…</div>
 <div id="app"></div>
 <div id="react" hidden></div>
@@ -591,7 +669,7 @@ function drawChess(a){
   const dr=st.draw!=null&&st.status=='play'?(st.draw==me?'🤝 Ничья предложена…':`🤝 Соперник предлагает ничью <button class="btn" style="padding:6px 12px" onclick="send({t:'accept'})">Принять</button> <button class="btn ghost" style="padding:6px 12px" onclick="send({t:'decline'})">Нет</button>`):'';
   const ml=[];for(let i=0;i<n;i+=2)ml.push(`<span><i>${i/2+1}.</i>${st.hist[i]} ${st.hist[i+1]||''}</span>`);
   const unread=chatOpen?0:st.logN-logSeen,rr=(st.rres||[]).find(x=>x.i==me);
-  const ov=st.over&&Date.now()>=chOverAt?`<div class="res"><div class="box"><div class="big">${st.win==me?'🏆':st.win<0?'🤝':'😔'}</div><h2>${st.win==me?'Победа':st.win<0?'Ничья':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${RS[st.result.reason]||''}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Шахматный рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+  const ov=st.over&&Date.now()>=chOverAt?`<div class="res"><div class="box"><div class="big">${st.win==me?'🏆':st.win<0?'🤝':'😔'}</div><h2>${st.win==me?'Победа':st.win<0?'Ничья':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${RS[st.result.reason]||''}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Шахматный рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div>${ovX()}</div></div>`:'';
   const pv=chPromo?`<div class="res" onclick="chPromo=null;draw()"><div class="box"><h2>Превращение пешки</h2><div class="row">${['q','r','b','n'].map(t=>`<button class="btn pcb" onclick="event.stopPropagation();send({t:'move',from:'${chPromo.from}',to:'${chPromo.to}',promo:'${t}'});chPromo=null;chSel=null">${pcSVG(st.col||'w',t,'pcp')}</button>`).join('')}</div></div></div>`:'';
   a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div><div style="display:flex;gap:6px;align-items:center"><button class="ico c3d ${ch3d?'on':''}" onclick="chToggle3d()" aria-label="Вид 3D">3D</button><div class="chip">♞ ${st.tc} мин</div></div></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0">${chBar(opp)}<div class="board ${ch3d?'d3':''}" style="margin:0 auto">${boardHTML()}</div>${chBar(me)}</div>
@@ -699,7 +777,7 @@ function drawMafia(a){
   let act='';
   if(st.alive&&ph=='day')act=iReady?`<div class="mfann">Вы готовы к голосованию (${readyN}/${aliveN})</div>`:`<button class="btn" onclick="send({t:'ready'})">Готов к голосованию (${readyN}/${aliveN})</button>`;
   else if(st.alive&&ph=='vote')act=`<button class="btn ghost" onclick="send({t:'vote',target:null})">Воздержаться</button>`;
-  const ov=st.over?`<div class="res"><div class="dossier"><div class="tabl">Дело № ${esc(st.room)} · ${st.day} дн.</div><div class="stamp red ds">Закрыто</div><h2>${st.won=='mafia'?'Победила мафия':'Победили мирные'}</h2><p class="sub2">${st.won==side?'Ваша команда победила':'Ваша команда проиграла'}</p><div class="dlist">${P.map(p=>`<div class="r ${p.alive?'':'x'} ${p.role=='mafia'?'mf':''}"><span style="flex:none;width:22px;height:26px">${mfArt(p.role||'civ')}</span><span>${esc(p.name)}${p.left?' 🚪':''}</span><b>${p.role?MF_ROLE[p.role].n:''}</b></div>`).join('')}</div>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}" style="margin-top:10px">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:2px 0 12px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:'<div style="height:12px"></div>'}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё раз</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+  const ov=st.over?`<div class="res"><div class="dossier"><div class="tabl">Дело № ${esc(st.room)} · ${st.day} дн.</div><div class="stamp red ds">Закрыто</div><h2>${st.won=='mafia'?'Победила мафия':'Победили мирные'}</h2><p class="sub2">${st.won==side?'Ваша команда победила':'Ваша команда проиграла'}</p><div class="dlist">${P.map(p=>`<div class="r ${p.alive?'':'x'} ${p.role=='mafia'?'mf':''}"><span style="flex:none;width:22px;height:26px">${mfArt(p.role||'civ')}</span><span>${esc(p.name)}${p.left?' 🚪':''}</span><b>${p.role?MF_ROLE[p.role].n:''}</b></div>`).join('')}</div>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}" style="margin-top:10px">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:2px 0 12px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:'<div style="height:12px"></div>'}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё раз</button><button class="btn ghost" onclick="location.reload()">В меню</button></div>${ovX()}</div></div>`:'';
   const phm=MF_PH[ph]||['',''];
   a.innerHTML=`<div class="top"><div style="display:flex;gap:6px;align-items:center"><div class="chip"><b>${esc(st.room)}</b></div><button class="ico snd" onclick="toggleSound()">${muted?'🔇':'🔊'}</button><button class="ico rbtn ${st.radio&&!radioMuted?'on':''}" onclick="toggleRadio()">📻</button></div>
     <div class="chip mfph">${phm[0]} ${phm[1]}${st.day?' '+st.day:''}${st.over?'':` · <span class="mft" data-e="${Date.now()+st.left}">${fmtT(st.left)}</span>`}</div></div>
@@ -749,7 +827,7 @@ function blHud(){const v=blView;if(!v||!$('#blopp'))return;const me=v.you;
   if(v.status!='over')blOverAt=0;else if(!blOverAt){blOverAt=Date.now()+(v.last&&v.last.end?1700:0);setTimeout(()=>{blOvKey='';blHud()},blOverAt-Date.now()+30)}
   const ovOn=v.status=='over'&&Date.now()>=blOverAt,rr=(v.rres||[]).find(x=>x.i==me),ok=v.status+':'+v.winner+':'+(v.rres?1:0)+':'+ovOn;
   if(ok!=blOvKey){blOvKey=ok;
-    $('#blov').innerHTML=ovOn?`<div class="res"><div class="box"><div class="big">${v.winner==me?'🏆':'😔'}</div><h2>${v.winner==me?'Победа':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${esc(v.reason)}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`:'';
+    $('#blov').innerHTML=ovOn?`<div class="res"><div class="box"><div class="big">${v.winner==me?'🏆':'😔'}</div><h2>${v.winner==me?'Победа':'Поражение'}</h2><p style="margin:-6px 0 12px;opacity:.85">${esc(v.reason)}</p>${rr?`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}</div>`:''}<div class="row"><button class="btn" onclick="send({t:'again'})">Реванш</button><button class="btn ghost" onclick="location.reload()">В меню</button></div>${ovX()}</div></div>`:'';
     if(ovOn&&!blOverSnd){blOverSnd=true;snd(v.winner==me?'win':'lose',.4)}if(v.status!='over')blOverSnd=false}}
 function blNudge(d){if(!blMine())return;blAim+=d*.0032;blDirty=1}
 function blNudgeStart(d){blNudge(d);clearInterval(blNudgeT);blNudgeT=setInterval(()=>blNudge(d),70)}
@@ -813,9 +891,9 @@ const BL_SIDES=(()=>{const W=BW,L=BLL,RW=BL_RW,CU=BL_CU,cg=30,sg=28,m=(RW+CU)/2,
     {n:[1,0],e:[[W,-RW],[W,L+RW]],cush:[[W,cg,W,L/2-sg],[W,L/2+sg,W,L-cg]],wood:[[W+RW,-RW],[W+RW,L+RW],[W+CU,L+CU],[W+CU,-CU]],dia:[1,2,3,5,6,7].map(i=>[W+m,i*L/8]),gr:gr()}]})();
 function blSide(g,B,S){const RZ=BL_RZ,CU=BL_CU,[nx,ny]=S.n,cam=[B.cx,B.cy];
   for(const [x1,y1,x2,y2] of S.cush){const tl=Math.hypot(x2-x1,y2-y1),ux=(x2-x1)/tl,uy=(y2-y1)/tl,j=CU*.85;
-    if(((cam[0]-x1)*-nx+(cam[1]-y1)*-ny)>0&&blPoly(g,B,[[x1,y1,0],[x2,y2,0],[x2,y2,RZ-3],[x1,y1,RZ-3]])){g.fillStyle='#0c3f68';g.fill()}
-    if(blPoly(g,B,[[x1,y1,RZ-3],[x2,y2,RZ-3],[x2+nx*CU+ux*j,y2+ny*CU+uy*j,RZ],[x1+nx*CU-ux*j,y1+ny*CU-uy*j,RZ]])){g.fillStyle='#17629d';g.fill()}
-    blSeg(g,B,[x1,y1,RZ-3],[x2,y2,RZ-3],'rgba(170,215,255,.4)',1)}
+    if(((cam[0]-x1)*-nx+(cam[1]-y1)*-ny)>0&&blPoly(g,B,[[x1,y1,0],[x2,y2,0],[x2,y2,RZ-3],[x1,y1,RZ-3]])){g.fillStyle=BLC.f;g.fill()}
+    if(blPoly(g,B,[[x1,y1,RZ-3],[x2,y2,RZ-3],[x2+nx*CU+ux*j,y2+ny*CU+uy*j,RZ],[x1+nx*CU-ux*j,y1+ny*CU-uy*j,RZ]])){g.fillStyle=BLC.c;g.fill()}
+    blSeg(g,B,[x1,y1,RZ-3],[x2,y2,RZ-3],`rgba(${BLC.e},.4)`,1)}
   if(blPoly(g,B,S.wood.map(p=>[p[0],p[1],RZ]))){const w=S.wood,I=blPj(B,(w[2][0]+w[3][0])/2,(w[2][1]+w[3][1])/2,RZ),O=blPj(B,(w[0][0]+w[1][0])/2,(w[0][1]+w[1][1])/2,RZ);
     if(I&&O){const gr=g.createLinearGradient(I[0],I[1],O[0],O[1]);gr.addColorStop(0,'#5e2d0f');gr.addColorStop(.2,'#93501f');gr.addColorStop(.45,'#ad6528');gr.addColorStop(.75,'#7f4016');gr.addColorStop(1,'#4b210a');g.fillStyle=gr}else g.fillStyle='#8a4a1c';
     g.fill();g.save();g.clip();g.lineCap='round';
@@ -915,10 +993,10 @@ function blDraw(cv){const Ly=blLay,g=cv.getContext('2d'),B=blBasis(blCam),now=pe
     if((B.cx-x1)*nx+(B.cy-y1)*ny<=0)continue;
     if(blPoly(g,B,[[x1,y1,RZ],[x2,y2,RZ],[x2,y2,RZ-46],[x1,y1,RZ-46]])){const A=blPj(B,x1,y1,RZ),Z=blPj(B,x1,y1,RZ-46);if(A&&Z){gr=g.createLinearGradient(A[0],A[1],Z[0],Z[1]);gr.addColorStop(0,'#6a3414');gr.addColorStop(.08,'#d9a441');gr.addColorStop(.13,'#5a2a0e');gr.addColorStop(1,'#1c0c04');g.fillStyle=gr}else g.fillStyle='#3a1a08';g.fill()}}
   // сукно: цвет, пятно света от лампы, фактура, тень у бортов
-  if(blPoly(g,B,[[0,0,0],[W,0,0],[W,L,0],[0,L,0]])){g.fillStyle='#1767a3';g.fill();
-    const C=blPj(B,W/2,L/2,0);if(C){const rr=C[2]*L*.62;gr=g.createRadialGradient(C[0],C[1],rr*.04,C[0],C[1],rr);gr.addColorStop(0,'rgba(110,200,255,.45)');gr.addColorStop(.5,'rgba(50,140,215,.16)');gr.addColorStop(1,'rgba(0,15,40,.38)');g.fillStyle=gr;g.fill()}
+  if(blPoly(g,B,[[0,0,0],[W,0,0],[W,L,0],[0,L,0]])){g.fillStyle=BLC.t;g.fill();
+    const C=blPj(B,W/2,L/2,0);if(C){const rr=C[2]*L*.62;gr=g.createRadialGradient(C[0],C[1],rr*.04,C[0],C[1],rr);gr.addColorStop(0,`rgba(${BLC.l1},.45)`);gr.addColorStop(.5,`rgba(${BLC.l2},.16)`);gr.addColorStop(1,`rgba(${BLC.sh},.38)`);g.fillStyle=gr;g.fill()}
     if(!blNoise)blNoise=g.createPattern(blMkNoise(),'repeat');g.fillStyle=blNoise;g.fill();
-    g.save();g.clip();g.strokeStyle='rgba(0,10,28,.42)';g.lineWidth=(C?C[2]:.5)*24;g.stroke();g.restore()}
+    g.save();g.clip();g.strokeStyle=`rgba(${BLC.st},.42)`;g.lineWidth=(C?C[2]:.5)*24;g.stroke();g.restore()}
   blSeg(g,B,[0,L*.75,0],[W,L*.75,0],'rgba(255,255,255,.16)',1,[4,6]);
   for(const [x,y] of [[W/2,L*.75],[W/2,L*.3]])if(blEll(g,B,x,y,0,2.3)){g.fillStyle='rgba(255,255,255,.35)';g.fill();blRT(g)}
   // лузы на уровне сукна: глубокая темнота и намёк на сетку
@@ -980,7 +1058,8 @@ function drawBill(a){
 /*BOWL*/
 // Боулинг: дорожка в перспективе (вид из-за спины игрока), камера едет за шаром, табло-монитор над дорожкой.
 // Физика, траектория для прицела и подсчёт очков общие с сервером: файл /bowling.js (window.BWL).
-const BWD=[{c:['#06123f','#1f5bff','#8fd0ff']},{c:['#2a0303','#e0261b','#ffae3c']},{c:['#01241a','#0c9a6a','#86f7cc']},{c:['#160635','#7c3aed','#f5a8ff']},{c:['#7f879c','#f4f6fb','#b9d4ff']},{c:['#030304','#26262f','#d9b24a']}];
+const BWD=[{c:['#06123f','#1f5bff','#8fd0ff']},{c:['#2a0303','#e0261b','#ffae3c']},{c:['#01241a','#0c9a6a','#86f7cc']},{c:['#160635','#7c3aed','#f5a8ff']},{c:['#7f879c','#f4f6fb','#b9d4ff']},{c:['#030304','#26262f','#d9b24a']},
+  {c:['#05031a','#3b1d8f','#ff5ad1'],st:1},{c:['#6b4508','#f0c24a','#fff3b8']},{c:['#cfeeff','#f7fcff','#5fb6ff']}];   // редкие: Галактика, Золото, Ледник
 const PPH=[0,2,5,8,11.4,15,19,22,24.4,26,28.5,31.5,34,36.2,37.6,38.1],PPR=[2.6,3.9,5,5.7,6.05,5.8,4.9,3.6,2.45,2.35,2.6,3.15,3.2,2.7,1.6,0];
 const BW_HOLES=[[-.25,-.32,.91,.14],[-.03,.3,.95,.11],[.3,.04,.95,.11]];   // большой палец и два пальца, по диагонали
 let bwView=null,bwPend=null,bwAnim=null,bwHold=0,bwFinal=null,bwWait=0,bwRaf=0,bwDirty=1,bwLay=null,bwCam={x:0,y:-330,h:120},bwT0=0;
@@ -997,7 +1076,9 @@ function bwTex(id){if(bwTexC[id])return bwTexC[id];const S=192,c=document.create
     for(let k=0;k<(pass?9:20);k++){const pts=[R()*S,R()*S];for(let j=0;j<9;j++)pts.push(R()*S*1.2-S*.1,R()*S);
       g.strokeStyle=P[k%3];g.globalAlpha=pass?.3+R()*.3:.35+R()*.5;g.lineWidth=pass?1+R()*2.5:6+R()*18;g.lineCap='round';
       for(const dy of [-S,0,S]){g.beginPath();g.moveTo(pts[0],pts[1]+dy);for(let j=2;j<20;j+=6)g.bezierCurveTo(pts[j],pts[j+1]+dy,pts[j+2],pts[j+3]+dy,pts[j+4],pts[j+5]+dy);g.stroke()}}}
-  try{g.filter='none'}catch(e){}g.globalAlpha=1;return bwTexC[id]=c}
+  try{g.filter='none'}catch(e){}g.globalAlpha=1;
+  if(BWD[id].st)for(let k=0;k<80;k++){const x=R()*S,y=R()*S,r=.3+R()*1.7;g.fillStyle=`rgba(255,255,255,${.45+R()*.55})`;for(const dy of [-S,0,S]){g.beginPath();g.arc(x,y+dy,r,0,7);g.fill()}}   // звёзды «Галактики»
+  return bwTexC[id]=c}
 function bwBallAt(g,cx,cy,r,id,roll,spin){if(r<.5)return;
   g.save();g.beginPath();g.arc(cx,cy,r,0,7);g.clip();g.translate(cx,cy);g.rotate(spin);
   const T=bwTex(id),q=r*1.5,off=(((roll*r*.95)%(2*q))+2*q)%(2*q);
@@ -1192,7 +1273,7 @@ function bwDown(e){if(!bwMine()||!bwLay)return;const cv=e.currentTarget,r=cv.get
   const B=bwP(bwX,BWL.L.RB,-18);bwDrag=B&&sy>B[1]-BWL.L.RB*B[2]*2.2?'pos':'aim';bwPtr(sx,sy)}
 function bwPick(i){send({t:'ball',id:i});hap('light');$('#pm').hidden=true}
 function bwRack(){const me=bwView?bwView.players[bwView.you]:null;
-  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Выбор шара</h3><div class="bwrack" style="margin-top:10px">${BWL.BALLS.map((b,i)=>`<button class="bwrk ${me&&me.ball==i?'on':''}" onclick="bwPick(${i})"><img src="${bwBallImg(i)}" alt=""><span>${b.n}</span><small>${b.lb} lb · ${bwKg(b.lb)} кг</small></button>`).join('')}</div><p style="font-size:12px;opacity:.7;margin:10px 0 0">Тяжёлый шар сильнее раскидывает кегли, лёгкий летит быстрее и меньше заворачивает.</p></div>`;$('#pm').hidden=false}
+  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Выбор шара</h3><div class="bwrack" style="margin-top:10px">${bwBalls().map(([b,i])=>`<button class="bwrk ${me&&me.ball==i?'on':''}" onclick="bwPick(${i})"><img src="${bwBallImg(i)}" alt=""><span>${b.n}</span><small>${b.lb} lb · ${bwKg(b.lb)} кг</small></button>`).join('')}</div><p style="font-size:12px;opacity:.7;margin:10px 0 0">Тяжёлый шар сильнее раскидывает кегли, лёгкий летит быстрее и меньше заворачивает.</p></div>`;$('#pm').hidden=false}
 function bwHud(){const s=bwView;if(!s||!$('#bwmsg'))return;const me=s.you,P=s.players,mine=bwMine(),busy=!!(bwAnim||bwHold);
   let h='';
   if(s.status=='play'&&!busy){const c=P[s.cur],r=((s.fr[s.cur]||[])[s.frame]||[]).length;
@@ -1209,7 +1290,7 @@ function bwHud(){const s=bwView;if(!s||!$('#bwmsg'))return;const me=s.you,P=s.pl
     if(s.status=='over'&&!busy){const solo=P.length<2,win=(s.win||[]).includes(me),W=j=>(s.win||[]).includes(j)?1:0,ord=P.map((_,j)=>j).sort((x,y)=>(W(y)-W(x))||((P[x].left?1:0)-(P[y].left?1:0))||(s.tot[y]-s.tot[x]));
       const ti=solo?'Тренировка окончена':win?(s.win.length>1?'Ничья':'Победа!'):'Игра окончена';
       const rt=rr?(solo?`<div style="margin:0 0 14px;opacity:.9">${rr.nb?'🎉 Новый рекорд: <b>'+rr.best+'</b>':'Ваш рекорд: '+rr.best}</div>`:`<div class="dl ${rr.d>=0?'up':'dn'}">${rr.d>=0?'+':''}${rr.d}</div><div style="margin:4px 0 14px;opacity:.9">Рейтинг ${rr.after} · ${rankOf(rr.after).n}${rr.nb?'<br>🎉 Новый рекорд: '+rr.best:''}</div>`):(P[me].prof?'':'<p style="opacity:.7;font-size:13px;margin:0 0 14px">Рейтинг ведется для игроков из Telegram</p>');
-      $('#bwov').innerHTML=`<div class="res"><div class="box"><div class="big">${win&&!solo?'🏆':'🎳'}</div><h2>${ti}</h2><div class="bwfin">${ord.map((j,k)=>`<div class="r ${j==me?'me':''}"><i>${solo?'':['🥇','🥈','🥉','4.'][k]}</i><span>${esc(P[j].name)}${P[j].left?' 🚪':''}</span><b>${s.tot[j]}</b></div>`).join('')}</div>${rt}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё игра</button><button class="btn ghost" onclick="location.reload()">В меню</button></div></div></div>`;
+      $('#bwov').innerHTML=`<div class="res"><div class="box"><div class="big">${win&&!solo?'🏆':'🎳'}</div><h2>${ti}</h2><div class="bwfin">${ord.map((j,k)=>`<div class="r ${j==me?'me':''}"><i>${solo?'':['🥇','🥈','🥉','4.'][k]}</i><span>${esc(P[j].name)}${P[j].left?' 🚪':''}</span><b>${s.tot[j]}</b></div>`).join('')}</div>${rt}<div class="row"><button class="btn" onclick="send({t:'again'})">Ещё игра</button><button class="btn ghost" onclick="location.reload()">В меню</button></div>${ovX()}</div></div>`;
       if(!bwOverSnd){bwOverSnd=true;snd(win||solo?'win':'lose',.2,.8)}}
     else if(s.status=='play'&&P[me].left)$('#bwov').innerHTML=`<div class="res"><div class="box"><div class="big">🚪</div><h2>Вы вышли из игры</h2><div class="row"><button class="btn ghost" onclick="$('#bwov').innerHTML=''">Досмотреть</button><button class="btn" onclick="location.reload()">В меню</button></div></div></div>`;
     else $('#bwov').innerHTML='';
@@ -1221,7 +1302,7 @@ function bwBuild(a){bwCtlKey='';bwOvKey='';bwPrevTot={};bwLane=1+[...String(st.r
 function bwLobby(a){const P=st.players,me=st.you,mb=P[me]?P[me].ball||0:0;
   a.innerHTML=`${sndBtn()}<h1 style="margin-top:14px;font-size:40px">Боулинг</h1><p class="sub">Комната <b style="color:var(--gold)">${esc(st.room)}</b> · до ${st.max} игроков</p>
   <div style="flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px"><div class="bwlob">${P.map((p,j)=>`<div class="r" onclick="showProf(${j})" style="animation-delay:${j*.06}s">${av({...p,n:''})}<div><div class="nm">${esc(p.name)}${j==me?' (вы)':''}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}${p.prof.best?' · рекорд '+p.prof.best:''}</div>`:`<div class="role">${p.bot?'🤖 компьютер':'гость'}</div>`}</div><img src="${bwBallImg(p.ball||0)}" alt=""></div>`).join('')}</div>
-  <p class="sub" style="margin:8px 0 0">Ваш шар</p><div class="bwrack">${BWL.BALLS.map((b,i)=>`<button class="bwrk ${i==mb?'on':''}" onclick="bwPick(${i})"><img src="${bwBallImg(i)}" alt=""><span>${b.n}</span><small>${b.lb} lb · ${bwKg(b.lb)} кг</small></button>`).join('')}</div>
+  <p class="sub" style="margin:8px 0 0">Ваш шар</p><div class="bwrack">${bwBalls().map(([b,i])=>`<button class="bwrk ${i==mb?'on':''}" onclick="bwPick(${i})"><img src="${bwBallImg(i)}" alt=""><span>${b.n}</span><small>${b.lb} lb · ${bwKg(b.lb)} кг</small></button>`).join('')}</div>
   <p class="sub" style="font-size:12px;margin:4px 10px 0">Тяжёлый шар сильнее раскидывает кегли, лёгкий летит быстрее. ${P.length<2?'Одному: тренировка без рейтинга.':''}</p></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻</button><button class="btn ghost" onclick="send({t:'bot'})" ${P.length>=st.max?'disabled':''}>+ Компьютер</button><button class="btn" onclick="send({t:'start'})">${P.length<2?'Тренировка':'Начать'}</button></div>`}
 function drawBowl(a){
@@ -1347,10 +1428,10 @@ function showProf(j){const p=st.players[j],pm=$('#pm');
   pm.innerHTML=p.prof?profCard(p.name,p.prof):`<div class="pc"><h3>${esc(p.name)}</h3><p style="opacity:.8">${p.bot?'У ботов нет рейтинга':'Гость: рейтинг ведется для игроков из Telegram'}</p></div>`;pm.hidden=false}
 let me0;
 async function loadMe(){try{const d=tg&&tg.initData;if(!d)return;const p=await (await fetch('/api/me?g='+chGame+'&d='+encodeURIComponent(d))).json();if(!p||!$('#me'))return;me0=p;
-  $('#me').innerHTML=`<div class="seat me" onclick="meCard()" style="margin:6px auto;width:max-content">${av({name:p.name,photo:p.photo,n:'',prof:p})}<div><div class="nm">${esc(p.name)}</div><div class="rt">${rankOf(p.rating).n} · ${p.rating}</div></div></div>`}catch(e){}}
-function meCard(){$('#pm').innerHTML=profCard(me0.name,me0);$('#pm').hidden=false}
-async function showTop(g){g=chGame;let l=[];try{l=await (await fetch('/api/top?g='+g)).json()}catch(e){}
-  $('#pm').innerHTML=`<div class="pc" onclick="event.stopPropagation()"><h3>Лучшие игроки: ${({durak:'дурак',chess:'шахматы',mafia:'мафия',billiards:'бильярд',bowling:'боулинг'})[g]}</h3><div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
+  $('#me').innerHTML=`<div class="seat me" onclick="meCard()" style="margin:6px auto;width:max-content">${av({name:p.name,photo:p.photo,n:'',prof:p,fr:CLUB&&CLUB.eq.frame})}<div><div class="nm">${esc(p.name)}</div><div class="rt">${rankOf(p.rating).n} · ${p.rating}</div></div></div>`}catch(e){}}
+function meCard(){$('#pm').innerHTML=profCard(me0.name,me0);const pc=$('#pm .pc');if(pc&&CLUB)pc.insertAdjacentHTML('beforeend',clubLine());$('#pm').hidden=false}
+async function showRating(tabs){const g=chGame;let l=[];try{l=await (await fetch('/api/top?g='+g)).json()}catch(e){}
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Лучшие игроки: ${({durak:'дурак',chess:'шахматы',mafia:'мафия',billiards:'бильярд',bowling:'боулинг'})[g]}</h3>${tabs||''}<div class="top10">${l.length?l.map((u,i)=>`<div class="r"><b class="pos">${i+1}</b>${badge(u.rating,22)}<span>${esc(u.name)}</span><b>${u.rating}</b></div>`).join(''):'<p style="text-align:center;opacity:.7">Пока никто не сыграл</p>'}</div></div>`;$('#pm').hidden=false}
 function resHTML(me){const r=(st.result||[]).find(x=>x.i==me);
   if(!r)return st.players[me].prof?'':'<p style="opacity:.7;font-size:13px;margin:0 0 14px">Рейтинг ведется для игроков из Telegram</p>';
   const a=rankIdx(r.before),b=rankIdx(r.after);
@@ -1391,7 +1472,9 @@ function cardSVG(r,s){const col=sCol(s),rk=RK[r-6],f="'Times New Roman',Times,'N
   else if(r==14)g+=`<circle cx="50" cy="72.5" r="33" fill="none" stroke="#c9a24a" stroke-width="1.2"/><circle cx="50" cy="72.5" r="29" fill="none" stroke="#c9a24a" stroke-width=".7" stroke-dasharray="1.6 2.4"/>${[0,90,180,270].map(a=>`<path d="M50 36.5l2 4-2 2-2-2z" fill="#c9a24a" transform="rotate(${a} 50 72.5)"/>`).join('')}${pipG(s,50,72.5,44)}`;
   else{const fig=courtFig(r,s);g+=`<rect x="17" y="15" width="66" height="115" rx="3" fill="#fbf3de" stroke="${col}" stroke-width="1.1"/><g clip-path="url(#h)">${fig}</g><g transform="rotate(180 50 72.5)"><g clip-path="url(#h)">${fig}</g></g><path d="M17 72.5h66" stroke="#c9a24a" stroke-width=".9"/><rect x="19.5" y="17.5" width="61" height="110" rx="2" fill="none" stroke="#c9a24a" stroke-width=".8"/>`}
   return g+'</svg>'}
-const backSVG=()=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 145"><defs><pattern id="l" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#8e1424"/><path d="M0 4.5h9M4.5 0v9" stroke="#d9b45a" stroke-width=".6" opacity=".55"/><circle cx="4.5" cy="4.5" r="1.2" fill="#e8c56a" opacity=".75"/></pattern><radialGradient id="v" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient></defs><rect width="100" height="145" fill="#fbf6e8"/><rect x="5" y="5" width="90" height="135" rx="6" fill="url(#l)"/><rect x="5" y="5" width="90" height="135" rx="6" fill="url(#v)"/><rect x="8.5" y="8.5" width="83" height="128" rx="4" fill="none" stroke="#e8c56a" stroke-width="1.2"/><circle cx="50" cy="72.5" r="17" fill="#6e0f1c" stroke="#e8c56a" stroke-width="1.5"/><circle cx="50" cy="72.5" r="13.2" fill="none" stroke="#e8c56a" stroke-width=".6" stroke-dasharray="1.5 1.8"/>${pipG(0,50,72.5,15,0,'#e8c56a')}</svg>`;
+// рубашки: классическая и из коллекции клуба
+const BACKS={back_red:{bg:'#8e1424',ln:'#d9b45a',dot:'#e8c56a',ctr:'#6e0f1c',rim:'#e8c56a'},back_navy:{bg:'#14305e',ln:'#c3d0e4',dot:'#e3ecf8',ctr:'#0b1d3d',rim:'#d3deef'},back_emerald:{bg:'#0b5c3d',ln:'#d9b45a',dot:'#ecd07a',ctr:'#053d27',rim:'#e8c56a'},back_noir:{bg:'#17171a',ln:'#b08d3e',dot:'#e3c06a',ctr:'#060607',rim:'#d9b45a'},back_royal:{bg:'#4b1a7c',ln:'#e8c56a',dot:'#f5df92',ctr:'#2f0f52',rim:'#f5df92'}};
+const backSVG=(P=BACKS.back_red)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 145"><defs><pattern id="l" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="${P.bg}"/><path d="M0 4.5h9M4.5 0v9" stroke="${P.ln}" stroke-width=".6" opacity=".55"/><circle cx="4.5" cy="4.5" r="1.2" fill="${P.dot}" opacity=".75"/></pattern><radialGradient id="v" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient></defs><rect width="100" height="145" fill="#fbf6e8"/><rect x="5" y="5" width="90" height="135" rx="6" fill="url(#l)"/><rect x="5" y="5" width="90" height="135" rx="6" fill="url(#v)"/><rect x="8.5" y="8.5" width="83" height="128" rx="4" fill="none" stroke="${P.rim}" stroke-width="1.2"/><circle cx="50" cy="72.5" r="17" fill="${P.ctr}" stroke="${P.rim}" stroke-width="1.5"/><circle cx="50" cy="72.5" r="13.2" fill="none" stroke="${P.rim}" stroke-width=".6" stroke-dasharray="1.5 1.8"/>${pipG(0,50,72.5,15,0,P.rim)}</svg>`;
 (function(){const uri=s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s),css=[];
   for(let s=0;s<4;s++)for(let r=6;r<=14;r++)css.push(`.cd${r}-${s}{background-image:url("${uri(cardSVG(r,s))}")}`);
   css.push(`.cback{background-image:url("${uri(backSVG())}")}`);const el=document.createElement('style');el.textContent=css.join('\n');document.head.appendChild(el)})();
@@ -1403,27 +1486,29 @@ function deckHTML(){const n=st.deck,T=st.tc;
   return n?`<div class="deck" id="deckpile" title="Колода: ${n}">${face(T,'trc t')}${[...Array(Math.min(5,Math.ceil(n/6)))].map((_,i)=>`<i class="card cback" style="--o:${i}"></i>`).join('')}<b class="dn">${n}</b></div>`
     :`<div class="deck nd" id="deckpile"><span class="trs">Козырь ${suitIcon(T.s,18)}</span></div>`}
 /*ENDCARDS*/
-const av=p=>`<div class="av" style="background-color:hsl(${hue(p.name)} 45% 36%);${p.photo?`background-image:url('${esc(p.photo)}')`:''}">${p.photo?'':esc([...p.name][0]||'?').toUpperCase()}${p.n===''?'':`<span class="cnt">${p.n}</span>`}${p.prof?`<span class="bg">${badge(p.prof.rating,22)}</span>`:''}</div>`;
+const av=p=>`<div class="av${p.fr?' fr-'+esc(p.fr):''}" style="background-color:hsl(${hue(p.name)} 45% 36%);${p.photo?`background-image:url('${esc(p.photo)}')`:''}">${p.photo?'':esc([...p.name][0]||'?').toUpperCase()}${p.n===''?'':`<span class="cnt">${p.n}</span>`}${p.prof?`<span class="bg">${badge(p.prof.rating,22)}</span>`:''}</div>`;
 const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}" onclick="showProf(${j})">${me?'':fanH(p.n)}${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.left?'🚪 покинул игру':p.off?`📵 нет связи <span class="offt" data-e="${Date.now()+p.offIn}">${Math.ceil(p.offIn/1000)}</span> с`:p.n==0&&!st.deck?'✅ без карт':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}</div></div>`;
 
 function entry(){
-  const code=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'';
-  $('#app').innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
-  <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div>
-  <form onsubmit="return go(event)"><input id="nm" maxlength="12" placeholder="Ваше имя" value="${esc(U?U.first_name:'')}">
-  <input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(code)}">
-  <div class="row"><button class="btn" type="submit">Войти</button><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">Новая комната</button></div></form><div class="row" style="margin-top:6px"><button class="btn ghost" onclick="showTop()">🏆 Лучшие игроки</button></div>`;
-  loadMe();
+  const a=$('#app');a.classList.add('ent');
+  a.innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
+  <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div><div class="clubbar" id="clubbar"></div>
+  <button class="btn qbtn" onclick="quickGo()"><b>⚡ Быстрая игра</b><small>подберём соперника по силе</small></button><div class="onl" id="onl">Если живых соперников нет, через 20 секунд за стол сядет компьютер</div>
+  <form onsubmit="return go(event)" class="ef">${U?'':'<input id="nm" maxlength="12" placeholder="Ваше имя">'}<div class="rmr"><input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(SP_ROOM)}" autocomplete="off"><button class="btn ghost" type="submit">Войти</button></div><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">＋ Своя комната для друзей</button></form>
+  <div class="erow"><button class="btn ghost" onclick="showTop()">🏆 Рейтинг</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl()">🎨 Коллекция</button></div>`;
+  loadMe();loadClub();onlTick();
+  if(SP_ROOM&&U&&!ssGet('sp:'+SP)){ssSet('sp:'+SP,'1');setTimeout(go,60)}   // открыли по приглашению: сразу за стол (один раз)
+  else if(ssGet('qk')==chGame){ssSet('qk','');setTimeout(quickGo,60)}     // «Новый соперник» после партии
 }
 function go(e){if(e)e.preventDefault();const room=$('#rm').value.trim();if(!room){alert('Введите код комнаты');return false}
-  cur={room,name:$('#nm').value.trim()||'Игрок',game:chGame};conn();return false}
+  cur={room,name:myName(),game:chGame};conn();return false}
 function conn(){
   ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
-  ws.onopen=()=>{$('#net').hidden=true;send({t:'join',room:cur.room,name:cur.name,game:cur.game,uid,initData:(tg&&tg.initData)||''})};
+  ws.onopen=()=>{$('#net').hidden=true;const id={name:cur.name,game:cur.game,uid,initData:(tg&&tg.initData)||''};send(cur.room?{t:'join',room:cur.room,...id}:{t:'quick',since:Date.now()-cur.t0,...id})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
-    if(m.err){alert(m.err);cur=null;ws.close();return}
-    if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='react')return float(m);
-    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='afk')return afkEv(m);chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
+    if(m.err){alert(m.err);cur=null;ws.close();if($('#mmv'))entry();return}
+    if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='mm')return mmView(m);if(m.ev=='matched'){cur={room:m.room,name:cur.name,game:cur.game};mmDone();return}if(m.ev=='club')return clubEv(m);if(m.ev=='callres')return callRes(m);if(m.ev=='react')return float(m);
+    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='afk')return afkEv(m);$('#app').classList.remove('ent');chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
@@ -1432,7 +1517,6 @@ function lobby(a){
   <div style="flex:1"></div>
   <div class="row"><button class="btn ghost" onclick="share()">Пригласить</button><button class="btn ghost" onclick="toggleRadio()">📻 Радио</button><button class="btn ghost" onclick="send({t:'bot'})" ${st.players.length>=6?'disabled':''}>+ Бот</button><button class="btn" onclick="send({t:'start'})" ${st.players.length<2?'disabled':''}>Начать</button></div>`;
 }
-function share(){const l='https://t.me/share/url?url='+encodeURIComponent(INVITES[chGame]+'?startapp='+st.room)+'&text='+encodeURIComponent(({durak:'Сыграем в дурака?',chess:'Сыграем в шахматы?',mafia:'Сыграем в мафию?',billiards:'Сыграем в бильярд?',bowling:'Сыграем в боулинг?'})[chGame]+' Код комнаты: '+st.room);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
 // Полёт карт: перед перерисовкой запоминаем, где что лежало, после перерисовки новые карты прилетают оттуда
 const flipOK=()=>{try{return!matchMedia('(prefers-reduced-motion: reduce)').matches&&!!Element.prototype.animate}catch(e){return false}};
 function flipSnap(){if(!flipOK()||!$('#app'))return null;const R=el=>el.getBoundingClientRect(),m={},seats={};
@@ -1487,7 +1571,7 @@ function draw(){
   <div class="msg">${msg}</div>
   <div class="bar">${seat(st.players[me],me,1)}<div class="btns">${b.join('')}</div><div class="tools"><button class="ico" onclick="toggleReact()">😊</button><button class="ico" onclick="toggleChat()">💬${unread>0?`<i>${unread}</i>`:''}</button></div></div>
   <div class="hand" style="--n:${Math.max(st.hand.length,2)}">${st.hand.map((c,k)=>card(c,'h'+(can(c)?'':' dim'),'h'+key(c),`style="--i:${k}" onclick="play(${k})"`)).join('')}</div>
-  ${st.players[me].left?`<div class="res"><div class="box"><div class="big">🚪</div><h2>Вы больше не в партии</h2><button class="btn" onclick="location.reload()">В меню</button></div></div>`:''}${st.over?`<div class="res"><div class="box"><div class="stamp inbox ${st.loser<0?'':win?'gold':'red'}">${st.loser<0?'Ничья':win?'Победа':'Дурак'}</div><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button></div></div>`:''}`;
+  ${st.players[me].left?`<div class="res"><div class="box"><div class="big">🚪</div><h2>Вы больше не в партии</h2><button class="btn" onclick="location.reload()">В меню</button></div></div>`:''}${st.over?`<div class="res"><div class="box"><div class="stamp inbox ${st.loser<0?'':win?'gold':'red'}">${st.loser<0?'Ничья':win?'Победа':'Дурак'}</div><div class="big">${win?'🏆':'🤡'}</div><h2>${txt}</h2>${resHTML(me)}<button class="btn" onclick="send({t:'again'})">Сыграть ещё раз</button>${ovX()}</div></div>`:''}`;
   flipRun(F0,prevSt);sfx(seen,next,me,win);seen=next;prevSt=st;
   if(st.over)try{tg.HapticFeedback.notificationOccurred(win?'success':'error')}catch(e){}
 }
@@ -1509,6 +1593,223 @@ function chatRender(){if(!st)return;setChatUI();const l=$('#log');
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closeSheets()});
 setInterval(()=>document.querySelectorAll('.offt').forEach(e=>e.textContent=Math.max(0,Math.ceil((+e.dataset.e-Date.now())/1000))),500);
 setInterval(()=>{if(!st||st.game!='chess'||!st.clk)return;document.querySelectorAll('.clk').forEach(e=>{const c=e.dataset.s,ms=clkNow(c);e.textContent=fmtT(ms);e.classList.toggle('low',ms<30000&&st.clk.run&&st.clk.turn==c)})},250);
+/*CLUB*/
+// ===== Клуб: быстрая игра, фишки, задания дня, серия входов, турнир недели, коллекция, «Поделиться» =====
+// Данные клуба приходят с сервера (/api/club) при открытии игры и после каждой партии (событие club).
+const SP=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'',SPM=/^([A-Za-z0-9]{0,8})(?:-u(\d{3,15}))?$/.exec(SP)||[],SP_ROOM=(SPM[1]||'').toUpperCase();
+const ssGet=k=>{try{return sessionStorage.getItem(k)||''}catch(e){return''}},ssSet=(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}};
+const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(e){return''}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const plur=(n,a,b,c)=>{const k=Math.abs(n)%100,j=k%10;return k>10&&k<20?c:j==1?a:j>=2&&j<=4?b:c};
+const myName=()=>{const e=$('#nm');return((e&&e.value.trim())||(U&&U.first_name)||'Игрок').slice(0,12)};
+const CGI={durak:'🃏',chess:'♞',mafia:'🔪',billiards:'🎱',bowling:'🎳'},CGIN={durak:'дураке',chess:'шахматах',mafia:'мафии',billiards:'бильярде',bowling:'боулинге'};
+const CGPATH={durak:'/',chess:'/chess',mafia:'/mafia',billiards:'/billiards',bowling:'/bowling'};
+const CHIP='<svg class="cchip" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#e9b83a" stroke="#7a5410" stroke-width="1.2"/><circle cx="10" cy="10" r="6" fill="#f6d36b" stroke="#a87a1c" stroke-width="1"/><path d="M10 1v3M10 16v3M1 10h3M16 10h3M3.6 3.6l2.1 2.1M14.3 14.3l2.1 2.1M3.6 16.4l2.1-2.1M14.3 5.7l2.1-2.1" stroke="#fff8" stroke-width="1.6"/></svg>';
+// оформление из коллекции: доски, сукно (рубашки BACKS лежат рядом с картами)
+const BOARDS={board_ice:['#e6ebf0','#7389a3'],board_walnut:['#ecd3a8','#a06c3f'],board_malachite:['#dcefe3','#2e7d5b'],board_night:['#a9b4cf','#3a4466'],board_tourney:['#eeeed2','#769656']};
+const CLOTHS={cloth_blue:{t:'#1767a3',f:'#0c3f68',c:'#17629d',e:'170,215,255',l1:'110,200,255',l2:'50,140,215',sh:'0,15,40',st:'0,10,28'},
+  cloth_green:{t:'#1b7a3e',f:'#0c4522',c:'#1a723a',e:'170,255,200',l1:'120,235,150',l2:'50,170,90',sh:'0,30,10',st:'0,22,8'},
+  cloth_wine:{t:'#7d1d2e',f:'#4a0d19',c:'#771b2c',e:'255,185,195',l1:'255,120,140',l2:'200,60,85',sh:'40,0,10',st:'32,0,8'},
+  cloth_graphite:{t:'#3b4149',f:'#1d2127',c:'#383e46',e:'215,225,240',l1:'205,215,230',l2:'120,130,145',sh:'4,6,10',st:'4,6,10'},
+  cloth_violet:{t:'#5b2a8c',f:'#341552',c:'#562886',e:'225,195,255',l1:'200,150,255',l2:'140,80,210',sh:'20,0,40',st:'16,0,32'}};
+let BLC=CLOTHS.cloth_blue,CLUB=null,CAT=[],WEEK=null,backCur='';
+const bwBalls=()=>{const own=new Set((CLUB&&CLUB.own)||[]);return BWL.BALLS.map((b,i)=>[b,i]).filter(([b,i])=>i<(BWL.BASE||6)||own.has('ball_'+i))};
+const clubPost=b=>fetch('/api/club',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({d:(tg&&tg.initData)||'',uid,name:myName(),...b})}).then(r=>r.json());
+async function loadClub(){try{const r=await clubPost({a:'get',sp:SP});if(!r||r.err||!r.me)return;CAT=r.cat||[];WEEK=r.week;setClub(r.me);if(r.onl)onlShow({all:r.onl});
+  if(r.daily)dailyPop(r.daily);else wresPop()}catch(e){}}
+function setClub(me){if(!me)return;CLUB=me;applySkins();clubBar();const a=$('#me .av');if(a)a.className='av'+(me.eq.frame?' fr-'+me.eq.frame:'')}
+function setBack(id){id=BACKS[id]?id:'back_red';if(id==backCur)return;backCur=id;let el=$('#cbk');if(!el){el=document.createElement('style');el.id='cbk';document.head.appendChild(el)}
+  el.textContent=`.cback{background-image:url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(backSVG(BACKS[id]))}")}`}
+function applySkins(){const e=(CLUB&&CLUB.eq)||{};setBack(e.back);const B=BOARDS[e.board]||BOARDS.board_ice;document.body.style.setProperty('--sql',B[0]);document.body.style.setProperty('--sqd',B[1]);
+  const c=CLOTHS[e.cloth]||CLOTHS.cloth_blue;if(c!==BLC){BLC=c;try{blDirty=1}catch(x){}}}
+function clubBar(){const el=$('#clubbar');if(!el||!CLUB)return;const q=CLUB.q.list,dn=q.filter(x=>x.done).length,w=WEEK&&WEEK.me;
+  el.innerHTML=`<button class="cb" onclick="showColl()" aria-label="Фишки и коллекция">${CHIP}<b>${CLUB.chips}</b></button><button class="cb" onclick="showQuests()" aria-label="Серия входов">🔥<b>${CLUB.streak}</b><small>${plur(CLUB.streak,'день','дня','дней')}</small></button><button class="cb" onclick="showQuests()" aria-label="Задания дня">📋<b>${dn}/${q.length}</b></button><button class="cb" onclick="showTop('week')" aria-label="Турнир недели">🏆<b>${w?w.place:'–'}</b><small>${w?'место':'неделя'}</small></button>`;
+  const qd=$('#qdot');if(qd)qd.hidden=dn==q.length}
+const clubNA=()=>toast(U?'Клуб загружается, попробуйте через пару секунд':'Задания, турнир и коллекция доступны, когда игра открыта в Telegram');
+// ---- сколько людей в клубе ----
+let onlT=0;
+function onlTick(){clearTimeout(onlT);if(!$('#onl'))return;fetch('/api/online').then(r=>r.json()).then(onlShow).catch(()=>{});onlT=setTimeout(onlTick,15000)}
+function onlShow(o){const e=$('#onl');if(!e||!o)return;const n=o.all||0,gn=o.g?o.g[chGame]||0:0;
+  if(n>=2)e.innerHTML=`<i class="live"></i>Сейчас в клубе <b>${n}</b> ${plur(n,'игрок','игрока','игроков')}${gn?` · в ${CGIN[chGame]} <b>${gn}</b>`:''}`}
+// ---- быстрая игра ----
+let mmLast=null,mmIv=0;
+function quickGo(){hap('medium');cur={quick:true,name:myName(),game:chGame,t0:Date.now()};mmView({n:1,w:0,bot:20000});conn()}
+// в центре радара знак своей игры, нарисованный в её стиле
+function mmIcon(){try{if(chGame=='chess')return`<span style="width:78px;height:78px;display:block">${pcSVG('w','n','pch')}</span>`;if(chGame=='billiards')return'<span class="hb" style="--c:#1a1a1a"><b>8</b></span>';if(chGame=='bowling')return`<img src="${bwBallImg(0)}" width="84" height="84" alt="">`;if(chGame=='mafia')return`<span style="width:64px;height:76px;display:block">${mfArt('mafia')}</span>`;return`<svg viewBox="0 0 100 100" width="58" height="58"><g fill="#ecc96b">${SUITSH[0]}</g></svg>`}catch(e){return CGI[chGame]}}
+function mmView(m){mmLast=m;if(!cur||!cur.quick)return;const a=$('#app');
+  if(!$('#mmv')){a.classList.add('ent');a.innerHTML=`${sndBtn()}<div class="mmv" id="mmv"><div class="radar"><i></i><i></i><i></i><b>${mmIcon()}</b></div><h2>Ищем соперника</h2><div class="mmt" id="mmt">0:00</div><p class="sub" id="mmn"></p><button class="btn ghost" onclick="quickCancel()">Отмена</button></div>`;clearInterval(mmIv);mmIv=setInterval(mmUpd,250)}
+  mmUpd()}
+function mmUpd(){if(!$('#mmv')||!cur||!cur.quick){clearInterval(mmIv);return}const w=Date.now()-cur.t0,s=Math.floor(w/1000),m=mmLast||{},left=Math.max(0,Math.ceil(((m.bot||20000)-w)/1000));
+  $('#mmt').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  $('#mmn').innerHTML=(m.n>1?`Ищут вместе с вами: <b>${m.n-1}</b><br>`:'')+(chGame=='mafia'?(left?`Собираем город: через ${left} с недостающих жителей заменят боты`:'Рассаживаем жителей…'):left?`Подбираем соперника по силе. Если никого нет, через ${left} с сядет компьютер`:'Садимся за стол…')}
+function mmDone(){clearInterval(mmIv);hap('heavy');snd('turn')}
+function quickCancel(){send({t:'unquick'});cur=null;try{ws.close()}catch(e){}clearInterval(mmIv);entry()}
+function quickAgain(){ssSet('qk',chGame);location.reload()}
+// ---- события клуба во время игры ----
+let tq=[],tqOn=false;
+function ctoast(t,chips){tq.push([t,chips]);if(!tqOn)tqNext()}
+function tqNext(){const x=tq.shift(),e=$('#ctoast');if(!x||!e){tqOn=false;if(e)e.hidden=true;return}tqOn=true;
+  e.innerHTML=`<span>${esc(x[0])}</span>${x[1]?`<b>+${x[1]} 🪙</b>`:''}`;e.hidden=false;e.classList.remove('go');void e.offsetWidth;e.classList.add('go');if(x[1])snd('win',0,.5);else snd('pop');
+  setTimeout(tqNext,3300)}
+function clubEv(m){if(m.me)setClub(m.me);const t=m.toasts||[];t.forEach(x=>ctoast(x.t,x.chips));if(m.wk)ctoast(`🏆 +${m.wk} ${plur(m.wk,'очко','очка','очков')} в турнире недели`)}
+function callRes(m){const b=$('#cl-'+m.to);if(m.ok){if(b)b.textContent='✓ Позвали';hap('light')}else{if(b){b.disabled=false;b.textContent='Позвать'}toast(m.err||'Не получилось')}}
+// ---- окна: награда дня, итоги недели ----
+const stk=C=>{const cy=C.streak?(C.streak-1)%7:-1;return`<div class="stk">${C.streakR.map((r,i)=>`<div class="sd ${i<cy?'past':i==cy?'now':''}"><small>${i+1} д.</small><b>${r}</b></div>`).join('')}</div>`};
+function dailyPop(d){const C=CLUB;
+  $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">${d.r?'🔥':'🎁'}</div><h3>${d.r?(d.day>1?`${d.day} ${plur(d.day,'день','дня','дней')} подряд`:'Награда дня'):'Подарок'}</h3>
+  ${d.r?`${stk(C)}<div class="dgain">+${d.r} 🪙</div><div class="msub">Завтра: +${C.streakR[C.streak%7]} 🪙. Пропустите день, и серия начнётся заново.</div>`:''}
+  ${d.welcome?`<div class="dgain">+${d.welcome} 🪙</div><div class="msub">Подарок от клуба: вас позвал(а) ${esc(d.by||'друг')}</div>`:''}
+  <button class="btn" onclick="$('#pm').hidden=true;hap('medium')">Забрать</button></div>`;$('#pm').hidden=false;snd('win',.1,.6)}
+function wresPop(){const w=CLUB&&CLUB.wres;if(!w||lsGet('wres')==w.wk)return;lsSet('wres',w.wk);
+  $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">${w.place<=3?['🥇','🥈','🥉'][w.place-1]:'🏆'}</div><h3>Итоги недели</h3><div class="msub" style="font-size:14px;opacity:.9">Вы на <b>${w.place} месте</b> из ${w.of}: ${w.p} ${plur(w.p,'очко','очка','очков')}</div>
+  ${w.prize?`<div class="dgain">+${w.prize} 🪙</div>`:''}${w.place<=3?'<div class="msub">👑 Значок «Чемпион недели» и рамка с короной теперь ваши</div>':''}<div class="msub">Новая неделя уже идёт, очки обнулились</div><button class="btn" onclick="$('#pm').hidden=true">Отлично</button></div>`;$('#pm').hidden=false}
+// ---- задания дня ----
+function showQuests(){if(!CLUB)return clubNA();const C=CLUB,q=C.q.list,left=Math.max(0,C.dayEnd-Date.now()),hh=Math.floor(left/36e5),mi=Math.floor(left%36e5/6e4);
+  const rows=q.map(x=>`<div class="qr ${x.done?'done':''}" onclick="qGo('${x.g}')"><span class="qi">${CGI[x.g]}</span><div class="qt"><div>${esc(x.t)}</div><div class="pbar"><i style="width:${Math.min(100,x.n/x.need*100)}%"></i></div><small>${x.done?'выполнено':x.max?(x.n?'лучший результат сегодня: '+x.n:'нужна одна игра'):x.n+' из '+x.need}${x.g!=chGame&&!x.done?' · нажмите, чтобы перейти':''}</small></div><b class="qrw">${x.done?'✅':'+'+x.r+' 🪙'}</b></div>`).join('');
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Задания дня</h3><div class="msub">Обновятся через ${hh} ч ${mi} мин. Засчитываются партии и с компьютером</div><div class="ql">${rows}</div>
+   <div class="qbonus ${C.q.bonus?'done':''}">🎁 За все три задания: <b>${C.q.bonus?'получено':'+'+C.qb+' 🪙'}</b></div>
+   <h4>🔥 Серия входов: ${C.streak} ${plur(C.streak,'день','дня','дней')}</h4>${stk(C)}<div class="msub">Заходите каждый день: награда растёт, пропуск обнуляет серию. За 7 дней подряд рамка «Неделя подряд»</div>
+   <h4>🤝 Друзья</h4><div class="msub">+${C.refR} 🪙 за каждого друга, который сыграет первую партию по вашей ссылке${C.refs?`. Уже пришло: <b>${C.refs}</b>`:''}. За троих рамка «Душа компании»</div><button class="btn" onclick="inviteFriend()">Позвать друга</button>
+   <label class="tgl"><input type="checkbox" ${C.mute?'':'checked'} onchange="setMute(!this.checked)"> Напоминания и приглашения от бота</label></div>`;$('#pm').hidden=false}
+function qGo(g){if(g==chGame){$('#pm').hidden=true;return}location.href=CGPATH[g]}
+function inviteFriend(){openShare(INVITES[chGame]+(U?'?startapp=-u'+U.id:''),'Заходи в игровой клуб в Telegram: дурак, шахматы, мафия, бильярд и боулинг. Сыграем?')}
+async function setMute(on){try{const r=await clubPost({a:'mute',on});if(r.me)setClub(r.me);toast(on?'🔕 Бот больше не будет присылать напоминания':'🔔 Напоминания включены')}catch(e){}}
+// ---- коллекция ----
+const KINDS=[['back','Рубашки'],['board','Доски'],['cloth','Сукно'],['ball','Шары'],['frame','Рамки']];
+const KHINT={back:'Рубашка видна вам: колода и карты соперников в дураке',board:'Цвета шахматной доски видны вам',cloth:'Цвет сукна бильярдного стола виден вам',ball:'Редкие шары весят как обычные и отличаются только видом. Выбранный шар будет у вас в боулинге',frame:'Рамку вокруг аватара видят все за столом и в турнире недели'};
+const CGN3={durak:'дураке',chess:'шахматах',billiards:'бильярде',bowling:'боулинге',mafia:'мафии'};
+let collK='';
+function reqText(it){return it.rank?`рейтинг ${it.rank} в ${CGN3[it.game]}`:it.streak?`${it.streak} дней подряд`:it.refs?`${it.refs} друга в клубе`:it.champ?'тройка турнира недели':''}
+function prevItem(it){const k=it.kind;
+  if(k=='back')return`<i class="pv pvb" style="background-image:url(&quot;data:image/svg+xml;charset=utf-8,${encodeURIComponent(backSVG(BACKS[it.id]||BACKS.back_red))}&quot;)"></i>`;
+  if(k=='board'){const B=BOARDS[it.id]||BOARDS.board_ice;return`<i class="pv pvbd" style="--a:${B[0]};--b:${B[1]}"></i>`}
+  if(k=='cloth'){const C=CLOTHS[it.id]||CLOTHS.cloth_blue;return`<i class="pv pvc" style="--t:${C.t};--l:rgb(${C.l1})"></i>`}
+  if(k=='ball')return`<img class="pv pvball" src="${bwBallImg(+it.id.slice(5))}" alt="">`;
+  return`<i class="pv pvf">${av({name:myName(),photo:(me0&&me0.photo)||'',n:'',fr:it.id})}</i>`}
+function showColl(k){if(!CLUB)return clubNA();collK=k||collK||({durak:'back',chess:'board',billiards:'cloth',bowling:'ball',mafia:'frame'})[chGame];
+  const own=new Set(CLUB.own),eq=CLUB.eq;
+  const cells=CAT.filter(x=>x.kind==collK).map(it=>{const has=own.has(it.id),on=eq[it.kind]==it.id;
+    const act=on?(it.kind=='frame'||it.kind=='ball'?`<button class="btn ghost sm" onclick="cEquip('','${it.kind}')">Снять</button>`:'<span class="cs">✓ Выбрано</span>')
+      :has?`<button class="btn sm" onclick="cEquip('${it.id}')">Выбрать</button>`
+      :it.price?`<button class="btn sm ${CLUB.chips<it.price?'ghost':''}" onclick="cBuy('${it.id}')">${it.price} 🪙</button>`
+      :`<span class="cl">🔒 ${reqText(it)}</span>`;
+    return`<div class="ci ${on?'on':''}">${prevItem(it)}<div class="cn">${esc(it.n)}</div>${act}</div>`}).join('');
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Коллекция</h3><div class="msub">У вас ${CHIP} <b>${CLUB.chips}</b> ${plur(CLUB.chips,'фишка','фишки','фишек')}. Их дают за задания, серию входов, турнир недели и друзей</div>
+   <div class="tabs">${KINDS.map(([kk,n])=>`<button class="${kk==collK?'on':''}" onclick="showColl('${kk}')">${n}</button>`).join('')}</div><div class="cgrid">${cells}</div><div class="msub" style="margin-top:10px">${KHINT[collK]}</div></div>`;$('#pm').hidden=false}
+function cBuy(id){const it=CAT.find(x=>x.id==id);if(!it)return;if(CLUB.chips<it.price){toast(`Не хватает фишек: нужно ${it.price} 🪙, у вас ${CLUB.chips}`);return}
+  const go=async ok=>{if(!ok)return;try{const r=await clubPost({a:'buy',id});if(r.err){toast(r.err);return}setClub(r.me);hap('heavy');snd('win');showColl();ctoast(`🎨 Новое в коллекции: «${it.n}»`)}catch(e){toast('Сервер не ответил')}};
+  const q=`Купить «${it.n}» за ${it.price} 🪙?`;try{if(tg&&tg.showConfirm&&tg.isVersionAtLeast&&tg.isVersionAtLeast('6.2'))return tg.showConfirm(q,go)}catch(e){}go(confirm(q))}
+async function cEquip(id,kind){try{const r=await clubPost({a:'equip',id,kind});if(r.err){toast(r.err);return}setClub(r.me);hap('light');
+  if(st&&st.game=='bowling'&&st.status=='lobby'){const b=id&&id.startsWith('ball_')?+id.slice(5):kind=='ball'?st.you%6:-1;if(b>=0)send({t:'ball',id:b})}
+  showColl()}catch(e){toast('Сервер не ответил')}}
+// ---- турнир недели и рейтинг ----
+let topTab='';
+async function showTop(t){topTab=t||topTab||(CLUB?'week':'rating');if(!CLUB)topTab='rating';
+  const tabs=`<div class="tabs">${CLUB?`<button class="${topTab=='week'?'on':''}" onclick="showTop('week')">Турнир недели</button>`:''}<button class="${topTab=='rating'?'on':''}" onclick="showTop('rating')">Рейтинг в игре</button></div>`;
+  if(topTab=='rating')return showRating(tabs);
+  try{const r=await clubPost({a:'week'});if(r.week)WEEK=r.week;clubBar()}catch(e){}
+  const W=WEEK;if(!W)return;const left=Math.max(0,W.ends-Date.now()),dd=Math.floor(left/864e5),hh=Math.floor(left%864e5/36e5);
+  const row=(u,i)=>`<div class="r ${u.me?'me':''}"><b class="pos">${i}</b>${av({name:u.n,photo:'',n:'',fr:u.fr})}<span>${esc(u.n)}</span><b>${u.p}</b></div>`;
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Турнир недели</h3>${tabs}<div class="msub">Все пять игр клуба · до конца ${dd?dd+' дн. ':''}${hh} ч</div>
+   <div class="wkpr"><span>🥇 ${W.prize[0]} 🪙</span><span>🥈 ${W.prize[1]} 🪙</span><span>🥉 ${W.prize[2]} 🪙</span><span>4–10 место: ${W.top10} 🪙</span></div>
+   <div class="top10">${W.top.length?W.top.map((u,i)=>row(u,i+1)).join(''):'<p style="text-align:center;opacity:.7">На этой неделе ещё никто не играл. Будьте первым!</p>'}${W.me&&W.me.place>W.top.length?row({n:myName(),p:W.me.p,me:1,fr:CLUB.eq.frame},W.me.place):''}</div>
+   <div class="msub" style="margin-top:10px">${W.me?`Вы на <b>${W.me.place}</b> месте из ${W.of}. `:'Сыграйте партию, чтобы попасть в таблицу. '}Очки за партию: победа ${W.pts.win}, ничья ${W.pts.draw}, поражение ${W.pts.loss}. Тройка получает значок «Чемпион недели» и рамку с короной</div></div>`;$('#pm').hidden=false}
+function clubLine(){const C=CLUB;return`<div class="grid" style="margin-top:8px"><div><b>${C.chips}</b>фишек</div><div><b>${C.best}</b>лучшая серия</div><div><b>${C.crowns?'👑'+C.crowns:0}</b>${C.crowns?'чемпион недели':'побед в неделе'}</div></div>`}
+// ---- позвать в комнату ----
+const INVT={durak:'Сыграем в дурака?',chess:'Сыграем в шахматы?',mafia:'Сыграем в мафию?',billiards:'Сыграем в бильярд?',bowling:'Сыграем в боулинг?'};
+function openShare(url,text){const l='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
+function shareLink(){openShare(INVITES[chGame]+'?startapp='+st.room+(U?'-u'+U.id:''),INVT[chGame]+' Код комнаты: '+st.room)}
+function share(){const R=(CLUB&&CLUB.recent)||[];if(!R.length)return shareLink();
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Позвать в игру</h3><button class="btn" onclick="shareLink()">📨 Отправить ссылку в чат</button><div class="msub" style="margin-top:14px">Или позовите тех, с кем уже играли: бот пришлёт им приглашение в эту комнату</div>
+   <div class="top10">${R.map(x=>`<div class="r"><span>${CGI[x.g]||''} ${esc(x.n)}</span><button class="btn ghost sm" id="cl-${x.u}" onclick="callF('${x.u}')">Позвать</button></div>`).join('')}</div></div>`;$('#pm').hidden=false}
+function callF(u){if(!/^[\w]+$/.test(u))return;send({t:'call',to:u});const b=$('#cl-'+u);if(b){b.disabled=true;b.textContent='…'}}
+// ---- после партии: поделиться результатом, новый соперник ----
+const ovX=()=>`<div class="row ovx"><button class="btn ghost" onclick="shareCard()">📤 Поделиться</button><button class="btn ghost" onclick="quickAgain()">⚡ Новый соперник</button></div>`;
+function bwStrikes(fr){let n=0;(fr||[]).forEach((r,f)=>{if(f<9){if(r[0]==10)n++;return}let fresh=true;for(const x of r){if(fresh&&x==10)n++;else fresh=!fresh}});return n}
+const WINR={resign:'Соперник сдался',time:'У соперника упал флаг',leave:'Соперник покинул партию',agreed:'По согласию'};
+function cardData(){const g=st.game,me=st.you,P=st.players,p=P[me]||{},prof=p.prof,rr=(g=='durak'?st.result:st.rres)||[],r=rr.find(x=>x.i==me);let big='',sub='',tone='win';
+  if(g=='durak'){if(st.loser<0){big='Ничья';sub='Карты закончились у всех разом';tone='draw'}else if(st.loser!=me){big='Я не дурак!';sub=`За столом ${P.length} ${plur(P.length,'игрок','игрока','игроков')}, дурак сегодня ${P[st.loser].name}`}else{big='Сегодня я дурак';sub='Требую реванша!';tone='loss'}}
+  else if(g=='chess'){const w=st.win,res=st.result||{},mv=Math.ceil((st.hist||[]).length/2),mvs=mv+' '+plur(mv,'ход','хода','ходов');
+    if(w<0){big='Ничья';sub=RS[res.reason]||'';tone='draw'}else if(w==me){big=res.reason=='mate'?'Мат!':'Победа!';sub=res.reason=='mate'?'Мат в '+mvs:(WINR[res.reason]||RS[res.reason]||'')+' · '+mvs}else{big='Поражение';sub='Отыграюсь в следующей партии';tone='loss'}}
+  else if(g=='billiards'){if(st.winner==me){big='Победа!';sub=st.reason||'Восьмёрка в лузе'}else{big='Поражение';sub=st.reason||'';tone='loss'}}
+  else if(g=='bowling'){const tot=st.tot?st.tot[me]:BWL.total((st.fr||[])[me]||[]),sk=bwStrikes((st.fr||[])[me]),solo=P.length<2,win=(st.win||[]).includes(me);big=tot+' '+plur(tot,'очко','очка','очков');sub=(sk?`Страйков: ${sk}`:'Без страйков, но с душой')+(solo?' · тренировка':win?' · победа!':'');tone=solo||win?'win':'loss'}
+  else if(g=='mafia'){const side=st.myRole=='mafia'?'mafia':'town',win=st.won==side,rl=(MF_ROLE[st.myRole]||{}).n||'';big=win?(side=='mafia'?'Мафия победила':'Город спасён'):(side=='mafia'?'Мафию раскрыли':'Мафия победила');sub='Моя роль: '+rl;tone=win?'win':'loss'}
+  return{big,sub,tone,name:p.name||myName(),r,rating:prof?prof.rating:null}}
+// SVG-фигуры (масти, шахматы) в Path2D для рисования на холсте
+function svgP(mk){const P=new Path2D(),n=x=>+x;
+  mk.replace(/<path d="([^"]+)"\/>/g,(_,d)=>{P.addPath(new Path2D(d));return''});
+  mk.replace(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"\/>/g,(_,x,y,r)=>{P.moveTo(n(x)+n(r),n(y));P.arc(n(x),n(y),n(r),0,Math.PI*2);return''});
+  mk.replace(/<ellipse cx="([\d.]+)" cy="([\d.]+)" rx="([\d.]+)" ry="([\d.]+)"\/>/g,(_,x,y,a,b)=>{P.moveTo(n(x)+n(a),n(y));P.ellipse(n(x),n(y),n(a),n(b),0,0,Math.PI*2);return''});
+  mk.replace(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"[^/]*\/>/g,(_,x,y,w,h)=>{P.rect(n(x),n(y),n(w),n(h));return''});return P}
+function rrect(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function fitText(g,t,x,y,maxW,w8,size,fam){let s=size;do{g.font=`${w8} ${s}px ${fam}`;s-=4}while(g.measureText(t).width>maxW&&s>24);g.fillText(t,x,y)}
+const CTH={
+  durak:{f1:"'Playfair Display',Georgia,serif",f2:'Manrope,sans-serif',ac:'#ecc96b',fg:'#fff6dc',
+    bg(g,S){const gr=g.createRadialGradient(S/2,S*.4,40,S/2,S*.5,S*.78);gr.addColorStop(0,'#1f9264');gr.addColorStop(.6,'#0b4d34');gr.addColorStop(1,'#03170e');g.fillStyle=gr;g.fillRect(0,0,S,S);
+      g.fillStyle='rgba(255,255,255,.045)';for(let y=0;y<S;y+=120)for(let x=(y/120%2)*60;x<S;x+=120){g.save();g.translate(x+20,y+20);g.scale(.42,.42);g.fill(svgP(SUITSH[(x/60+y/120)%4|0]));g.restore()}},
+    art(g,S){const C=[[14,0,-15],[14,1,0],[13,2,15]];C.forEach(([r,s,a],i)=>{g.save();g.translate(S/2+(i-1)*70,520);g.rotate(a*Math.PI/180);g.translate(-105,-330);
+      g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=30;g.shadowOffsetY=12;rrect(g,0,0,210,300,18);const gr=g.createLinearGradient(0,0,210,300);gr.addColorStop(0,'#fffdf6');gr.addColorStop(1,'#efe5c9');g.fillStyle=gr;g.fill();g.shadowColor='transparent';
+      g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=2;g.stroke();const col=sCol(s);g.fillStyle=col;g.font="700 44px 'Times New Roman',serif";g.textAlign='center';g.fillText(RK[r-6],30,52);
+      g.save();g.translate(14,62);g.scale(.32,.32);g.fill(svgP(SUITSH[s]));g.restore();g.save();g.translate(45,90);g.scale(1.2,1.2);g.fill(svgP(SUITSH[s]));g.restore();g.restore()})}},
+  chess:{f1:'Unbounded,Manrope,sans-serif',f2:'Manrope,sans-serif',ac:'#7cc4ff',fg:'#eaf4ff',
+    bg(g,S){const gr=g.createLinearGradient(0,0,0,S);gr.addColorStop(0,'#1b2740');gr.addColorStop(1,'#07090f');g.fillStyle=gr;g.fillRect(0,0,S,S);g.fillStyle='rgba(255,255,255,.035)';for(let y=0;y<S;y+=90)for(let x=(y/90%2)*90;x<S;x+=180)g.fillRect(x,y,90,90);
+      const gl=g.createRadialGradient(S/2,330,10,S/2,330,420);gl.addColorStop(0,'rgba(124,196,255,.35)');gl.addColorStop(1,'rgba(124,196,255,0)');g.fillStyle=gl;g.fillRect(0,0,S,S)},
+    art(g,S){const base='<path d="M20 91h60a3 3 0 0 0 3-3v-3a4 4 0 0 0-4-4H21a4 4 0 0 0-4 4v3a3 3 0 0 0 3 3z"/><path d="M27 81h46l-4-7H31z"/>';
+      [['q',-190,.62,'#2b3240','#0a0d13'],['k',0,1,'#ffffff','#a59e8c'],['n',190,.62,'#2b3240','#0a0d13']].forEach(([t,dx,sc,a,b])=>{const P=svgP(PC_SH[t]+base),k=3.9*sc;g.save();g.translate(S/2+dx-50*k,540-92*k);g.scale(k,k);
+        const gr=g.createLinearGradient(0,0,100,40);gr.addColorStop(0,a);gr.addColorStop(1,b);g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=8;g.fillStyle=gr;g.fill(P);g.shadowColor='transparent';g.lineWidth=1.6;g.strokeStyle=t=='k'?'#1c2330':'#9fb4d4';g.stroke(P);g.restore()})}},
+  mafia:{f1:'Oswald,Manrope,sans-serif',f2:"'Courier Prime',monospace",ac:'#ff5470',fg:'#f4eaec',
+    bg(g,S){const gr=g.createLinearGradient(0,0,0,S);gr.addColorStop(0,'#2a0d16');gr.addColorStop(.6,'#120609');gr.addColorStop(1,'#050203');g.fillStyle=gr;g.fillRect(0,0,S,S);
+      const R=bwRng(7);g.fillStyle='#000';for(let x=0;x<S;x+=60+R()*40){const h=50+R()*120;g.fillRect(x,S-h,50+R()*40,h);g.fillStyle='rgba(255,210,120,.35)';for(let k=0;k<6;k++)if(R()<.4)g.fillRect(x+8+R()*30,S-h+20+R()*(h-40),6,9);g.fillStyle='#000'}
+      const gl=g.createRadialGradient(S/2,330,10,S/2,330,400);gl.addColorStop(0,'rgba(255,84,112,.28)');gl.addColorStop(1,'rgba(255,84,112,0)');g.fillStyle=gl;g.fillRect(0,0,S,S)},
+    art(g,S){g.save();g.translate(S/2,400);g.shadowColor='rgba(0,0,0,.7)';g.shadowBlur=30;g.fillStyle='#141016';g.beginPath();g.ellipse(0,70,250,58,0,0,7);g.fill();g.shadowColor='transparent';
+      g.beginPath();g.moveTo(-140,62);g.bezierCurveTo(-150,-60,-110,-120,-40,-110);g.quadraticCurveTo(0,-80,40,-110);g.bezierCurveTo(110,-120,150,-60,140,62);g.closePath();const gr=g.createLinearGradient(-140,0,140,0);gr.addColorStop(0,'#0e0b10');gr.addColorStop(.5,'#2c2530');gr.addColorStop(1,'#0e0b10');g.fillStyle=gr;g.fill();
+      g.fillStyle='#b3203a';g.beginPath();g.moveTo(-142,20);g.quadraticCurveTo(0,40,142,20);g.lineTo(141,58);g.quadraticCurveTo(0,78,-141,58);g.closePath();g.fill();
+      g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=3;g.beginPath();g.ellipse(0,70,250,58,0,Math.PI*1.05,Math.PI*1.95);g.stroke();g.restore()}},
+  billiards:{f1:"'Russo One',Manrope,sans-serif",f2:'Manrope,sans-serif',ac:'#f0b441',fg:'#f6ead7',
+    bg(g,S){let gr=g.createRadialGradient(S/2,S*.35,20,S/2,S*.45,S*.8);gr.addColorStop(0,'#4a2c14');gr.addColorStop(1,'#0a0603');g.fillStyle=gr;g.fillRect(0,0,S,S);
+      rrect(g,90,170,S-180,420,60);g.fillStyle='#5e2d0f';g.fill();rrect(g,120,200,S-240,360,40);gr=g.createRadialGradient(S/2,360,20,S/2,390,520);gr.addColorStop(0,'rgb('+BLC.l1+')');gr.addColorStop(.55,BLC.t);gr.addColorStop(1,'rgb('+BLC.sh+')');g.fillStyle=gr;g.fill()},
+    art(g,S){[[1,'#f4c20d',-230],[8,'#1a1a1a',0],[3,'#d62d20',230]].forEach(([n,c,dx],i)=>{const x=S/2+dx,y=395-(i==1?18:0),r=i==1?118:100;
+      g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.ellipse(x+14,y+r*.92,r*.9,r*.25,0,0,7);g.fill();
+      let gr=g.createRadialGradient(x-r*.35,y-r*.4,r*.05,x,y,r);gr.addColorStop(0,'#fff');gr.addColorStop(.18,c);gr.addColorStop(1,'#000');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,7);g.fill();
+      g.fillStyle='#f6f1e4';g.beginPath();g.arc(x-r*.12,y-r*.12,r*.42,0,7);g.fill();g.fillStyle='#111';g.font=`900 ${r*.5}px Manrope,Arial,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(String(n),x-r*.12,y-r*.09);g.textBaseline='alphabetic'})}},
+  bowling:{f1:"'Exo 2',Manrope,sans-serif",f2:"'Exo 2',Manrope,sans-serif",ac:'#3ee6ff',fg:'#eef0ff',
+    bg(g,S){let gr=g.createLinearGradient(0,0,0,S);gr.addColorStop(0,'#1e1050');gr.addColorStop(.55,'#0b0624');gr.addColorStop(1,'#030208');g.fillStyle=gr;g.fillRect(0,0,S,S);
+      g.strokeStyle='rgba(62,230,255,.25)';g.lineWidth=3;for(let k=-4;k<=4;k++){g.beginPath();g.moveTo(S/2+k*30,330);g.lineTo(S/2+k*260,S);g.stroke()}
+      gr=g.createRadialGradient(S/2,280,10,S/2,280,460);gr.addColorStop(0,'rgba(255,79,176,.35)');gr.addColorStop(1,'rgba(255,79,176,0)');g.fillStyle=gr;g.fillRect(0,0,S,S)},
+    art(g,S){const pin=(cx,base,H)=>{const s=H/38.1;g.beginPath();for(let i=0;i<PPH.length;i++)g.lineTo(cx-PPR[i]*s,base-PPH[i]*s);for(let i=PPH.length-1;i>=0;i--)g.lineTo(cx+PPR[i]*s,base-PPH[i]*s);g.closePath();
+        const gr=g.createLinearGradient(cx-6*s,0,cx+6*s,0);gr.addColorStop(0,'#c9ccd8');gr.addColorStop(.4,'#ffffff');gr.addColorStop(1,'#9ea3b5');g.fillStyle=gr;g.fill();
+        g.fillStyle='#e0263a';for(const h of [24.6,26.6])g.fillRect(cx-2.7*s,base-h*s,5.4*s,1.1*s)};
+      [[-150,470,250],[150,470,250],[0,500,300]].forEach(([dx,b,h])=>pin(S/2+dx,b,h));const p=st.players[st.you]||{};bwBallAt(g,S/2+250,450,95,p.ball||0,.6,-.4)}}
+};
+async function mkCard(){const S=1080,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),D=cardData(),T=CTH[st.game]||CTH.durak;
+  try{await Promise.race([Promise.all([`900 100px ${T.f1}`,`700 40px ${T.f2}`].map(f=>document.fonts.load(f))),new Promise(r=>setTimeout(r,1500))])}catch(e){}
+  T.bg(g,S);g.textAlign='center';
+  g.fillStyle=T.ac;g.font=`800 30px ${T.f2}`;try{g.letterSpacing='6px'}catch(e){}g.fillText('ИГРОВОЙ КЛУБ · '+GT[st.game][0].toUpperCase(),S/2,92);try{g.letterSpacing='0px'}catch(e){}
+  g.save();T.art(g,S,D);g.restore();
+  g.textAlign='center';g.fillStyle=T.fg;g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=18;fitText(g,D.big.toUpperCase(),S/2,700,S-120,900,118,T.f1);g.shadowBlur=0;
+  g.fillStyle=T.fg;g.globalAlpha=.85;fitText(g,D.sub,S/2,768,S-140,600,40,T.f2);g.globalAlpha=1;
+  // игрок: аватар с буквой, имя, ранг, изменение рейтинга
+  const y=830,h=120;rrect(g,140,y,S-280,h,28);g.fillStyle='rgba(0,0,0,.42)';g.fill();g.strokeStyle=T.ac;g.globalAlpha=.5;g.lineWidth=2;g.stroke();g.globalAlpha=1;
+  g.fillStyle=`hsl(${hue(D.name)} 45% 36%)`;g.beginPath();g.arc(210,y+h/2,40,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=3;g.stroke();
+  g.fillStyle='#fff';g.font="900 40px 'Playfair Display',serif";g.textAlign='center';g.textBaseline='middle';g.fillText(([...D.name][0]||'?').toUpperCase(),210,y+h/2+2);
+  g.textAlign='left';g.font=`800 38px ${T.f2}`;g.fillText(D.name,272,y+42);
+  if(D.rating!=null){g.globalAlpha=.75;g.font=`600 28px ${T.f2}`;g.fillText(`${rankOf(D.r?D.r.after:D.rating).n} · рейтинг ${D.r?D.r.after:D.rating}`,272,y+86);g.globalAlpha=1}
+  if(D.r&&D.r.d){g.textAlign='right';g.fillStyle=D.r.d>0?'#8ff3a8':'#ff9a8b';g.font=`900 58px ${T.f2}`;g.fillText((D.r.d>0?'+':'')+D.r.d,S-180,y+h/2+4)}
+  g.textBaseline='alphabetic';g.textAlign='center';g.fillStyle=T.ac;g.font=`700 30px ${T.f2}`;g.fillText('Сыграем? @'+(INVITES.durak.split('/')[3]||'duraktelega_bot'),S/2,S-48);
+  return c.toDataURL('image/jpeg',.88)}
+let shareImg=null,shareUp=null;
+async function shareCard(){hap('light');try{shareImg=await mkCard();shareUp=null}catch(e){console.error(e);const D=cardData();return openShare(INVITES[chGame]+(U?'?startapp=-u'+U.id:''),D.big+'. '+D.sub)}
+  const v=x=>tg&&tg.isVersionAtLeast&&tg.isVersionAtLeast(x)&&tg.initData,story=!!(tg&&tg.shareToStory&&v('7.8'));
+  $('#pm').innerHTML=`<div class="pc clubm shc" onclick="event.stopPropagation()"><img src="${shareImg}" alt="Карточка результата"><div class="row"><button class="btn" onclick="shareSend()">📨 В чат</button>${story?'<button class="btn ghost" onclick="shareStory()">📸 В историю</button>':''}</div><div class="msub" id="shmsg" style="margin-top:8px">Друзья увидят результат и кнопку, чтобы сыграть с вами</div></div>`;$('#pm').hidden=false}
+async function shareUpload(){if(shareUp&&(shareUp.id||shareUp.url))return shareUp;const D=cardData();
+  shareUp=await fetch('/api/card',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({d:(tg&&tg.initData)||'',img:shareImg,cap:D.big+'. '+D.sub,g:chGame})}).then(r=>r.json());return shareUp}
+async function shareSend(){const D=cardData(),m=$('#shmsg');
+  if(tg&&tg.shareMessage&&tg.isVersionAtLeast&&tg.isVersionAtLeast('8.0')&&tg.initData){if(m)m.textContent='Готовим картинку…';
+    try{const r=await shareUpload();if(r&&r.id){tg.shareMessage(r.id,ok=>{if(ok){toast('Отправлено!');$('#pm').hidden=true}});if(m)m.textContent='';return}}catch(e){}}
+  openShare(INVITES[chGame]+(U?'?startapp=-u'+U.id:''),D.big+'. '+D.sub+'. Сыграем?')}
+async function shareStory(){const m=$('#shmsg');if(m)m.textContent='Готовим картинку…';
+  try{const r=await shareUpload();if(r&&r.url){tg.shareToStory(r.url,{text:cardData().big+' · сыграем в клубе?'});if(m)m.textContent='';return}}catch(e){}
+  if(m)m.textContent='Не получилось, попробуйте ещё раз'}
+/*ENDCLUB*/
 entry();
 </script>
 </body>

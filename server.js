@@ -1,6 +1,7 @@
-const http = require('http'), fs = require('fs'), path = require('path');
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const db = require('./db');
+const CL = require('./club.js');   // общий профиль клуба: фишки, задания, неделя, коллекция, приглашения
 const BL = require('./billiards.js');
 const BW = require('./bowling.js');
 const RT = require('./rating.js');   // общий рейтинг по Эло для всех игр   // боулинг: физика и счёт, этот же файл грузит браузер
@@ -11,6 +12,17 @@ const TOKEN = process.env.BOT_TOKEN, APP_URL = process.env.RENDER_EXTERNAL_URL |
 const tg = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b)
 }).catch(() => {});
+// то же, но с ответом Telegram ({ ok, result } или { ok: false, description })
+const tgJ = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b)
+}).then(r => r.json()).catch(e => ({ ok: false, description: e.message }));
+// Ссылки на игры внутри Telegram (Mini App в @BotFather): по ним открывается нужная игра, startapp передаёт код комнаты
+// и того, кто позвал (например K7QX-u12345). Имя бота уточняется при запуске через getMe.
+let BOT = process.env.BOT_USERNAME || 'duraktelega_bot';
+const APPS = { durak: 'durakvtelege', chess: 'chess', mafia: 'mafia', billiards: 'billiards', bowling: 'bowling' };
+const appLink = (g, sp) => `https://t.me/${BOT}/${APPS[g] || APPS.durak}` + (sp ? '?startapp=' + sp : '');
+const ADMINS = String(process.env.ADMIN_ID || '').split(/[\s,]+/).filter(Boolean);   // кто видит /stats
+const escH = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
 const KB_D = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть в дурака', web_app: { url: APP_URL } }], [{ text: '📖 Правила', callback_data: 'rules_durak' }]] } : undefined;
 const KB_M = APP_URL ? { inline_keyboard: [[{ text: '🔪 Играть в мафию', web_app: { url: APP_URL + '/mafia' } }], [{ text: '📖 Правила', callback_data: 'rules_mafia' }]] } : undefined;
@@ -170,8 +182,11 @@ const TIPS = {
   tip_bowling: '🎳 10 фреймов по 2 броска. Страйк: 10 + два следующих броска, спэр: 10 + следующий. Цельтесь в «карман» между 1-й и 3-й кеглей. Зажмите «Бросок» и отпустите.'
 };
 // Меню игр на /start: одна картинка с панелью на каждую игру + кнопки. Правила показываются всплывающим окошком (как подсказка).
-const MENU_CAP = `<b>ИГРОВОЙ КЛУБ</b>
+const menuCap = () => `<b>ИГРОВОЙ КЛУБ</b>
 Выберите игру. Кнопка 📖 показывает правила во всплывающем окошке.
+
+⚡ Внутри каждой игры: быстрый подбор соперника, задания дня с фишками и турнир недели.
+🤝 Зовите друзей: напишите @${BOT} в любом чате или добавьте бота в группу.
 
 <i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>`;
 const MENU_KB = APP_URL ? { inline_keyboard: [
@@ -185,7 +200,7 @@ async function sendMenu(chat) {
   try {
     if (!MENU_ID) {
       const fd = new FormData();
-      fd.append('chat_id', String(chat)); fd.append('caption', MENU_CAP); fd.append('parse_mode', 'HTML');
+      fd.append('chat_id', String(chat)); fd.append('caption', menuCap()); fd.append('parse_mode', 'HTML');
       if (MENU_KB) fd.append('reply_markup', JSON.stringify(MENU_KB));
       fd.append('photo', new Blob([fs.readFileSync(path.join(__dirname, 'menu.jpg'))], { type: 'image/jpeg' }), 'menu.jpg');
       const r = await (await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd })).json();
@@ -193,20 +208,157 @@ async function sendMenu(chat) {
       MENU_ID = r.result.photo[r.result.photo.length - 1].file_id;
       return;
     }
-    await tg('sendPhoto', { chat_id: chat, photo: MENU_ID, caption: MENU_CAP, parse_mode: 'HTML', reply_markup: MENU_KB });
+    await tg('sendPhoto', { chat_id: chat, photo: MENU_ID, caption: menuCap(), parse_mode: 'HTML', reply_markup: MENU_KB });
   } catch (e) {   // нет картинки или Telegram отказал: показываем то же меню текстом
     console.error('menu:', e.message);
-    await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: MENU_CAP, reply_markup: MENU_KB });
+    await tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: menuCap(), reply_markup: MENU_KB });
   }
 }
+// ---------- приглашения: инлайн-режим (@бот в любом чате) и игра в группах ----------
+const INL = {
+  durak: { kw: /дур|карт|durak/, title: '🃏 Сыграем в дурака?', desc: 'Подкидной на 2–6 игроков, пустые места займут боты', btn: '🃏 Сесть за стол', text: c => `🃏 <b>Сыграем в дурака?</b>\nКомната <code>${c}</code>: нажмите кнопку и садитесь за стол. Пустые места займут боты.` },
+  chess: { kw: /шах|chess/, title: '♞ Сыграем в шахматы?', desc: 'Партия один на один с часами', btn: '♞ Сесть за доску', text: c => `♞ <b>Сыграем в шахматы?</b>\nКомната <code>${c}</code>: кто первым нажмёт кнопку, тот и соперник.` },
+  mafia: { kw: /маф|mafia/, title: '🔪 Сыграем в мафию?', desc: 'От 5 игроков, недостающих заменят боты', btn: '🔪 Войти в город', text: c => `🔪 <b>Сыграем в мафию?</b>\nГород <code>${c}</code> ждёт жителей. Чем больше людей, тем интереснее, недостающих заменят боты.` },
+  billiards: { kw: /бил|пул|pool|бильярд/, title: '🎱 Сыграем в бильярд?', desc: 'Американка на 8 шаров, один на один', btn: '🎱 К столу', text: c => `🎱 <b>Сыграем в бильярд?</b>\nСтол <code>${c}</code> накрыт, кий ждёт. Нажмите кнопку, чтобы разбить пирамиду.` },
+  bowling: { kw: /боул|кегл|bowl/, title: '🎳 Сыграем в боулинг?', desc: 'До 4 игроков, 10 фреймов, страйки', btn: '🎳 На дорожку', text: c => `🎳 <b>Сыграем в боулинг?</b>\nДорожка <code>${c}</code> свободна, до 4 игроков. Нажмите кнопку и выбирайте шар.` }
+};
+const CODE_CH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function rcode(n = 4) { for (;;) { let s = ''; for (let i = 0; i < n; i++) s += CODE_CH[crypto.randomInt(CODE_CH.length)]; if (!rooms[s]) return s; } }
+function inlineAnswer(q) {
+  const s = String(q.query || '').toLowerCase(), from = q.from.id;
+  const ord = GAMES.slice().sort((a, b) => (INL[b].kw.test(s) ? 1 : 0) - (INL[a].kw.test(s) ? 1 : 0));
+  const results = ord.map(g => { const code = rcode(); return {
+    type: 'article', id: g + '_' + code, title: INL[g].title, description: INL[g].desc,
+    input_message_content: { message_text: INL[g].text(code), parse_mode: 'HTML' },
+    reply_markup: { inline_keyboard: [[{ text: INL[g].btn, url: appLink(g, code + '-u' + from) }]] }
+  }; });
+  CL.stat('inline');
+  return tg('answerInlineQuery', { inline_query_id: q.id, results, cache_time: 0, is_personal: true });
+}
+// в группе кнопки web_app запрещены, поэтому ссылки вида t.me/бот/игра?startapp=КОД: все, кто нажал, садятся за один стол
+const groupInvite = (chat, g, from) => { const code = rcode(); return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: INL[g].text(code), reply_markup: { inline_keyboard: [[{ text: INL[g].btn, url: appLink(g, code + (from ? '-u' + from : '')) }]] } }); };
+function groupMenu(chat, from) {
+  const b = g => ({ text: INL[g].title.split(' ')[0] + ' ' + ({ durak: 'Дурак', chess: 'Шахматы', mafia: 'Мафия', billiards: 'Бильярд', bowling: 'Боулинг' })[g], url: appLink(g, rcode() + (from ? '-u' + from : '')) });
+  return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML',
+    text: '🎲 <b>Игровой клуб в вашем чате</b>\nВыберите игру: каждая кнопка открывает отдельный стол, и все, кто нажмёт её, играют вместе.\n\nКоманды: /durak /chess /mafia /billiards /bowling',
+    reply_markup: { inline_keyboard: [[b('durak'), b('chess')], [b('mafia'), b('billiards')], [b('bowling')]] } });
+}
+async function onUpdate(u) {
+  const msg = (chat, text, kb) => tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text, reply_markup: kb, disable_web_page_preview: true });
+  if (u.inline_query) return inlineAnswer(u.inline_query);
+  if (u.my_chat_member) {   // бота добавили в группу: сразу показываем игры
+    const x = u.my_chat_member, inn = s => s === 'member' || s === 'administrator';
+    if (x.chat.type !== 'private' && inn(x.new_chat_member.status) && !inn(x.old_chat_member.status)) { CL.stat('group'); await groupMenu(x.chat.id, x.from && x.from.id); }
+    if (x.chat.type === 'private') CL.markPM('tg' + x.chat.id, inn(x.new_chat_member.status) || x.new_chat_member.status === 'restricted').catch(() => {});
+    return;
+  }
+  const cb = u.callback_query;
+  if (cb) {
+    if (cb.data === 'mute') {
+      await CL.setMute('tg' + cb.from.id, true).catch(() => {});
+      return tg('answerCallbackQuery', { callback_query_id: cb.id, text: '🔕 Уведомления отключены. Включить их снова можно в клубе, в окне заданий.', show_alert: true });
+    }
+    tg('answerCallbackQuery', TIPS[cb.data] ? { callback_query_id: cb.id, text: TIPS[cb.data], show_alert: true } : { callback_query_id: cb.id });
+    const ch = cb.message && cb.message.chat.id; if (!ch) return;
+    if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
+    else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
+    else if (cb.data == 'rules_billiards') msg(ch, RULES_B, KB_B);
+    else if (cb.data == 'rules_bowling') msg(ch, RULES_W, KB_W);
+    else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
+    return;
+  }
+  const m = u.message; if (!m || !m.text) return;
+  const cm = /^\/([a-z]+)(?:@(\w+))?/i.exec(m.text); if (!cm) return;
+  if (cm[2] && cm[2].toLowerCase() !== BOT.toLowerCase()) return;   // команда другому боту
+  const c = cm[1].toLowerCase(), id = m.chat.id, from = m.from && m.from.id;
+  if (m.chat.type !== 'private') {   // группа
+    if (GAMES.includes(c)) { CL.stat('group'); return groupInvite(id, c, from); }
+    if (c == 'start' || c == 'menu' || c == 'play') return groupMenu(id, from);
+    if (c == 'rules' || c == 'help') return msg(id, RULES).then(() => msg(id, RULES_C)).then(() => msg(id, RULES_M)).then(() => msg(id, RULES_B)).then(() => msg(id, RULES_W));
+    return;
+  }
+  if (c == 'start' || c == 'menu' || c == 'play') { if (from) CL.markPM('tg' + from, true, { name: String(m.from.first_name || 'Игрок').slice(0, 24) }).catch(() => {}); return sendMenu(id); }
+  if (c == 'durak') return msg(id, CARD_D, KB_D);
+  if (c == 'chess') return msg(id, CARD_C, KB_C);
+  if (c == 'mafia') return msg(id, CARD_M, KB_M);
+  if (c == 'billiards') return msg(id, CARD_B, KB_B);
+  if (c == 'bowling') return msg(id, CARD_W, KB_W);
+  if (c == 'rules' || c == 'help') return msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B)).then(() => msg(id, RULES_W, KB_W));
+  if (c == 'stats') {
+    if (!ADMINS.includes(String(from))) return msg(id, ADMINS.length ? 'Эта команда только для владельца клуба.' : `Статистика видна только владельцу. Добавьте на Render переменную <code>ADMIN_ID</code> со значением <code>${from}</code> (это ваш номер в Telegram) и перезапустите сервер.`);
+    return msg(id, await CL.statsText(online()));
+  }
+}
+// тело POST-запроса (JSON), не больше max байт
+const readBody = (q, max) => new Promise((ok, no) => {
+  const parts = []; let n = 0;
+  q.on('data', d => { n += d.length; if (n > max) { no(new Error('too big')); q.destroy(); } else parts.push(d); });
+  q.on('end', () => { try { ok(JSON.parse(Buffer.concat(parts).toString() || '{}')); } catch (e) { no(e); } });
+  q.on('error', no);
+});
+// кто прислал запрос из приложения: проверенный пользователь Telegram (в локальной проверке без токена: dev + uid)
+function webUser(b) {
+  if (TOKEN) {
+    const u = b.d && db.verify(b.d, TOKEN); if (!u) return null;
+    return { uid: 'tg' + u.id, tgId: u.id, name: String(u.first_name || 'Игрок').slice(0, 24), photo: PHOTO.test(u.photo_url || '') ? u.photo_url.slice(0, 300) : '' };
+  }
+  return b.uid ? { uid: 'dev' + String(b.uid).slice(0, 30), name: String(b.name || 'Игрок').slice(0, 24), photo: '' } : null;
+}
+const CARDS = new Map();   // картинки результатов для «Поделиться»: Telegram забирает их по ссылке, храним час
+async function clubApi(b) {
+  const me = webUser(b); if (!me) return { err: 'Клуб доступен игрокам из Telegram' };
+  const a = String(b.a || 'get'), info = { name: me.name, photo: me.photo };
+  if (a == 'get') {
+    const ref = (/-u(\d{3,15})$/.exec(String(b.sp || '')) || [])[1];
+    const { c, daily } = await CL.visit(me.uid, info, ref ? 'tg' + ref : '');
+    return { me: CL.view(c), daily, cat: CL.CAT, week: CL.weekView(me.uid), onl: online().all };
+  }
+  let res;
+  if (a == 'buy') res = await CL.buy(me.uid, String(b.id || ''));
+  else if (a == 'equip') res = await CL.equip(me.uid, String(b.id || ''), String(b.kind || ''));
+  else if (a == 'mute') res = await CL.setMute(me.uid, !!b.on);
+  else if (a == 'week') return { week: CL.weekView(me.uid) };
+  else return { err: 'Неизвестное действие' };
+  const c = await CL.get(me.uid, info);
+  return { ...res, me: c ? CL.view(c) : null };
+}
+async function cardApi(b) {
+  if (!TOKEN || !APP_URL) return { err: 'Поделиться картинкой можно только в Telegram' };
+  const u = b.d && db.verify(b.d, TOKEN); if (!u) return { err: 'Поделиться картинкой можно только в Telegram' };
+  const raw = Buffer.from(String(b.img || '').replace(/^data:image\/jpeg;base64,/, ''), 'base64');
+  if (raw.length < 2000 || raw.length > 1.8e6 || raw[0] !== 0xFF || raw[1] !== 0xD8) return { err: 'Картинка не получилась' };
+  const now = Date.now(); for (const [k, x] of CARDS) if (now - x.t > 3600e3 || CARDS.size > 300) CARDS.delete(k);
+  const id = crypto.randomBytes(12).toString('hex'), url = APP_URL.replace(/\/$/, '') + '/card/' + id + '.jpg', g = GAMES.includes(b.g) ? b.g : 'durak';
+  CARDS.set(id, { buf: raw, t: now }); CL.stat('share');
+  const r = await tgJ('savePreparedInlineMessage', {
+    user_id: u.id, allow_user_chats: true, allow_group_chats: true, allow_channel_chats: true,
+    result: { type: 'photo', id, photo_url: url, thumbnail_url: url, caption: escH(String(b.cap || '').slice(0, 300)), parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '🎮 Сыграть в клубе', url: appLink(g, '-u' + u.id) }]] } }
+  });
+  if (!r.ok) console.error('share:', r.description);
+  return { id: r.ok ? r.result.id : null, url, err: r.ok ? null : r.description };
+}
 const srv = http.createServer((q, r) => {
-  if (q.url.split('?')[0] === '/bowling.js') {   // физика и счёт боулинга нужны и браузеру (прицел, табло)
+  const pth = q.url.split('?')[0];
+  if (pth === '/bowling.js') {   // физика и счёт боулинга нужны и браузеру (прицел, табло)
     r.writeHead(200, { 'content-type': 'application/javascript;charset=utf-8', 'cache-control': 'no-cache' });
     return r.end(fs.readFileSync(path.join(__dirname, 'bowling.js')));
+  }
+  if (pth.startsWith('/card/')) {
+    const x = CARDS.get(pth.slice(6).replace(/\.jpg$/, ''));
+    if (!x) { r.writeHead(404); return r.end(); }
+    r.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=3600' }); return r.end(x.buf);
+  }
+  if (q.method === 'POST' && (pth === '/api/club' || pth === '/api/card')) {
+    const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
+    readBody(q, pth === '/api/card' ? 2.6e6 : 20000).then(b => (pth === '/api/card' ? cardApi(b) : clubApi(b))).then(json)
+      .catch(e => { console.error(pth, e.message); if (!r.headersSent) { r.writeHead(500, { 'content-type': 'application/json' }); r.end('{"err":"Сервер не ответил, попробуйте ещё раз"}'); } });
+    return;
   }
   if (q.url.startsWith('/api/')) {
     const json = o => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
     (async () => {
+      if (q.url.startsWith('/api/online')) return json(online());
       const gp = new URL(q.url, 'http://x').searchParams, g = GAMES.includes(gp.get('g')) ? gp.get('g') : 'durak';
       if (q.url.startsWith('/api/top')) return json((await db.top(10, g)).map(u => ({ name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins })));
       if (q.url.startsWith('/api/me')) {
@@ -221,28 +373,8 @@ const srv = http.createServer((q, r) => {
     let s = ''; q.on('data', d => s += d);
     q.on('end', () => {
       r.end('ok');
-      try {
-        const u = JSON.parse(s), m = u.message, cb = u.callback_query;
-        const msg = (chat, text, kb) => tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text, reply_markup: kb });
-        if (cb) {
-          tg('answerCallbackQuery', TIPS[cb.data] ? { callback_query_id: cb.id, text: TIPS[cb.data], show_alert: true } : { callback_query_id: cb.id });
-          const ch = cb.message.chat.id;
-          if (cb.data == 'rules_chess') msg(ch, RULES_C, KB_C);
-          else if (cb.data == 'rules_mafia') msg(ch, RULES_M, KB_M);
-          else if (cb.data == 'rules_billiards') msg(ch, RULES_B, KB_B);
-          else if (cb.data == 'rules_bowling') msg(ch, RULES_W, KB_W);
-          else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
-        } else if (m && m.text) {
-          const t = m.text, id = m.chat.id;
-          if (/^\/(start|menu)/.test(t)) sendMenu(id);   // одно меню с картинкой вместо ленты сообщений   // две отдельные карточки
-          else if (/^\/durak/.test(t)) msg(id, CARD_D, KB_D);
-          else if (/^\/chess/.test(t)) msg(id, CARD_C, KB_C);
-          else if (/^\/mafia/.test(t)) msg(id, CARD_M, KB_M);
-          else if (/^\/billiards/.test(t)) msg(id, CARD_B, KB_B);
-          else if (/^\/bowling/.test(t)) msg(id, CARD_W, KB_W);
-          else if (/^\/(rules|help)/.test(t)) msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B)).then(() => msg(id, RULES_W, KB_W));
-        }
-      } catch {}
+      let u; try { u = JSON.parse(s); } catch { return; }
+      onUpdate(u).catch(e => console.error('update:', e && e.stack || e));
     });
     return;
   }
@@ -292,16 +424,30 @@ function rate(pr, d, res) {
   db.saveUser(pr);
   return { d: pr.rating - before, before, after: pr.rating };
 }
+// Конец партии для клуба: задания дня, очки недели, последние соперники. Кто ушёл из партии, ничего не получает.
+// list: [{ p, res: 'win' | 'loss' | 'draw', extra }]
+function clubEnd(R, list) {
+  try {
+    if (list.some(x => x.p.prof && !x.p.bot && !x.p.left)) CL.stat('g_' + R.game);   // партия, которую кто-то доиграл
+    const hum = R.players.filter(p => p.prof && !p.bot).map(p => ({ uid: p.uid, name: p.prof.name || p.name }));
+    for (const x of list) {
+      const p = x.p; if (!p.prof || p.bot || p.left) continue;
+      CL.game(p.uid, R.game, { res: x.res, extra: x.extra, rating: p.prof.rating }, hum).catch(e => console.error('club game:', e.message));
+    }
+  } catch (e) { console.error('club end:', e && e.stack || e); }
+}
 // Дурак: ожидание = шанс не остаться дураком при таких соперниках. Ушедший из игры считается проигравшим.
 function settle(R) {
   R.result = [];
-  if (R.loser < 0) return;   // ничья: рейтинг не меняется
+  const hum = R.players.filter(p => p.prof && !p.bot);
+  if (R.loser < 0) return clubEnd(R, hum.map(p => ({ p, res: 'draw' })));   // ничья: рейтинг не меняется
   const rr = R.players.map(p => rOf(p, 'durak'));
   R.players.forEach((p, i) => {
     if (!p.prof || p.bot) return;
     const lost = i == R.loser || !!p.left;
     R.result.push({ i, ...rate(p.prof, RT.delta(p.prof.games, lost ? 0 : 1, RT.durakE(rr, i)), lost ? 'loss' : 'win') });
   });
+  clubEnd(R, hum.map(p => ({ p, res: R.players.indexOf(p) == R.loser ? 'loss' : 'win' })));
 }
 const BOTN = ['Шулер', 'Профессор', 'Гусар', 'Барон', 'Лиса', 'Граф'];
 const EMO = ['👍', '😂', '😮', '😡', '🔥', '👏', '😎', '🤝'];
@@ -421,6 +567,7 @@ function chElo(R) {
     if (!p.prof || p.bot) return;
     R.rres.push({ i, ...rate(p.prof, RT.duel(p.prof.games, r1, r2, sc), sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw') });
   });
+  clubEnd(R, [[a, sa], [b, 1 - sa]].map(([p, sc]) => ({ p, res: sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw' })));
 }
 function chEnd(R, res) { if (R.over) return; R.over = true; R.result = res; R.draw = null; chElo(R); }
 function chMove(R, i, m) {
@@ -522,7 +669,7 @@ function chState(R, i) {
     clk: R.cl ? { w: R.cl.w - (playing && turn == 'w' ? now - R.cl.since : 0), b: R.cl.b - (playing && turn == 'b' ? now - R.cl.since : 0), turn, run: playing } : null,
     result: R.result || null, win: R.result ? (R.result.winner ? R.col.indexOf(R.result.winner) : -1) : null, rres: R.rres || null,
     players: R.players.map((p, j) => ({
-      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, col: R.col ? R.col[j] : null, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      name: p.name, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, col: R.col ? R.col[j] : null, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, draws: p.prof.draws || 0, streak: 0, since: p.prof.since } : null
     })),
     log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
@@ -680,6 +827,7 @@ function mfSettle(R) {
     const win = !p.left && side(i) == mf.won, E = side(i) == 'mafia' ? RT.teamE(rm, rt) : RT.teamE(rt, rm);
     R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, win ? 1 : 0, E), win ? 'win' : 'loss') });
   });
+  clubEnd(R, P.map((p, i) => ({ p, res: side(i) == mf.won ? 'win' : 'loss' })));
 }
 function mfChat(R, i, m) {
   const tx = String(m.text || '').trim().slice(0, 120); if (!tx) return;
@@ -721,7 +869,7 @@ function mfState(R, i) {
     phase: mf ? mf.phase : 'lobby', day: mf ? mf.day : 0, left: mf ? Math.max(0, mf.end - now) : 0, dur: mf ? mf.dur : 0,
     myRole: my, alive: aliveMe, won: mf ? mf.won : null, need: 5,
     players: R.players.map((p, j) => ({
-      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      name: p.name, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
       alive: mf ? mf.alive[j] : true, fate: mf && mf.fate ? mf.fate[j] || null : null,
       role: mf && (ghost || j === i || (mafiaMe && mf.roles[j] == 'mafia') || !mf.alive[j]) ? mf.roles[j] : null,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null
@@ -755,6 +903,7 @@ function blEnd(R) {
     const sc = bl.winner === i ? 1 : 0;
     R.rres.push({ i, ...rate(p.prof, RT.duel(p.prof.games, r1, r2, sc), sc ? 'win' : 'loss') });
   });
+  clubEnd(R, [a, b].map((p, i) => ({ p, res: bl.winner === i ? 'win' : 'loss' })));
 }
 function blShot(R, i, a, p) {
   const bl = R.bl;
@@ -764,6 +913,11 @@ function blShot(R, i, a, p) {
   const sim = BL.simulate(bl.balls, a, p, true), out = BL.judge(bl, sim);
   BL.apply(bl, sim, out);
   bl.to[i] = 0; bl.seq++; R.mv++; bl.last.seq = bl.seq;
+  const sh = R.players[i];   // задание «забейте свои шары»: считаем шары своей группы без фола
+  if (sh && sh.prof && !sh.bot && !bl.last.foul) {
+    const g = bl.groups[i], n = bl.last.pots.filter(id => id !== 0 && id !== 8 && (!g || (g === 'solid' ? id < 8 : id > 8))).length;
+    if (n) CL.ev(sh.uid, 'billiards', { pot: n }).catch(() => {});
+  }
   R.animUntil = Date.now() + sim.dur * 1000 + 700; bl.end = R.animUntil + BL_MS;
   bcast(R, { ev: 'shot', seq: bl.seq, frames: sim.frames, events: sim.events, by: i });
   if (bl.over) blEnd(R);
@@ -816,7 +970,7 @@ function blState(R, i) {
     msg: bl ? bl.msg : '', seq: bl ? bl.seq : 0, last: bl ? bl.last || null : null, left: bl ? Math.max(0, bl.end - now) : 0, shotMs: BL_MS,
     winner: bl && bl.over ? bl.winner : null, reason: bl && bl.over ? bl.reason : '', rres: R.rres || null,
     players: R.players.map(p => ({
-      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      name: p.name, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak || 0, since: p.prof.since } : null
     })),
     log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
@@ -830,7 +984,7 @@ const BW_BOTN = ['Кегельбот', 'Страйкер', 'Хук', 'Спэр']
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function bwBot(R) {   // у каждого компьютера своя манера: рука, подкрутка, сила
   const hand = Math.random() < .8 ? 1 : -1;
-  return { name: BW_BOTN[R.players.length % BW_BOTN.length], hand: [], bot: true, ws: null, ball: Math.random() * BW.BALLS.length | 0,
+  return { name: BW_BOTN[R.players.length % BW_BOTN.length], hand: [], bot: true, ws: null, ball: Math.random() * BW.BASE | 0,
     style: { hand, s: .42 + Math.random() * .22, p: .55 + Math.random() * .12 } };
 }
 function bwStart(R) {
@@ -876,6 +1030,7 @@ function bwRoll(R, i, th) {
   if (kind === 'split') bw.sp[i].push(f + ':' + rolls.length);
   rolls.push(n);
   bw.streak[i] = kind === 'strike' ? bw.streak[i] + 1 : 0;
+  if (kind === 'strike' && p.prof && !p.bot) CL.ev(p.uid, 'bowling', { strike: 1 }).catch(() => {});   // задание «выбейте страйки»
   bw.seq++; R.mv++;
   bw.last = { seq: bw.seq, by: i, n, kind, streak: bw.streak[i], left: standing.map(q => q.id), frame: f, roll: rolls.length, v: res ? bw.v : 0 };
   bw.pins = standing;
@@ -901,6 +1056,7 @@ function bwEnd(R) {
     const f = RT.fieldSE(R0, sc, i), won = bw.win.includes(i);
     R.rres.push({ i, ...rate(pr, RT.delta(pr.games, f.S, f.E), won ? 'win' : 'loss'), best: pr.best || 0, nb });
   });
+  clubEnd(R, P.map((p, j) => ({ p, res: multi ? (bw.win.includes(j) ? (bw.win.length > 1 ? 'draw' : 'win') : 'loss') : 'loss', extra: BW.frameDone(9, bw.fr[j][9]) ? { score: tot[j] } : {} })));
   if (multi && bw.win.length) sys(R, `🏆 ${bw.win.map(j => P[j].name).join(', ')}: ${top} очков`);
   else if (!multi) sys(R, `🎳 Тренировка окончена: ${tot[0]} очков`);
 }
@@ -914,7 +1070,11 @@ function bwDrop(R, p, why) {
 }
 function bwMsg(R, i, m) {
   const p = R.players[i];
-  if (m.t == 'ball') { const b = +m.id; if (Number.isInteger(b) && b >= 0 && b < BW.BALLS.length) p.ball = b; return; }
+  if (m.t == 'ball') {   // редкие шары только у тех, у кого они есть в коллекции клуба
+    const b = +m.id, c = p.uid && CL.cached(p.uid);
+    if (Number.isInteger(b) && b >= 0 && b < BW.BALLS.length && (b < BW.BASE || (c && CL.has(c, 'ball_' + b)))) p.ball = b;
+    return;
+  }
   if (!R.started) {
     if (m.t == 'bot' && R.players.length < BW_MAX) R.players.push(bwBot(R));
     else if (m.t == 'start' && R.players.length >= 1) bwStart(R);
@@ -950,7 +1110,7 @@ function bwState(R, i) {
     pins: bw ? bw.pins.map(q => [q.id, q.x, q.y]) : [], seq: bw ? bw.seq : 0, left: bw && playing ? Math.max(0, bw.end - now) : 0, rollMs: BW_MS,
     last: bw ? bw.last : null, win: bw && bw.over ? bw.win : null, tot: bw && bw.over ? bw.tot : null, rres: R.rres || null, max: BW_MAX,
     players: R.players.map(p => ({
-      name: p.name, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0, ball: p.ball || 0,
+      name: p.name, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0, ball: p.ball || 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak || 0, since: p.prof.since, best: p.prof.best || 0 } : null
     })),
     log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
@@ -985,7 +1145,7 @@ function stateFor(R, i) {
   return {
     game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
-    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
+    players: R.players.map(p => ({ name: p.name, n: p.hand.length, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - Date.now()) : 0,
       prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak, since: p.prof.since } : null })),
     result: R.result, radio: R.radio || null, now: Date.now(),
     idle: R.started && !R.over && R.idleKey === R.mv + ':' + actor(R) ? { i: actor(R), ms: Date.now() - R.idleSince, warn: AFK_WARN, fine: AFK_FINE, kick: AFK_KICK } : null,
@@ -1012,6 +1172,93 @@ function toLobby(R) {
   R.players = R.players.filter(p => p.bot || p.ws);   // кто на связи, остаётся, даже если выходил из прошлой партии
   R.players.forEach(p => { p.off = false; p.left = false; clearTimeout(p.tm); p.lc = 0; });
 }
+// новый игрок за столом; A — результат auth() с профилем клуба (A.cl): рамка аватара и редкий шар
+function addPlayer(ws, A, name, R) {
+  const cl = A.cl || null;
+  ws.p = { name: String(name || 'Игрок').slice(0, 12), uid: A.uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws, fr: (cl && cl.eq.frame) || '' };
+  if (R.game === 'bowling') {   // у каждого свой шар по умолчанию, редкий из коллекции, если выбран
+    const b = cl && /^ball_\d+$/.test(cl.eq.ball || '') ? +cl.eq.ball.slice(5) : -1;
+    ws.p.ball = b >= BW.BASE && b < BW.BALLS.length && CL.has(cl, cl.eq.ball) ? b : R.players.length % BW.BASE;
+  }
+  ws.R = R; ws.quid = A.uid; R.players.push(ws.p); CL.touch(A.uid);
+}
+function mkBot(R) {
+  const n = R.players.length;
+  if (R.game === 'chess' || R.game === 'billiards') return { name: 'Компьютер', hand: [], bot: true, ws: null };
+  if (R.game === 'mafia') return { name: MF_BOTN[n % MF_BOTN.length], hand: [], bot: true, ws: null };
+  if (R.game === 'bowling') return bwBot(R);
+  return { name: BOTN[n % BOTN.length], hand: [], bot: true, ws: null };
+}
+// ================= БЫСТРАЯ ИГРА =================
+// Очередь по каждой игре. Подбираем людей с близким рейтингом (окно растёт с ожиданием). Если за MM_BOT
+// никого нет, за стол садится компьютер. Мафия собирает всех, кто ищет, и добирает ботов до 7 игроков.
+const MM_BOT = +process.env.MM_BOT_MS || 20000;
+const MM = { durak: { max: 4, fill: 3 }, chess: { max: 2, fill: 2 }, billiards: { max: 2, fill: 2 }, bowling: { max: 4, fill: 2 }, mafia: { max: 12, fill: 7 } };
+const MMQ = { durak: [], chess: [], mafia: [], billiards: [], bowling: [] };
+function mmLeave(ws) { const Q = MMQ[ws.q]; if (Q) { const k = Q.findIndex(e => e.ws === ws); if (k >= 0) Q.splice(k, 1); } ws.q = null; }
+async function mmJoin(ws, m) {
+  if (ws.R || ws.q) return;
+  const g = gameOf(m); let A;
+  try { A = await auth(m, g); A.cl = A.prof ? await CL.get(A.uid, { name: A.prof.name, photo: A.prof.photo }).catch(() => null) : null; }
+  catch (e) { console.error('auth:', e.message); return err(ws, 'Не удалось войти, попробуйте ещё раз'); }
+  if (ws.readyState !== 1 || ws.R || ws.q) return;
+  // уже играет в этой игре (например, приложение перезапустилось посреди партии): возвращаем за тот же стол
+  const R0 = Object.values(rooms).find(R => R.game === g && R.started && !R.over && R.players.some(p => p.uid === A.uid && !p.left && !p.bot));
+  if (R0) return ws.send(JSON.stringify({ ev: 'matched', room: R0.code }));
+  for (const e of MMQ[g].filter(e => e.uid === A.uid)) { mmLeave(e.ws); err(e.ws, 'Поиск продолжается в другом окне'); }
+  ws.q = g; ws.quid = A.uid; CL.touch(A.uid);
+  MMQ[g].push({ ws, A, uid: A.uid, name: String(m.name || 'Игрок').slice(0, 12), r: A.prof ? A.prof.rating : RT.ELO.bot[g], t: Date.now() - Math.max(0, Math.min(+m.since || 0, 60000)) });
+  mmTick(g);
+}
+function mmTick(only) {
+  const now = Date.now();
+  for (const g of only ? [only] : GAMES) {
+    const Q = MMQ[g] = MMQ[g].filter(e => e.ws.readyState === 1 && e.ws.q === g && !e.ws.R);
+    if (!Q.length) continue;
+    Q.sort((a, b) => a.t - b.t);
+    const cfg = MM[g], used = new Set(), win = e => 150 + (now - e.t) / 1000 * 25;
+    for (const a of Q) {
+      if (used.has(a)) continue;
+      const wa = now - a.t;
+      const mates = Q.filter(b => b !== a && !used.has(b) && b.uid !== a.uid && (g === 'mafia' || Math.abs(b.r - a.r) <= Math.max(win(a), win(b))))
+        .sort((x, y) => Math.abs(x.r - a.r) - Math.abs(y.r - a.r)).slice(0, cfg.max - 1);
+      const go = g === 'mafia' ? wa >= MM_BOT || mates.length + 1 >= cfg.max
+        : cfg.max === 2 ? mates.length >= 1 || wa >= MM_BOT
+        : mates.length + 1 >= cfg.max || (mates.length >= 1 && wa >= 5000) || wa >= MM_BOT;
+      if (!go) continue;
+      const grp = [a, ...mates]; grp.forEach(e => used.add(e));
+      try { mmLaunch(g, grp); } catch (e) { console.error('quick:', e && e.stack || e); grp.forEach(x => err(x.ws, 'Не удалось начать игру, попробуйте ещё раз')); }
+    }
+    MMQ[g] = Q.filter(e => !used.has(e));
+    for (const e of MMQ[g]) e.ws.send(JSON.stringify({ ev: 'mm', n: MMQ[g].length, w: now - e.t, bot: MM_BOT }));
+  }
+}
+function mmLaunch(g, grp) {
+  const code = rcode(5);
+  const R = rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: g, quick: true };
+  for (const e of grp) { e.ws.q = null; addPlayer(e.ws, e.A, e.name, R); }
+  while (R.players.length < MM[g].fill) R.players.push(mkBot(R));
+  const bots = R.players.some(p => p.bot);
+  if (g === 'durak') start(R); else if (g === 'chess') chStart(R, 5); else if (g === 'mafia') mfStart(R); else if (g === 'billiards') blStart(R); else bwStart(R);
+  (g === 'mafia' ? mfSys : sys)(R, !bots ? '⚡ Быстрая игра: соперники найдены' : grp.length > 1 ? '⚡ Быстрая игра: соперники найдены, свободные места заняли боты' : '⚡ Быстрая игра: живых соперников сейчас нет, играет компьютер');
+  CL.stat('quick'); if (bots) CL.stat('quickbot');
+  for (const e of grp) e.ws.send(JSON.stringify({ ev: 'matched', room: code }));
+  send(R);
+}
+setInterval(() => { try { mmTick(); } catch (e) { console.error('mm:', e && e.stack || e); } }, 1000);
+// сколько людей в клубе: за столами, в поиске и с открытым приложением за последние 5 минут
+function online() {
+  const seen = new Set(CL.activeNow()), at = new Set(), g = {}; let queue = 0, nr = 0;
+  for (const R of Object.values(rooms)) {
+    let any = false;
+    for (const p of R.players) if (!p.bot && p.ws && p.ws.readyState === 1) { seen.add(p.uid); at.add(p.uid); g[R.game] = (g[R.game] || 0) + 1; any = true; }
+    if (any) nr++;
+  }
+  for (const [k, Q] of Object.entries(MMQ)) for (const e of Q) if (e.ws.readyState === 1) { seen.add(e.uid); g[k] = (g[k] || 0) + 1; queue++; }
+  return { all: seen.size, g, play: at.size, queue, rooms: nr };
+}
+// сообщение всем открытым окнам игрока (задание выполнено, фишки и т. п.)
+function pushUser(uid, o) { const s = JSON.stringify(o); wss.clients.forEach(w => { if (w.readyState === 1 && w.quid === uid) w.send(s); }); }
 wss.on('connection', ws => {
   ws.send(JSON.stringify({ ev: 'stations', list: STATIONS }));
   // Любая ошибка при разборе сообщения не должна ронять сервер: иначе пропадают все комнаты
@@ -1027,7 +1274,7 @@ async function onMessage(ws, raw) {
       if (rooms[code] && rooms[code].game !== gameOf(m)) return err(ws, 'Это комната для ' + GN[rooms[code].game]);
       const R = rooms[code] || (rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: gameOf(m) });
       let A;
-      try { A = await auth(m, R.game); }
+      try { A = await auth(m, R.game); A.cl = A.prof ? await CL.get(A.uid, { name: A.prof.name, photo: A.prof.photo }).catch(() => null) : null; }
       catch (e) {   // база не ответила: просим войти ещё раз, пустую комнату убираем
         console.error('auth:', e.message);
         if (!R.players.length && rooms[code] === R) delete rooms[code];
@@ -1041,7 +1288,7 @@ async function onMessage(ws, raw) {
       const old = uid && R.players.find(p => p.uid == uid);
       if (old) {
         if (old.left) return err(ws, 'Вы покинули эту партию. Дождитесь ее окончания.');
-        const o = old.ws; old.ws = ws; ws.p = old; ws.R = R; clearTimeout(R.gc); R.idleKey = null;
+        const o = old.ws; old.ws = ws; ws.p = old; ws.R = R; ws.quid = uid; clearTimeout(R.gc); R.idleKey = null;
         if (old.off) { clearTimeout(old.tm); old.off = false; sys(R, old.name + ' вернулся'); }
         if (o && o !== ws) o.close();
         return send(R);
@@ -1049,14 +1296,19 @@ async function onMessage(ws, raw) {
       if (R.started && R.over) toLobby(R);
       if (R.started) return err(ws, 'Игра уже идет');
       if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : 6)) return err(ws, 'Комната заполнена');
-      const photo = /^https:\/\/[\w.\/-]+$/.test(m.photo || '') ? m.photo.slice(0, 300) : '';
-      ws.p = { name: String(m.name || 'Игрок').slice(0, 12), uid, photo: A.prof ? A.prof.photo : '', prof: A.prof, hand: [], bot: false, ws };
-      if (R.game === 'bowling') ws.p.ball = R.players.length % BW.BALLS.length;   // у каждого свой шар по умолчанию
-      ws.R = R; R.players.push(ws.p);
+      if (ws.q) mmLeave(ws);
+      addPlayer(ws, A, m.name, R);
       return send(R);
     }
+    if (m.t == 'quick') return mmJoin(ws, m);   // быстрая игра: подбор соперника
+    if (m.t == 'unquick') { mmLeave(ws); return; }
     const R = ws.R; if (!R) return;
     const i = R.players.indexOf(ws.p); if (i < 0) return;
+    if (m.t == 'call') {   // позвать через бота того, с кем уже играли
+      const res = !ws.p.prof ? { err: 'Звать друзей могут игроки из Telegram' } : R.started ? { err: 'Позвать можно, пока партия не началась' }
+        : await CL.call(ws.p.uid, String(m.to || ''), { game: R.game, room: R.code }).catch(e => ({ err: 'Не получилось: ' + e.message }));
+      return ws.readyState === 1 && ws.send(JSON.stringify({ ev: 'callres', to: m.to, ...res }));
+    }
     if (m.t == 'radio') {   // любой игрок включает/меняет/выключает радио для всей комнаты
       const now = Date.now(); if (now - (ws.p.rt || 0) < 2000) return; ws.p.rt = now;
       const stn = STATIONS.find(x => x.id == m.id);
@@ -1095,6 +1347,7 @@ async function onMessage(ws, raw) {
     send(R);
 }
 function onClose(ws) {
+    if (ws.q) mmLeave(ws);
     const R = ws.R, p = ws.p; if (!R || !p || p.ws !== ws) return;
     const i = R.players.indexOf(p); if (i < 0) return;
     p.ws = null;
@@ -1115,15 +1368,30 @@ setInterval(() => Object.values(rooms).forEach(R => { try { afkTick(R); } catch 
 // Последняя страховка: непойманная ошибка (например, в таймере бота) пишется в лог, а сервер продолжает работать
 process.on('unhandledRejection', e => console.error('unhandledRejection:', e && e.stack || e));
 process.on('uncaughtException', e => console.error('uncaughtException:', e && e.stack || e));
+// Render усыпляет и перезапускает сервер сигналом SIGTERM: успеваем сохранить фишки, задания и очки недели
+let stopping = false;
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
+  if (stopping) return; stopping = true;
+  Promise.race([CL.flushAll(), new Promise(r => setTimeout(r, 4000))]).catch(() => {}).then(() => process.exit(0));
+});
 srv.listen(process.env.PORT || 3000, () => {
   db.migrate().catch(e => console.error('migrate:', e.message));   // старые профили на новую шкалу рейтинга
+  CL.init({ tg: TOKEN ? tgJ : null, push: pushUser, appUrl: APP_URL || '', link: appLink });
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
-    tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
+    tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN, allowed_updates: ['message', 'callback_query', 'inline_query', 'my_chat_member'] });
+    tgJ('getMe', {}).then(r => {
+      if (!r.ok) return;
+      if (r.result.username) BOT = r.result.username;
+      if (!r.result.supports_inline_queries) console.log('Подсказка: включите инлайн-режим в @BotFather (/setinline), тогда друзей можно звать через @' + BOT + ' в любом чате');
+    });
+    tg('setMyCommands', { scope: { type: 'all_group_chats' }, commands: [{ command: 'play', description: 'Выбрать игру для чата' }, { command: 'durak', description: 'Стол для дурака' }, { command: 'chess', description: 'Партия в шахматы' }, { command: 'mafia', description: 'Город для мафии' }, { command: 'billiards', description: 'Стол для бильярда' }, { command: 'bowling', description: 'Дорожка для боулинга' }] });
     tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'bowling', description: 'Боулинг' }, { command: 'rules', description: 'Правила игр' }] });
     tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия, бильярд и боулинг онлайн
 
-Играйте с друзьями или ботами прямо в Telegram: чат, реакции, радио за столом, отдельный рейтинг с рангами в каждой игре.
+Играйте с друзьями или ботами прямо в Telegram: быстрый подбор соперника, задания дня, недельный турнир, коллекция украшений, чат и радио за столом, рейтинг с рангами в каждой игре.
+
+Зовите друзей: напишите @${BOT} в любом чате или добавьте бота в группу.
 
 Нажмите Start и выберите игру.
 
