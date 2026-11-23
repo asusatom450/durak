@@ -565,6 +565,7 @@ body.eye{--gold:#ffd84d;color:#fff8ee;background:radial-gradient(ellipse 80% 45%
 .eye .btn:active{box-shadow:0 2px 0 #c27407}
 .eye .btn.ghost{background:#ffffff22;color:#fff;box-shadow:none;border:2px solid #ffffff55}
 .eye input{border-radius:16px;background:#0000002e;border-color:#ffffff40}
+.eye .sheet{background:#4a1240f5;border-color:#ffd84d55}.eye .m.me{background:#ffd84d;color:#5a1650}.eye .quick button{border-radius:999px}
 .eye .res h2,.eye .pc h3,.eye .dl{font-family:Nunito,Manrope,sans-serif;font-weight:900}
 .eye .res .box,.eye .pc{background:linear-gradient(#8a2160,#3e0d38);border:2px solid #ffd84d;border-radius:26px}
 .eye .cb,.eye .tabs button{border-color:#ffffff40}
@@ -761,8 +762,8 @@ function drawChess(a){
 /*ENDCH*/
 /*MAFIA*/
 const GT={durak:['Дурак','Подкидной онлайн на 2–6 игроков'],chess:['Шахматы','Партии онлайн с друзьями и компьютером'],mafia:['Мафия','Город засыпает… Найдите мафию, пока не поздно'],billiards:['Бильярд','Американка на 8 шаров: цельтесь и забивайте'],bowling:['Боулинг','Десять кеглей, страйки и табло как в клубе'],eye:['Зоркий глаз','Найдите одинаковую картинку быстрее всех']};
-const QP={durak:['Ваш ход!','Бито','Ну вы даёте','gg'],chess:['Хороший ход!','Ничья?','gg','Реванш?'],mafia:['Я мирный','Я комиссар!','Подозреваю …','Голосуем вместе'],billiards:['Хороший удар!','Не повезло','Реванш?','gg'],bowling:['Страйк!','Красивый бросок','Почти!','gg']};
-function setChatUI(){const g=st?st.game:chGame,q=document.querySelector('.quick');if(q)q.innerHTML=QP[g].map(x=>`<button onclick="say('${x}')">${x}</button>`).join('');
+const QP={durak:['Ваш ход!','Бито','Ну вы даёте','gg'],chess:['Хороший ход!','Ничья?','gg','Реванш?'],mafia:['Я мирный','Я комиссар!','Подозреваю …','Голосуем вместе'],billiards:['Хороший удар!','Не повезло','Реванш?','gg'],bowling:['Страйк!','Красивый бросок','Почти!','gg'],eye:['Вижу пару!','Вот это скорость!','Почти!','gg']};
+function setChatUI(){const g=st?st.game:chGame,q=document.querySelector('.quick');if(q)q.innerHTML=(QP[g]||QP.durak).map(x=>`<button onclick="say('${x}')">${x}</button>`).join('');
   let ph='Сообщение',dis=false;
   if(g=='mafia'&&st&&st.status=='play'){if(!st.alive)ph='👻 Чат выбывших';else if(st.phase=='night'){if(st.myRole=='mafia')ph='🔪 Тайный чат мафии';else{ph='Ночью говорит только мафия';dis=true}}}
   const i=$('#ci');i.placeholder=ph;i.disabled=dis}
