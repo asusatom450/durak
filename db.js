@@ -15,7 +15,8 @@ if (process.env.FIREBASE_KEY) {
     if (key.private_key) key.private_key = key.private_key.replace(/\\n/g, '\n');
     admin.initializeApp({ credential: admin.credential.cert(key) });
     fsx = admin.firestore(); FV = admin.firestore.FieldValue;
-    cols = { durak: fsx.collection(COLS.durak), chess: fsx.collection(COLS.chess), mafia: fsx.collection(COLS.mafia), billiards: fsx.collection(COLS.billiards), bowling: fsx.collection(COLS.bowling) };
+    // коллекции всех игр из COLS: новая игра подключается сама, достаточно добавить её туда
+    cols = Object.fromEntries(Object.entries(COLS).map(([g, c]) => [g, fsx.collection(c)]));
     console.log('Firestore подключен, проект:', key.project_id);
   } catch (e) {
     console.error('Не удалось подключить Firestore, проверьте FIREBASE_KEY:', e.message);
