@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Дурак</title><script>var __p=location.pathname;document.title=__p.indexOf('/chess')==0?'Шахматы':__p.indexOf('/mafia')==0?'Мафия':__p.indexOf('/billiards')==0?'Бильярд':__p.indexOf('/bowling')==0?'Боулинг':__p.indexOf('/eye')==0?'Зоркий глаз':'Дурак'</script>
+<title>Дурак</title><script>var __p=location.pathname;document.title=__p.indexOf('/chess')==0?'Шахматы':__p.indexOf('/mafia')==0?'Мафия':__p.indexOf('/billiards')==0?'Бильярд':__p.indexOf('/bowling')==0?'Боулинг':__p.indexOf('/eye')==0?'Зоркий глаз':__p.indexOf('/club')==0?'Игровой клуб':'Дурак'</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Playfair+Display:wght@700;900&family=Russo+One&family=Oswald:wght@500;700&family=Courier+Prime:wght@400;700&family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@700;800&family=Exo+2:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -618,6 +618,22 @@ body.eye{--gold:#ffd84d;color:#fff8ee;background:radial-gradient(ellipse 80% 45%
 .tl-tile_gold{background:radial-gradient(circle at 30% 25%,#fffcef,#f3d684 76%);box-shadow:inset 0 0 0 5px #c99a1c,inset 0 0 0 8px #fff2c0,0 12px 26px #0006}
 .pvt.tl-tile_mint,.pvt.tl-tile_night,.pvt.tl-tile_candy,.pvt.tl-tile_gold{box-shadow:inset 0 0 0 4px var(--tb,#ffd84d),0 4px 10px #0006}
 .pvt.tl-tile_mint{--tb:#2ec4a0}.pvt.tl-tile_night{--tb:#8ea2ff}.pvt.tl-tile_candy{--tb:#ff6fa8}.pvt.tl-tile_gold{--tb:#c99a1c}
+/* ===== экран клуба: карточки игр вырезаны из картинки меню, у каждой кнопка правил ===== */
+body.hub{--gold:#f3d98b;color:#eef0f7;background:radial-gradient(ellipse 85% 40% at 50% -6%,#3b4c9455,transparent 70%),radial-gradient(ellipse at 50% 115%,#000c,transparent 55%),linear-gradient(#151a2d,#090b14)}
+.hub h1{font:800 25px/1.15 Unbounded,Manrope,sans-serif;letter-spacing:.6px;color:#fff;text-transform:uppercase;text-shadow:0 0 24px #6f86ff55;margin:14px 0 0}
+.hub .sub{font-size:13px;opacity:.7}
+.hub .pc,.hub .res .box{background:linear-gradient(#1d2442,#0c0f1d);border-color:#f3d98b99}
+.hubg{display:flex;flex-direction:column;gap:10px;width:100%;max-width:520px;margin:6px auto 0}
+.hcard{position:relative;flex:none;width:100%;aspect-ratio:1036/290;border-radius:3.5%/12.4%;background-image:url(/menu.jpg?v=6);background-size:104.247% auto;background-repeat:no-repeat;background-color:#11141f;box-shadow:0 8px 22px #0008;cursor:pointer;transition:transform .15s;animation:pop .4s backwards;-webkit-tap-highlight-color:transparent}
+.hcard:active{transform:scale(.97)}
+.hrule{position:absolute;top:7px;right:7px;width:36px;height:36px;border-radius:50%;border:1px solid #ffffff55;background:#00000080;color:#fff;font-size:16px;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px #0008}
+.hon{position:absolute;right:8px;bottom:7px;font:800 11px Manrope,sans-serif;background:#000000b0;color:#b8ffcf;border-radius:999px;padding:3px 8px}.hon:empty{display:none}
+.homeb{position:absolute;top:10px;left:10px;z-index:5;height:38px;padding:0 12px;border-radius:19px;border:1px solid #ffffff33;background:#00000040;color:inherit;font:700 13px Manrope,sans-serif;cursor:pointer}
+.erow.e4{display:grid;grid-template-columns:1fr 1fr}
+.rulesm{text-align:left}
+.rtx{white-space:pre-line;font-size:13.5px;line-height:1.45;max-height:64dvh;overflow:auto;scrollbar-width:none}
+.rtx blockquote{margin:6px 0;padding:8px 10px;border-left:3px solid var(--gold);background:#0000002e;border-radius:8px}
+.rtx b{color:var(--gold)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -644,13 +660,13 @@ body.eye{--gold:#ffd84d;color:#fff8ee;background:radial-gradient(ellipse 80% 45%
 </div>
 <script>
 const tg=window.Telegram&&Telegram.WebApp;
-if(location.pathname.indexOf('/chess')==0)document.body.classList.add('chess');else if(location.pathname.indexOf('/mafia')==0)document.body.classList.add('mafia');else if(location.pathname.indexOf('/billiards')==0)document.body.classList.add('billiards');else if(location.pathname.indexOf('/bowling')==0)document.body.classList.add('bowling');else if(location.pathname.indexOf('/eye')==0)document.body.classList.add('eye');
-try{tg.ready();tg.expand();if(location.pathname.indexOf('/bowling')==0){tg.setHeaderColor('#120b30');tg.setBackgroundColor('#06040f')}else if(location.pathname.indexOf('/eye')==0){tg.setHeaderColor('#e4643d');tg.setBackgroundColor('#5a1650')}else{tg.setHeaderColor('#0d5238');tg.setBackgroundColor('#04241a')}}catch(e){}
+if(location.pathname.indexOf('/chess')==0)document.body.classList.add('chess');else if(location.pathname.indexOf('/mafia')==0)document.body.classList.add('mafia');else if(location.pathname.indexOf('/billiards')==0)document.body.classList.add('billiards');else if(location.pathname.indexOf('/bowling')==0)document.body.classList.add('bowling');else if(location.pathname.indexOf('/eye')==0)document.body.classList.add('eye');else if(location.pathname.indexOf('/club')==0)document.body.classList.add('hub');
+try{tg.ready();tg.expand();if(location.pathname.indexOf('/bowling')==0){tg.setHeaderColor('#120b30');tg.setBackgroundColor('#06040f')}else if(location.pathname.indexOf('/eye')==0){tg.setHeaderColor('#e4643d');tg.setBackgroundColor('#5a1650')}else if(location.pathname.indexOf('/club')==0){tg.setHeaderColor('#151a2d');tg.setBackgroundColor('#090b14')}else{tg.setHeaderColor('#0d5238');tg.setBackgroundColor('#04241a')}}catch(e){}
 const INVITES={durak:'https://t.me/duraktelega_bot/durakvtelege',chess:'https://t.me/duraktelega_bot/chess',mafia:'https://t.me/duraktelega_bot/mafia',billiards:'https://t.me/duraktelega_bot/billiards',bowling:'https://t.me/duraktelega_bot/bowling',eye:'https://t.me/duraktelega_bot/eye'};
 const RK=['6','7','8','9','10','В','Д','К','Т'],SU=['♠','♥','♦','♣'],EMO=['👍','😂','😮','😡','🔥','👏','😎','🤝'];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const U=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+const U=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user,HUB=location.pathname.indexOf('/club')==0;   // HUB: экран клуба со всеми играми
 let uid;try{uid=U?'tg'+U.id:(localStorage.uid=localStorage.uid||Math.random().toString(36).slice(2))}catch(e){uid=Math.random().toString(36).slice(2)}
 let ws,st,cur,selT=null,seen=new Set(),next,logSeen=0,chatOpen=false,idleAt=0;
 const send=o=>ws&&ws.readyState==1&&ws.send(JSON.stringify(o));
@@ -1555,12 +1571,13 @@ const av=p=>`<div class="av${p.fr?' fr-'+esc(p.fr):''}" style="background-color:
 const seat=(p,j,me)=>`<div class="seat ${me?'me':''} ${p.left?'left':p.off?'gone':''} ${j==st.att?'att':''} ${j==st.def?'def':''}" id="seat-${j}" onclick="showProf(${j})">${me?'':fanH(p.n)}${av(p)}<div><div class="nm">${esc(p.name)}${me?' (вы)':''}</div><div class="role">${p.left?'🚪 покинул игру':p.off?`📵 нет связи <span class="offt" data-e="${Date.now()+p.offIn}">${Math.ceil(p.offIn/1000)}</span> с`:p.n==0&&!st.deck?'✅ без карт':j==st.att?'⚔️ ходит':j==st.def?'🛡 отбивается':p.bot?'🤖 бот':'&nbsp;'}</div>${p.prof?`<div class="rt">${rankOf(p.prof.rating).n} · ${p.prof.rating}</div>`:''}</div></div>`;
 
 function entry(){
-  const a=$('#app');a.classList.add('ent');
-  a.innerHTML=`${sndBtn()}${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='eye'?`<div class="hero" style="height:132px">${eyHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
+  if(HUB)return hubView();
+  const a=$('#app');a.classList.add('ent');homeShow();
+  a.innerHTML=`${sndBtn()}<button class="homeb" onclick="goHub()">🏠 Клуб</button>${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='eye'?`<div class="hero" style="height:132px">${eyHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
   <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div><div class="clubbar" id="clubbar"></div>
   <button class="btn qbtn" onclick="quickGo()"><b>⚡ Быстрая игра</b><small>подберём соперника по силе</small></button><div class="onl" id="onl">Если живых соперников нет, через 20 секунд за стол сядет компьютер</div>
   <form onsubmit="return go(event)" class="ef">${U?'':'<input id="nm" maxlength="12" placeholder="Ваше имя">'}<div class="rmr"><input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(SP_ROOM)}" autocomplete="off"><button class="btn ghost" type="submit">Войти</button></div><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">＋ Своя комната для друзей</button></form>
-  <div class="erow"><button class="btn ghost" onclick="showTop()">🏆 Рейтинг</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl()">🎨 Коллекция</button></div>`;
+  <div class="erow e4"><button class="btn ghost" onclick="showRules()">📖 Правила</button><button class="btn ghost" onclick="showTop()">🏆 Рейтинг</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl()">🎨 Коллекция</button></div>`;
   loadMe();loadClub();onlTick();
   if(SP_ROOM&&U&&!ssGet('sp:'+SP)){ssSet('sp:'+SP,'1');setTimeout(go,60)}   // открыли по приглашению: сразу за стол (один раз)
   else if(ssGet('qk')==chGame){ssSet('qk','');setTimeout(quickGo,60)}     // «Новый соперник» после партии
@@ -1573,7 +1590,7 @@ function conn(){
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();if($('#mmv'))entry();return}
     if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='mm')return mmView(m);if(m.ev=='matched'){cur={room:m.room,name:cur.name,game:cur.game};mmDone();return}if(m.ev=='club')return clubEv(m);if(m.ev=='callres')return callRes(m);if(m.ev=='react')return float(m);
-    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='eycatch')return eyOnCatch(m);if(m.ev=='eymiss')return eyOnMiss(m);if(m.ev=='afk')return afkEv(m);$('#app').classList.remove('ent');chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
+    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='eycatch')return eyOnCatch(m);if(m.ev=='eymiss')return eyOnMiss(m);if(m.ev=='afk')return afkEv(m);$('#app').classList.remove('ent');homeHide();chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
@@ -1740,6 +1757,27 @@ function eyLoop(){const v=eyV,c=$('#eyc');if(!v||!c){if(!c&&eyIv){clearInterval(
 function eyQuit(){const v=eyV;if(!v||v.status!='play')return;const q='Выйти из игры? Засчитается поражение.',f=()=>send({t:'resign'});tg&&tg.showConfirm?tg.showConfirm(q,ok=>ok&&f()):confirm(q)&&f()}
 /*ENDEYE*/
 /*CLUB*/
+/*HUB*/
+// ===== экран клуба (/club): все игры карточками, правила, задания. Карточки вырезаны из menu.jpg:
+// панели там 1036×290 с шагом 310 px от y=126, поэтому смещение каждой: (126 + 310·k) / (1988 − 290) =====
+const HUBG=['durak','chess','mafia','billiards','bowling','eye'];
+function hubView(){const a=$('#app');a.classList.add('ent');
+  a.innerHTML=`<h1>Игровой клуб</h1><p class="sub">Нажмите на игру · 📖 правила</p><div class="clubbar" id="clubbar"></div><div class="onl" id="onl"></div>
+  <div class="hubg">${HUBG.map((g,k)=>`<div class="hcard" role="button" tabindex="0" aria-label="${GT[g][0]}" style="background-position:50% ${((126+310*k)/1698*100).toFixed(3)}%;animation-delay:${k*.05}s" onclick="hubGo('${g}')"><button class="hrule" onclick="event.stopPropagation();showRules('${g}')" aria-label="Правила: ${GT[g][0]}">📖</button><span class="hon" id="hon-${g}"></span></div>`).join('')}</div>
+  <div class="erow"><button class="btn ghost" onclick="showTop('week')">🏆 Турнир</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl('frame')">🎨 Коллекция</button></div>`;
+  loadClub();onlTick()}
+function hubGo(g){ssSet('hub','1');hap('light');location.href=CGPATH[g]}
+function goHub(){location.href='/club'}
+// в игре: кнопка «Клуб» на входе, а если пришли из клуба, ещё и системная «Назад» Telegram
+function homeShow(){if(!ssGet('hub'))return;try{tg.BackButton.onClick(goHub);tg.BackButton.show()}catch(e){}}
+function homeHide(){try{tg.BackButton.hide()}catch(e){}}
+// правила игры: тот же текст, что присылает бот
+const RULES_TX={};
+async function showRules(g){g=g||chGame;let h=RULES_TX[g];
+  if(!h){try{h=((await (await fetch('/api/rules?g='+g)).json()).html||'').split('</blockquote>\n').join('</blockquote>').split('\n<blockquote>').join('<blockquote>')}catch(e){}if(h)RULES_TX[g]=h}
+  if(!h){toast('Не удалось загрузить правила, попробуйте ещё раз');return}
+  $('#pm').innerHTML=`<div class="pc clubm rulesm" onclick="event.stopPropagation()"><div class="rtx">${h}</div><div class="row" style="margin-top:14px">${HUB?`<button class="btn" onclick="hubGo('${g}')">Играть</button>`:''}<button class="btn ghost" onclick="$('#pm').hidden=true">Понятно</button></div></div>`;$('#pm').hidden=false}
+/*ENDHUB*/
 // ===== Клуб: быстрая игра, фишки, задания дня, серия входов, турнир недели, коллекция, «Поделиться» =====
 // Данные клуба приходят с сервера (/api/club) при открытии игры и после каждой партии (событие club).
 const SP=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'',SPM=/^([A-Za-z0-9]{0,8})(?:-u(\d{3,15}))?$/.exec(SP)||[],SP_ROOM=(SPM[1]||'').toUpperCase();
@@ -1775,7 +1813,8 @@ const clubNA=()=>toast(U?'Клуб загружается, попробуйте 
 let onlT=0;
 function onlTick(){clearTimeout(onlT);if(!$('#onl'))return;fetch('/api/online').then(r=>r.json()).then(onlShow).catch(()=>{});onlT=setTimeout(onlTick,15000)}
 function onlShow(o){const e=$('#onl');if(!e||!o)return;const n=o.all||0,gn=o.g?o.g[chGame]||0:0;
-  if(n>=2)e.innerHTML=`<i class="live"></i>Сейчас в клубе <b>${n}</b> ${plur(n,'игрок','игрока','игроков')}${gn?` · в ${CGIN[chGame]} <b>${gn}</b>`:''}`}
+  if(HUB&&o.g)HUBG.forEach(g=>{const x=$('#hon-'+g),k=o.g[g]||0;if(x)x.textContent=k?`● ${k} ${plur(k,'играет','играют','играют')}`:''});
+  if(n>=2)e.innerHTML=`<i class="live"></i>Сейчас в клубе <b>${n}</b> ${plur(n,'игрок','игрока','игроков')}${gn&&!HUB?` · в ${CGIN[chGame]} <b>${gn}</b>`:''}`}
 // ---- быстрая игра ----
 let mmLast=null,mmIv=0;
 function quickGo(){hap('medium');cur={quick:true,name:myName(),game:chGame,t0:Date.now()};mmView({n:1,w:0,bot:20000});conn()}
@@ -1816,7 +1855,7 @@ function showQuests(){if(!CLUB)return clubNA();const C=CLUB,q=C.q.list,left=Math
    <h4>🔥 Серия входов: ${C.streak} ${plur(C.streak,'день','дня','дней')}</h4>${stk(C)}<div class="msub">Заходите каждый день: награда растёт, пропуск обнуляет серию. За 7 дней подряд рамка «Неделя подряд»</div>
    <h4>🤝 Друзья</h4><div class="msub">+${C.refR} 🪙 за каждого друга, который сыграет первую партию по вашей ссылке${C.refs?`. Уже пришло: <b>${C.refs}</b>`:''}. За троих рамка «Душа компании»</div><button class="btn" onclick="inviteFriend()">Позвать друга</button>
    <label class="tgl"><input type="checkbox" ${C.mute?'':'checked'} onchange="setMute(!this.checked)"> Напоминания и приглашения от бота</label></div>`;$('#pm').hidden=false}
-function qGo(g){if(g==chGame){$('#pm').hidden=true;return}location.href=CGPATH[g]}
+function qGo(g){if(g==chGame&&!HUB){$('#pm').hidden=true;return}if(HUB)ssSet('hub','1');location.href=CGPATH[g]}
 function inviteFriend(){openShare(INVITES[chGame]+(U?'?startapp=-u'+U.id:''),'Заходи в игровой клуб в Telegram: дурак, шахматы, мафия, бильярд и боулинг. Сыграем?')}
 async function setMute(on){try{const r=await clubPost({a:'mute',on});if(r.me)setClub(r.me);toast(on?'🔕 Бот больше не будет присылать напоминания':'🔔 Напоминания включены')}catch(e){}}
 // ---- коллекция ----

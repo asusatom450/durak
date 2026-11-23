@@ -198,7 +198,9 @@ const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 ✅ Всё побито: нажмите <b>«Бито»</b>, ходит защитник.
 🤲 Не можете побить: нажмите <b>«Взять»</b>.
 🔄 После хода все добирают карты до 6.
-🤡 Кто остался с картами последним, тот <b>дурак</b>.`;
+🤡 Кто остался с картами последним, тот <b>дурак</b>.
+
+<b>Рейтинг</b> по системе Эло: новичок начинает с 0, ожидание считается по силе всех за столом: остаться дураком среди слабых стоит дорого, выбраться из-за стола сильных выгодно. Первые 20 партий рейтинг меняется быстрее. Ушедший из партии проигрывает.`;
 const TIPS = {
   tip_durak: '🃏 Колода 36 карт, по 6 каждому, козырь по последней карте. Бейте старшей картой той же масти или козырем, подкидывайте карты того же достоинства. Кто остался с картами последним, тот дурак.',
   tip_chess: '♞ Мат королю выигрывает партию. Есть рокировка, взятие на проходе и превращение пешки. Ничья: пат, повтор, 50 ходов. Упало время: поражение. Нажмите фигуру, затем клетку с точкой.',
@@ -207,15 +209,18 @@ const TIPS = {
   tip_eye: '👀 У любых двух карточек ровно одна общая картинка. Найдите её на своей карточке и в центре и нажмите первым: центральная карточка ваша. Ошибка: пауза 1,5 с. Больше карточек, победа.',
   tip_bowling: '🎳 10 фреймов по 2 броска. Страйк: 10 + два следующих броска, спэр: 10 + следующий. Цельтесь в «карман» между 1-й и 3-й кеглей. Зажмите «Бросок» и отпустите.'
 };
+// полные правила каждой игры: их присылает бот и показывает приложение (окно 📖)
+const RULES_BY = { durak: RULES, chess: RULES_C, mafia: RULES_M, billiards: RULES_B, bowling: RULES_W, eye: RULES_E };
 // Меню игр на /start: одна картинка с панелью на каждую игру + кнопки. Правила показываются всплывающим окошком (как подсказка).
 const menuCap = () => `<b>ИГРОВОЙ КЛУБ</b>
-Выберите игру. Кнопка 📖 показывает правила во всплывающем окошке.
+Нажмите <b>🎮 Открыть клуб</b>: все игры карточками, правила, задания и турнир недели на одном экране. Или сразу выберите игру кнопкой ниже, 📖 коротко покажет правила.
 
 ⚡ Внутри каждой игры: быстрый подбор соперника, задания дня с фишками и турнир недели.
 🤝 Зовите друзей: напишите @${BOT} в любом чате или добавьте бота в группу.
 
 <i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>`;
 const MENU_KB = APP_URL ? { inline_keyboard: [
+  [{ text: '🎮 Открыть клуб', web_app: { url: APP_URL + '/club' } }],
   [{ text: '🃏 Дурак', web_app: { url: APP_URL } }, { text: '📖 Правила', callback_data: 'tip_durak' }],
   [{ text: '♞ Шахматы', web_app: { url: APP_URL + '/chess' } }, { text: '📖 Правила', callback_data: 'tip_chess' }],
   [{ text: '🔪 Мафия', web_app: { url: APP_URL + '/mafia' } }, { text: '📖 Правила', callback_data: 'tip_mafia' }],
@@ -374,6 +379,10 @@ const srv = http.createServer((q, r) => {
     r.writeHead(200, { 'content-type': 'application/javascript;charset=utf-8', 'cache-control': 'no-cache' });
     return r.end(fs.readFileSync(path.join(__dirname, 'bowling.js')));
   }
+  if (pth === '/menu.jpg') {   // картинка меню: из неё экран клуба вырезает карточки игр
+    r.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' });
+    return r.end(fs.readFileSync(path.join(__dirname, 'menu.jpg')));
+  }
   if (pth.startsWith('/card/')) {
     const x = CARDS.get(pth.slice(6).replace(/\.jpg$/, ''));
     if (!x) { r.writeHead(404); return r.end(); }
@@ -390,6 +399,7 @@ const srv = http.createServer((q, r) => {
     (async () => {
       if (q.url.startsWith('/api/online')) return json(online());
       const gp = new URL(q.url, 'http://x').searchParams, g = GAMES.includes(gp.get('g')) ? gp.get('g') : 'durak';
+      if (q.url.startsWith('/api/rules')) return json({ html: RULES_BY[gp.get('g')] || '' });
       if (q.url.startsWith('/api/top')) return json((await db.top(10, g)).map(u => ({ name: u.name, photo: u.photo, rating: u.rating, games: u.games, wins: u.wins })));
       if (q.url.startsWith('/api/me')) {
         const d = gp.get('d'), u = TOKEN && d && db.verify(d, TOKEN);
@@ -1543,6 +1553,6 @@ srv.listen(process.env.PORT || 3000, () => {
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
     tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия, бильярд, боулинг и «Зоркий глаз»: друзья, боты, рейтинг. Первый вход до 60 сек ⏳' });
-    tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL } } });
+    tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL + '/club' } } });   // кнопка «Играть» в чате открывает экран клуба
   }
 });
