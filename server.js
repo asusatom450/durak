@@ -2,7 +2,8 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const db = require('./db');
 const BL = require('./billiards.js');
-const BW = require('./bowling.js');   // боулинг: физика и счёт, этот же файл грузит браузер
+const BW = require('./bowling.js');
+const RT = require('./rating.js');   // общий рейтинг по Эло для всех игр   // боулинг: физика и счёт, этот же файл грузит браузер
 const { Chess } = require('./chess-lib.js');   // правила шахмат: chess.js, положен в проект целиком
 
 // ---------- Telegram-бот: кнопка «Играть» по /start (через webhook) ----------
@@ -59,7 +60,7 @@ const RULES_C = `📖 <b>ПРАВИЛА ШАХМАТ</b>
 
 <b>Как играть:</b> нажмите на свою фигуру, затем на клетку с точкой. Кнопки внизу: 🏳 сдаться, 🤝 предложить ничью.
 
-<b>Рейтинг</b> считается по системе Эло. Партии с компьютером и очень короткие рейтинг не меняют.`;
+<b>Рейтинг</b> по системе Эло: новичок начинает с 0, за победу над сильным соперником дают больше, над слабым меньше. Партии с компьютером тоже идут в зачёт, пока вы слабее его. Первые 20 партий рейтинг меняется быстрее. Очень короткие партии не считаются.`;
 const CARD_M = `🔪 <b>МАФИЯ</b>
 𝗡𝗜𝗚𝗛𝗧 · 𝗗𝗔𝗬 · 𝗩𝗢𝗧𝗘
 
@@ -88,7 +89,7 @@ const RULES_M = `📖 <b>ПРАВИЛА МАФИИ</b>
 
 <b>Победа:</b> мирные побеждают, когда вся мафия изгнана; мафия побеждает, когда ее становится не меньше, чем остальных.
 
-<b>Рейтинг</b> меняется только за игру: победа повышает, поражение понижает. С ботами изменения меньше. Если выйти из игры, засчитывается поражение.`;
+<b>Рейтинг</b> по системе Эло: новичок начинает с 0, команда против команды по среднему рейтингу. Победа над сильной командой даёт больше. Первые 20 игр рейтинг меняется быстрее. Если выйти из игры, засчитывается поражение.`;
 const CARD_B = `🎱 <b>БИЛЬЯРД</b>
 𝗔𝗠𝗘𝗥𝗜𝗖𝗔𝗡 𝗣𝗢𝗢𝗟 · 𝟴-𝗕𝗔𝗟𝗟
 
@@ -118,7 +119,7 @@ const RULES_B = `📖 <b>ПРАВИЛА БИЛЬЯРДА</b>
 
 <b>Как играть:</b> ведите пальцем по столу, чтобы прицелиться, кнопки ◀ ▶ для точной наводки, ползунок задает силу, кнопка «Удар».
 
-Вызывать лузу не нужно. Рейтинг считается по системе Эло, партии с компьютером рейтинг не меняют. Если соперник не бьет 60 секунд, шар в руке переходит к вам, три раза подряд означает поражение.`;
+Вызывать лузу не нужно. Рейтинг по системе Эло: новичок начинает с 0, за победу над сильным соперником дают больше. Партии с компьютером тоже идут в зачёт, пока вы слабее его. Если соперник не бьет 60 секунд, шар в руке переходит к вам, три раза подряд означает поражение.`;
 const CARD_W = `🎳 <b>БОУЛИНГ</b>
 𝗧𝗘𝗡 𝗣𝗜𝗡 · 𝟭–𝟰 𝗣𝗟𝗔𝗬𝗘𝗥𝗦
 
@@ -148,7 +149,7 @@ const RULES_W = `📖 <b>ПРАВИЛА БОУЛИНГА</b>
 • Зажмите «Бросок» и отпустите: сила зависит от момента. Пунктир показывает, куда пойдёт шар.
 💡 Лучше всего попадать в «карман»: между 1-й и 3-й кеглей (при подкрутке вправо между 1-й и 2-й).
 
-<b>Рейтинг:</b> побеждает больший счёт. Игра с людьми меняет рейтинг сильнее, с компьютером слабее, одиночная тренировка не меняет. На бросок 45 секунд: не успели, бросок не засчитан; три раза подряд, и вы выбываете.`;
+<b>Рейтинг</b> по системе Эло: побеждает больший счёт, новичок начинает с 0, за победу над сильными соперниками дают больше. Одиночная тренировка рейтинг не меняет. На бросок 45 секунд: не успели, бросок не засчитан; три раза подряд, и вы выбываете.`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 𝗣𝗢𝗗𝗞𝗜𝗗𝗡𝗢𝗬 𝗗𝗨𝗥𝗔𝗞
 
@@ -279,20 +280,27 @@ async function auth(m, game) {
   const uid = 'dev' + String(m.uid || '').slice(0, 30);   // локальная проверка без токена
   return { uid, prof: await db.getUser(uid, String(m.name || 'Игрок').slice(0, 24), '', game) };
 }
-// Рейтинг: с живыми соперниками ±18/−24, против одних ботов ±6/−8, серия побед +3
+// ---------- рейтинг (Эло, см. rating.js) ----------
+// у игрока из Telegram его рейтинг; у компьютера и гостя постоянный рейтинг игры
+const rOf = (p, game) => (p.prof && !p.bot ? p.prof.rating : RT.ELO.bot[game]);
+// записать результат партии: d уже посчитан, res — 'win' | 'loss' | 'draw'
+function rate(pr, d, res) {
+  const before = pr.rating; pr.rating = Math.max(RT.ELO.floor, before + d); pr.games++;
+  if (res === 'win') { pr.wins++; pr.streak = (pr.streak || 0) + 1; }
+  else if (res === 'loss') { pr.losses++; pr.streak = 0; }
+  else pr.draws = (pr.draws || 0) + 1;
+  db.saveUser(pr);
+  return { d: pr.rating - before, before, after: pr.rating };
+}
+// Дурак: ожидание = шанс не остаться дураком при таких соперниках. Ушедший из игры считается проигравшим.
 function settle(R) {
   R.result = [];
-  if (R.loser < 0) return;
-  const multi = R.players.filter(p => p.prof).length >= 2;
+  if (R.loser < 0) return;   // ничья: рейтинг не меняется
+  const rr = R.players.map(p => rOf(p, 'durak'));
   R.players.forEach((p, i) => {
-    if (!p.prof) return;
-    const pr = p.prof, lost = i == R.loser || !!p.left;
-    let d = multi ? (lost ? -24 : 18) : (lost ? -8 : 6);
-    if (!lost && pr.streak >= 2) d += 3;
-    const before = pr.rating; pr.rating = Math.max(100, pr.rating + d);
-    pr.games++; if (lost) { pr.losses++; pr.streak = 0; } else { pr.wins++; pr.streak++; }
-    db.saveUser(pr);
-    R.result.push({ i, d: pr.rating - before, before, after: pr.rating });
+    if (!p.prof || p.bot) return;
+    const lost = i == R.loser || !!p.left;
+    R.result.push({ i, ...rate(p.prof, RT.delta(p.prof.games, lost ? 0 : 1, RT.durakE(rr, i)), lost ? 'loss' : 'win') });
   });
 }
 const BOTN = ['Шулер', 'Профессор', 'Гусар', 'Барон', 'Лиса', 'Граф'];
@@ -382,7 +390,7 @@ function afkTick(R) {
   } else if (el >= AFK_FINE && !R.fined) {
     R.fined = true;
     let d = 0;
-    if (p.prof && (p.fines || 0) < 2) { p.fines = (p.fines || 0) + 1; const b = p.prof.rating; p.prof.rating = Math.max(100, b - AFK_PEN); d = p.prof.rating - b; db.saveUser(p.prof); }
+    if (p.prof && (p.fines || 0) < 2) { p.fines = (p.fines || 0) + 1; const b = p.prof.rating; p.prof.rating = Math.max(RT.ELO.floor, b - AFK_PEN); d = p.prof.rating - b; db.saveUser(p.prof); }
     sys(R, d ? `⚠️ ${p.name}: ${d} к рейтингу за бездействие` : `⚠️ ${p.name} все еще не ходит`);
     notify(p, { ev: 'afk', stage: 'fine', d }); send(R);
   } else if (el >= AFK_WARN && !R.warned) {
@@ -403,17 +411,15 @@ function chStart(R, tc) {
   R.ch = new Chess(); R.started = true; R.over = false; R.result = null; R.rres = null; R.draw = null; R.last = null;
   R.tc = ms / 60000; R.cl = { w: ms, b: ms, since: Date.now() }; R.mv++;
 }
+// Шахматы: обычное Эло, партия с компьютером тоже идёт в зачёт. Партии короче 4 полуходов не считаются.
 function chElo(R) {
   const [a, b] = R.players;
-  if (!a.prof || !b.prof || a.bot || b.bot || R.ch.history().length < 4) return;
-  const sa = !R.result.winner ? .5 : (R.col[0] == R.result.winner ? 1 : 0);
-  const d = Math.round(32 * (sa - 1 / (1 + Math.pow(10, (b.prof.rating - a.prof.rating) / 400))));
+  if (R.ch.history().length < 4) return;
+  const sa = !R.result.winner ? .5 : (R.col[0] == R.result.winner ? 1 : 0), ra = rOf(a, 'chess'), rb = rOf(b, 'chess');
   R.rres = [];
-  [[a, 0, d, sa], [b, 1, -d, 1 - sa]].forEach(([p, i, dd, sc]) => {
-    const pr = p.prof, before = pr.rating;
-    pr.rating = Math.max(100, before + dd); pr.games++;
-    if (sc == 1) pr.wins++; else if (sc == 0) pr.losses++; else pr.draws = (pr.draws || 0) + 1;
-    db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating });
+  [[a, 0, sa, ra, rb], [b, 1, 1 - sa, rb, ra]].forEach(([p, i, sc, r1, r2]) => {
+    if (!p.prof || p.bot) return;
+    R.rres.push({ i, ...rate(p.prof, RT.duel(p.prof.games, r1, r2, sc), sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw') });
   });
 }
 function chEnd(R, res) { if (R.over) return; R.over = true; R.result = res; R.draw = null; chElo(R); }
@@ -665,15 +671,14 @@ function mfDrop(R, p) {
   R.mf.alive[i] = false; R.mf.fate[i] = 'left'; mfSys(R, `🚪 ${p.name} покинул игру: ${MF_RN[R.mf.roles[i]]}`);
   mfWinCheck(R);
 }
+// Мафия: команда против команды по среднему рейтингу. Ушедший из игры проигрывает.
 function mfSettle(R) {
-  const mf = R.mf, multi = R.players.filter(p => p.prof).length >= 4; R.rres = [];
-  R.players.forEach((p, i) => {
-    if (!p.prof) return;
-    const pr = p.prof, win = !p.left && (mf.roles[i] == 'mafia' ? 'mafia' : 'town') == mf.won;
-    let d = multi ? (win ? 20 : -15) : (win ? 6 : -5); if (win && pr.streak >= 2) d += 3;
-    const before = pr.rating; pr.rating = Math.max(100, before + d); pr.games++;
-    if (win) { pr.wins++; pr.streak++; } else { pr.losses++; pr.streak = 0; }
-    db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating });
+  const mf = R.mf, P = R.players, side = i => (mf.roles[i] == 'mafia' ? 'mafia' : 'town'); R.rres = [];
+  const team = t => P.map((p, i) => (side(i) == t ? rOf(p, 'mafia') : null)).filter(x => x != null), rm = team('mafia'), rt = team('town');
+  P.forEach((p, i) => {
+    if (!p.prof || p.bot) return;
+    const win = !p.left && side(i) == mf.won, E = side(i) == 'mafia' ? RT.teamE(rm, rt) : RT.teamE(rt, rm);
+    R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, win ? 1 : 0, E), win ? 'win' : 'loss') });
   });
 }
 function mfChat(R, i, m) {
@@ -742,15 +747,14 @@ function blStart(R) {
 }
 function blEnd(R) {
   const bl = R.bl; R.over = true; bl.over = true; R.rres = null;
-  const [a, b] = R.players;
-  if (a.prof && b.prof && !a.bot && !b.bot) {
-    const sa = bl.winner === 0 ? 1 : 0, d = Math.round(32 * (sa - 1 / (1 + Math.pow(10, (b.prof.rating - a.prof.rating) / 400))));
-    R.rres = [];
-    [[a, 0, d, sa], [b, 1, -d, 1 - sa]].forEach(([p, i, dd, sc]) => {
-      const pr = p.prof, before = pr.rating; pr.rating = Math.max(100, before + dd); pr.games++; if (sc) pr.wins++; else pr.losses++;
-      db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating });
-    });
-  }
+  // Бильярд: обычное Эло, партия с компьютером тоже идёт в зачёт
+  const [a, b] = R.players, ra = rOf(a, 'billiards'), rb = rOf(b, 'billiards');
+  R.rres = [];
+  [[a, 0, ra, rb], [b, 1, rb, ra]].forEach(([p, i, r1, r2]) => {
+    if (!p.prof || p.bot) return;
+    const sc = bl.winner === i ? 1 : 0;
+    R.rres.push({ i, ...rate(p.prof, RT.duel(p.prof.games, r1, r2, sc), sc ? 'win' : 'loss') });
+  });
 }
 function blShot(R, i, a, p) {
   const bl = R.bl;
@@ -887,22 +891,15 @@ function bwEnd(R) {
   const tot = P.map((_, j) => BW.total(bw.fr[j])), alive = P.map((_, j) => j).filter(j => !P[j].left);
   const top = alive.length ? Math.max(...alive.map(j => tot[j])) : -1;
   bw.tot = tot; bw.win = alive.filter(j => tot[j] === top);
-  // рейтинг по Эло: каждый с каждым по итоговому счёту; с людьми K=32, с компьютером и гостями K=10 (у них 1000)
-  const R0 = P.map(p => (p.prof ? p.prof.rating : 1000)), multi = P.length > 1;
+  // Эло: каждый с каждым по итоговому счёту (ушедший ниже всех), результат усредняется по соперникам
+  const R0 = P.map(p => rOf(p, 'bowling')), sc = P.map((p, j) => (p.left ? -1 : tot[j])), multi = P.length > 1;
   P.forEach((p, i) => {
     if (!p.prof) return;
     const pr = p.prof, before = pr.rating, done = BW.frameDone(9, bw.fr[i][9]) && !p.left;
     const nb = done && tot[i] > (pr.best || 0); if (nb) pr.best = tot[i];
     if (!multi) { db.saveUser(pr); R.rres.push({ i, d: 0, before, after: before, best: pr.best || 0, nb }); return; }
-    let d = 0;
-    P.forEach((q, j) => {
-      if (j === i) return;
-      const S = p.left ? 0 : q.left ? 1 : tot[i] > tot[j] ? 1 : tot[i] < tot[j] ? 0 : .5, K = q.prof && !q.bot ? 32 : 10;
-      d += K * (S - 1 / (1 + Math.pow(10, (R0[j] - R0[i]) / 400)));
-    });
-    pr.rating = Math.max(100, before + Math.round(d / (P.length - 1))); pr.games++;
-    if (bw.win.includes(i)) { pr.wins++; pr.streak = (pr.streak || 0) + 1; } else { pr.losses++; pr.streak = 0; }
-    db.saveUser(pr); R.rres.push({ i, d: pr.rating - before, before, after: pr.rating, best: pr.best || 0, nb });
+    const f = RT.fieldSE(R0, sc, i), won = bw.win.includes(i);
+    R.rres.push({ i, ...rate(pr, RT.delta(pr.games, f.S, f.E), won ? 'win' : 'loss'), best: pr.best || 0, nb });
   });
   if (multi && bw.win.length) sys(R, `🏆 ${bw.win.map(j => P[j].name).join(', ')}: ${top} очков`);
   else if (!multi) sys(R, `🎳 Тренировка окончена: ${tot[0]} очков`);
@@ -1119,6 +1116,7 @@ setInterval(() => Object.values(rooms).forEach(R => { try { afkTick(R); } catch 
 process.on('unhandledRejection', e => console.error('unhandledRejection:', e && e.stack || e));
 process.on('uncaughtException', e => console.error('uncaughtException:', e && e.stack || e));
 srv.listen(process.env.PORT || 3000, () => {
+  db.migrate().catch(e => console.error('migrate:', e.message));   // старые профили на новую шкалу рейтинга
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN });
