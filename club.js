@@ -76,6 +76,7 @@ const QP = {
   chess: [{ k: 'play', t: 'Сыграйте партию в шахматы', need: 1, r: 25 }, { k: 'win', t: 'Выиграйте партию в шахматы', need: 1, r: 45 }],
   mafia: [{ k: 'play', t: 'Сыграйте 2 партии в мафию', need: 2, r: 30 }, { k: 'win', t: 'Победите в мафии', need: 1, r: 40 }],
   billiards: [{ k: 'pot', t: 'Забейте 6 своих шаров в бильярде', need: 6, r: 30 }, { k: 'win', t: 'Выиграйте партию в бильярд', need: 1, r: 45 }],
+  rainbow: [{ k: 'play', t: 'Сыграйте 2 партии в «Радугу»', need: 2, r: 25 }, { k: 'win', t: 'Победите в «Радуге»', need: 1, r: 40 }, { k: 'wild', t: 'Сыграйте 3 «радужные» карты', need: 3, r: 30 }],
   eye: [{ k: 'play', t: 'Сыграйте 2 партии в «Зоркий глаз»', need: 2, r: 25 }, { k: 'win', t: 'Победите в «Зорком глазе»', need: 1, r: 40 }, { k: 'catch', t: 'Заберите 25 карточек в «Зорком глазе»', need: 25, r: 30 }],
   bowling: [{ k: 'strike', t: 'Выбейте 3 страйка', need: 3, r: 30 }, { k: 'score', t: 'Наберите 120 очков в боулинге', need: 120, r: 40, max: true }, { k: 'play', t: 'Сыграйте партию в боулинг', need: 1, r: 25 }]
 };
@@ -292,7 +293,7 @@ async function notifyAuto(c, text) {
   return ok;
 }
 // позвать в комнату того, с кем уже играли
-const GV = { durak: 'в дурака', chess: 'в шахматы', mafia: 'в мафию', billiards: 'в бильярд', bowling: 'в боулинг', eye: 'в «Зоркий глаз»' };
+const GV = { durak: 'в дурака', chess: 'в шахматы', mafia: 'в мафию', billiards: 'в бильярд', bowling: 'в боулинг', eye: 'в «Зоркий глаз»', rainbow: 'в «Радугу»' };
 async function call(uid, to, x) {
   const c = await get(uid); if (!c) return { err: 'Звать друзей могут игроки из Telegram' };
   if (!c.recent.some(r => r.u === to)) return { err: 'Позвать можно только тех, с кем вы уже играли' };
@@ -336,7 +337,7 @@ function flushStats() {
   ST = { d: s.d, f: {} };
   return Promise.resolve(db.dinc('stats', s.d, s.f)).catch(e => console.error('stats:', e.message));
 }
-const GI = { durak: '🃏', chess: '♞', mafia: '🔪', billiards: '🎱', bowling: '🎳', eye: '👀' };
+const GI = { durak: '🃏', chess: '♞', mafia: '🔪', billiards: '🎱', bowling: '🎳', eye: '👀', rainbow: '🌈' };
 async function statsText(onl) {
   await flushStats();
   const d = dayOf(), days = [...Array(7)].map((_, i) => dayAdd(d, -i));

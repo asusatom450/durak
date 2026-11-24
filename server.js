@@ -19,7 +19,7 @@ const tgJ = (m, b) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
 // Ссылки на игры внутри Telegram (Mini App в @BotFather): по ним открывается нужная игра, startapp передаёт код комнаты
 // и того, кто позвал (например K7QX-u12345). Имя бота уточняется при запуске через getMe.
 let BOT = process.env.BOT_USERNAME || 'duraktelega_bot';
-const APPS = { durak: 'durakvtelege', chess: 'chess', mafia: 'mafia', billiards: 'billiards', bowling: 'bowling', eye: 'eye' };
+const APPS = { durak: 'durakvtelege', chess: 'chess', mafia: 'mafia', billiards: 'billiards', bowling: 'bowling', eye: 'eye', rainbow: 'rainbow' };
 const appLink = (g, sp) => `https://t.me/${BOT}/${APPS[g] || APPS.durak}` + (sp ? '?startapp=' + sp : '');
 const ADMINS = String(process.env.ADMIN_ID || '').split(/[\s,]+/).filter(Boolean);   // кто видит /stats
 const escH = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
@@ -28,6 +28,7 @@ const KB_D = APP_URL ? { inline_keyboard: [[{ text: '🃏 Играть в дур
 const KB_M = APP_URL ? { inline_keyboard: [[{ text: '🔪 Играть в мафию', web_app: { url: APP_URL + '/mafia' } }], [{ text: '📖 Правила', callback_data: 'rules_mafia' }]] } : undefined;
 const KB_B = APP_URL ? { inline_keyboard: [[{ text: '🎱 Играть в бильярд', web_app: { url: APP_URL + '/billiards' } }], [{ text: '📖 Правила', callback_data: 'rules_billiards' }]] } : undefined;
 const KB_C = APP_URL ? { inline_keyboard: [[{ text: '♞ Играть в шахматы', web_app: { url: APP_URL + '/chess' } }], [{ text: '📖 Правила', callback_data: 'rules_chess' }]] } : undefined;
+const KB_R = APP_URL ? { inline_keyboard: [[{ text: '🌈 Играть в «Радугу»', web_app: { url: APP_URL + '/rainbow' } }], [{ text: '📖 Правила', callback_data: 'rules_rainbow' }]] } : undefined;
 const KB_E = APP_URL ? { inline_keyboard: [[{ text: '👀 Играть в «Зоркий глаз»', web_app: { url: APP_URL + '/eye' } }], [{ text: '📖 Правила', callback_data: 'rules_eye' }]] } : undefined;
 const KB_W = APP_URL ? { inline_keyboard: [[{ text: '🎳 Играть в боулинг', web_app: { url: APP_URL + '/bowling' } }], [{ text: '📖 Правила', callback_data: 'rules_bowling' }]] } : undefined;
 const WAIT = '<i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>';
@@ -187,6 +188,36 @@ const RULES_E = `📖 <b>ПРАВИЛА «ЗОРКОГО ГЛАЗА»</b>
 🏆 Когда колода из 30 карточек закончится, побеждает тот, у кого больше всех.
 
 <b>Рейтинг</b> по системе Эло: каждый с каждым по числу карточек, новичок начинает с 0, за победу над сильными дают больше. Первые 20 игр рейтинг меняется быстрее.`;
+const CARD_R = `🌈 <b>РАДУГА</b>
+𝗖𝗢𝗟𝗢𝗥 𝗖𝗔𝗥𝗗𝗦 · 𝟮–𝟲 𝗣𝗟𝗔𝗬𝗘𝗥𝗦
+
+<i>Весёлая карточная игра на сброс: цвет к цвету, число к числу, и подлые «+4» соседу.</i>
+
+<blockquote>🃏 108 карт: 4 цвета, «Пропуск», «Разворот», «+2», «Радуга» и «Радуга +4»
+☝️ Осталась одна карта: успейте нажать «Последняя!»
+👥 2–6 игроков, пустые места займут боты
+🏅 Свой рейтинг и ранги: от Новичка до Радужного</blockquote>
+
+${WAIT}`;
+const RULES_R = `📖 <b>ПРАВИЛА «РАДУГИ»</b>
+𝗖𝗢𝗟𝗢𝗥 𝗖𝗔𝗥𝗗𝗦
+
+<blockquote>🃏 Каждому 7 карт, одна карта открыта в центре.
+🎨 Кладите карту того же цвета или того же значения (число или знак).
+🌈 «Радугу» можно положить всегда и выбрать любой цвет.
+🏆 Кто первым избавился от всех карт, тот победил.</blockquote>
+
+<b>Особые карты</b>
+⊘ <b>Пропуск:</b> следующий игрок пропускает ход.
+⇄ <b>Разворот:</b> ход идёт в обратную сторону (вдвоём работает как пропуск).
+➕ <b>+2:</b> следующий берёт 2 карты и пропускает ход.
+🌈 <b>Радуга +4:</b> выбираете цвет, следующий берёт 4 карты и пропускает ход.
+
+<b>Нечем ходить:</b> возьмите карту из колоды. Подошла, можно сразу сыграть её или пропустить ход.
+☝️ <b>Последняя карта:</b> оставляя одну карту, нажмите «Последняя!». Не успели, и за 3 секунды соперник может поймать вас: +2 карты.
+⏱ На ход 30 секунд: не успели, берёте карту и ход переходит. Три раза подряд, и вы выбываете.
+
+<b>Рейтинг</b> по системе Эло: каждый с каждым по числу оставшихся карт, новичок начинает с 0. Первые 20 игр рейтинг меняется быстрее.`;
 const RULES = `📖 <b>ПРАВИЛА ИГРЫ</b>
 𝗣𝗢𝗗𝗞𝗜𝗗𝗡𝗢𝗬 𝗗𝗨𝗥𝗔𝗞
 
@@ -206,11 +237,12 @@ const TIPS = {
   tip_chess: '♞ Мат королю выигрывает партию. Есть рокировка, взятие на проходе и превращение пешки. Ничья: пат, повтор, 50 ходов. Упало время: поражение. Нажмите фигуру, затем клетку с точкой.',
   tip_mafia: '🔪 Ночью мафия убивает, доктор лечит, комиссар проверяет. Днем город обсуждает и голосует. Мирные побеждают, изгнав всю мафию, мафия: когда ее не меньше остальных.',
   tip_billiards: '🎱 Забейте все шары своей группы (цельные 1–7 или полосатые 9–15), затем восьмерку. Фол: биток в лузе, нет касания или борта. После фола шар в руке у соперника.',
+  tip_rainbow: '🌈 Кладите карту того же цвета или значения, «Радугу» можно всегда. +2 и +4: сосед берёт карты и пропускает ход. Оставляя одну карту, нажмите «Последняя!». Первый без карт победил.',
   tip_eye: '👀 У любых двух карточек ровно одна общая картинка. Найдите её на своей карточке и в центре и нажмите первым: центральная карточка ваша. Ошибка: пауза 1,5 с. Больше карточек, победа.',
   tip_bowling: '🎳 10 фреймов по 2 броска. Страйк: 10 + два следующих броска, спэр: 10 + следующий. Цельтесь в «карман» между 1-й и 3-й кеглей. Зажмите «Бросок» и отпустите.'
 };
 // полные правила каждой игры: их присылает бот и показывает приложение (окно 📖)
-const RULES_BY = { durak: RULES, chess: RULES_C, mafia: RULES_M, billiards: RULES_B, bowling: RULES_W, eye: RULES_E };
+const RULES_BY = { durak: RULES, chess: RULES_C, mafia: RULES_M, billiards: RULES_B, bowling: RULES_W, eye: RULES_E, rainbow: RULES_R };
 // Меню игр на /start: одна картинка с панелью на каждую игру + кнопки. Правила показываются всплывающим окошком (как подсказка).
 const menuCap = () => `<b>ИГРОВОЙ КЛУБ</b>
 Нажмите <b>🎮 Открыть клуб</b>: все игры карточками, правила, задания и турнир недели на одном экране. Или сразу выберите игру кнопкой ниже, 📖 коротко покажет правила.
@@ -226,7 +258,8 @@ const MENU_KB = APP_URL ? { inline_keyboard: [
   [{ text: '🔪 Мафия', web_app: { url: APP_URL + '/mafia' } }, { text: '📖 Правила', callback_data: 'tip_mafia' }],
   [{ text: '🎱 Бильярд', web_app: { url: APP_URL + '/billiards' } }, { text: '📖 Правила', callback_data: 'tip_billiards' }],
   [{ text: '🎳 Боулинг', web_app: { url: APP_URL + '/bowling' } }, { text: '📖 Правила', callback_data: 'tip_bowling' }],
-  [{ text: '👀 Зоркий глаз', web_app: { url: APP_URL + '/eye' } }, { text: '📖 Правила', callback_data: 'tip_eye' }]] } : undefined;
+  [{ text: '👀 Зоркий глаз', web_app: { url: APP_URL + '/eye' } }, { text: '📖 Правила', callback_data: 'tip_eye' }],
+  [{ text: '🌈 Радуга', web_app: { url: APP_URL + '/rainbow' } }, { text: '📖 Правила', callback_data: 'tip_rainbow' }]] } : undefined;
 let MENU_ID = null;   // file_id картинки: после первой отправки Telegram хранит ее у себя
 async function sendMenu(chat) {
   try {
@@ -252,6 +285,7 @@ const INL = {
   chess: { kw: /шах|chess/, title: '♞ Сыграем в шахматы?', desc: 'Партия один на один с часами', btn: '♞ Сесть за доску', text: c => `♞ <b>Сыграем в шахматы?</b>\nКомната <code>${c}</code>: кто первым нажмёт кнопку, тот и соперник.` },
   mafia: { kw: /маф|mafia/, title: '🔪 Сыграем в мафию?', desc: 'От 5 игроков, недостающих заменят боты', btn: '🔪 Войти в город', text: c => `🔪 <b>Сыграем в мафию?</b>\nГород <code>${c}</code> ждёт жителей. Чем больше людей, тем интереснее, недостающих заменят боты.` },
   billiards: { kw: /бил|пул|pool|бильярд/, title: '🎱 Сыграем в бильярд?', desc: 'Американка на 8 шаров, один на один', btn: '🎱 К столу', text: c => `🎱 <b>Сыграем в бильярд?</b>\nСтол <code>${c}</code> накрыт, кий ждёт. Нажмите кнопку, чтобы разбить пирамиду.` },
+  rainbow: { kw: /радуг|цвет|уно|uno|rainbow|сброс/, title: '🌈 Сыграем в «Радугу»?', desc: 'Карты на сброс: цвет к цвету, +2 и +4, до 6 игроков', btn: '🌈 За стол', text: c => `🌈 <b>Сыграем в «Радугу»?</b>\nСтол <code>${c}</code>: цвет к цвету, число к числу, и не забудьте крикнуть «Последняя!». До 6 игроков, пустые места займут боты.` },
   eye: { kw: /глаз|зорк|пар|карт|eye/, title: '👀 Сыграем в «Зоркий глаз»?', desc: 'Кто первым найдёт одинаковую картинку, 2–6 игроков', btn: '👀 Играть', text: c => `👀 <b>Сыграем в «Зоркий глаз»?</b>\nСтол <code>${c}</code>: кто быстрее найдёт одинаковую картинку на двух карточках? До 6 игроков, можно с детьми.` },
   bowling: { kw: /боул|кегл|bowl/, title: '🎳 Сыграем в боулинг?', desc: 'До 4 игроков, 10 фреймов, страйки', btn: '🎳 На дорожку', text: c => `🎳 <b>Сыграем в боулинг?</b>\nДорожка <code>${c}</code> свободна, до 4 игроков. Нажмите кнопку и выбирайте шар.` }
 };
@@ -271,10 +305,10 @@ function inlineAnswer(q) {
 // в группе кнопки web_app запрещены, поэтому ссылки вида t.me/бот/игра?startapp=КОД: все, кто нажал, садятся за один стол
 const groupInvite = (chat, g, from) => { const code = rcode(); return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text: INL[g].text(code), reply_markup: { inline_keyboard: [[{ text: INL[g].btn, url: appLink(g, code + (from ? '-u' + from : '')) }]] } }); };
 function groupMenu(chat, from) {
-  const b = g => ({ text: INL[g].title.split(' ')[0] + ' ' + ({ durak: 'Дурак', chess: 'Шахматы', mafia: 'Мафия', billiards: 'Бильярд', bowling: 'Боулинг', eye: 'Зоркий глаз' })[g], url: appLink(g, rcode() + (from ? '-u' + from : '')) });
+  const b = g => ({ text: INL[g].title.split(' ')[0] + ' ' + ({ durak: 'Дурак', chess: 'Шахматы', mafia: 'Мафия', billiards: 'Бильярд', bowling: 'Боулинг', eye: 'Зоркий глаз', rainbow: 'Радуга' })[g], url: appLink(g, rcode() + (from ? '-u' + from : '')) });
   return tg('sendMessage', { chat_id: chat, parse_mode: 'HTML',
-    text: '🎲 <b>Игровой клуб в вашем чате</b>\nВыберите игру: каждая кнопка открывает отдельный стол, и все, кто нажмёт её, играют вместе.\n\nКоманды: /durak /chess /mafia /billiards /bowling /eye',
-    reply_markup: { inline_keyboard: [[b('durak'), b('chess')], [b('mafia'), b('billiards')], [b('bowling'), b('eye')]] } });
+    text: '🎲 <b>Игровой клуб в вашем чате</b>\nВыберите игру: каждая кнопка открывает отдельный стол, и все, кто нажмёт её, играют вместе.\n\nКоманды: /durak /chess /mafia /billiards /bowling /eye /rainbow',
+    reply_markup: { inline_keyboard: [[b('durak'), b('chess')], [b('mafia'), b('billiards')], [b('bowling'), b('eye')], [b('rainbow')]] } });
 }
 async function onUpdate(u) {
   const msg = (chat, text, kb) => tg('sendMessage', { chat_id: chat, parse_mode: 'HTML', text, reply_markup: kb, disable_web_page_preview: true });
@@ -298,6 +332,7 @@ async function onUpdate(u) {
     else if (cb.data == 'rules_billiards') msg(ch, RULES_B, KB_B);
     else if (cb.data == 'rules_bowling') msg(ch, RULES_W, KB_W);
     else if (cb.data == 'rules_eye') msg(ch, RULES_E, KB_E);
+    else if (cb.data == 'rules_rainbow') msg(ch, RULES_R, KB_R);
     else if (cb.data == 'rules_durak' || cb.data == 'rules') msg(ch, RULES, KB_D);
     return;
   }
@@ -308,7 +343,7 @@ async function onUpdate(u) {
   if (m.chat.type !== 'private') {   // группа
     if (GAMES.includes(c)) { CL.stat('group'); return groupInvite(id, c, from); }
     if (c == 'start' || c == 'menu' || c == 'play') return groupMenu(id, from);
-    if (c == 'rules' || c == 'help') return msg(id, RULES).then(() => msg(id, RULES_C)).then(() => msg(id, RULES_M)).then(() => msg(id, RULES_B)).then(() => msg(id, RULES_W)).then(() => msg(id, RULES_E));
+    if (c == 'rules' || c == 'help') return msg(id, RULES).then(() => msg(id, RULES_C)).then(() => msg(id, RULES_M)).then(() => msg(id, RULES_B)).then(() => msg(id, RULES_W)).then(() => msg(id, RULES_E)).then(() => msg(id, RULES_R));
     return;
   }
   if (c == 'start' || c == 'menu' || c == 'play') { if (from) CL.markPM('tg' + from, true, { name: String(m.from.first_name || 'Игрок').slice(0, 24) }).catch(() => {}); return sendMenu(id); }
@@ -318,7 +353,8 @@ async function onUpdate(u) {
   if (c == 'billiards') return msg(id, CARD_B, KB_B);
   if (c == 'bowling') return msg(id, CARD_W, KB_W);
   if (c == 'eye') return msg(id, CARD_E, KB_E);
-  if (c == 'rules' || c == 'help') return msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B)).then(() => msg(id, RULES_W, KB_W)).then(() => msg(id, RULES_E, KB_E));
+  if (c == 'rainbow') return msg(id, CARD_R, KB_R);
+  if (c == 'rules' || c == 'help') return msg(id, RULES, KB_D).then(() => msg(id, RULES_C, KB_C)).then(() => msg(id, RULES_M, KB_M)).then(() => msg(id, RULES_B, KB_B)).then(() => msg(id, RULES_W, KB_W)).then(() => msg(id, RULES_E, KB_E)).then(() => msg(id, RULES_R, KB_R));
   if (c == 'stats') {
     if (!ADMINS.includes(String(from))) return msg(id, ADMINS.length ? 'Эта команда только для владельца клуба.' : `Статистика видна только владельцу. Добавьте на Render переменную <code>ADMIN_ID</code> со значением <code>${from}</code> (это ваш номер в Telegram) и перезапустите сервер.`);
     return msg(id, await CL.statsText(online()));
@@ -423,7 +459,7 @@ const srv = http.createServer((q, r) => {
 });
 const wss = new WebSocketServer({ server: srv, perMessageDeflate: { threshold: 1024 } });
 const rooms = {};
-const GAMES = ['durak', 'chess', 'mafia', 'billiards', 'bowling', 'eye'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии', billiards: 'бильярда', bowling: 'боулинга', eye: '«Зоркого глаза»' };
+const GAMES = ['durak', 'chess', 'mafia', 'billiards', 'bowling', 'eye', 'rainbow'], GN = { durak: 'дурака', chess: 'шахмат', mafia: 'мафии', billiards: 'бильярда', bowling: 'боулинга', eye: '«Зоркого глаза»', rainbow: '«Радуги»' };
 const gameOf = m => (GAMES.includes(m.game) ? m.game : 'durak');
 // Радио: каждый телефон качает поток сам, через сервер трафик не идет. Список можно менять здесь, без правки приложения.
 const STATIONS = [
@@ -549,6 +585,7 @@ function drop(R, p) { R.mv++; if (R.game === 'chess') return chDrop(R, p);
   if (R.game === 'billiards') return blDrop(R, p);
   if (R.game === 'bowling') return bwDrop(R, p);
   if (R.game === 'eye') return eyDrop(R, p);
+  if (R.game === 'rainbow') return rbDrop(R, p);
   const i = R.players.indexOf(p); if (i < 0 || p.left) return;
   p.left = true; p.off = false; p.hand = [];
   sys(R, p.name + ' покинул игру');
@@ -567,6 +604,7 @@ function afkTick(R) {
   if (R.game === 'mafia') return mfTick(R);
   if (R.game === 'billiards') return blTick(R);
   if (R.game === 'bowling') return bwTick(R);
+  if (R.game === 'rainbow') return rbTick(R);
   if (R.game === 'eye') return;   // раунды короткие: ждать некого, отключившихся убирает общий таймер
   if (!R.started || R.over) { R.idleKey = null; return; }
   const i = actor(R), p = R.players[i], key = R.mv + ':' + i;
@@ -1269,6 +1307,179 @@ function eyState(R, i) {
   };
 }
 
+// ================= РАДУГА =================
+// Карточная игра на сброс. 108 карт: 4 цвета, в каждом 0 (одна), 1–9, «Пропуск», «Разворот», «+2» (по две),
+// и 8 «радужных»: «Радуга» (выбор цвета) и «Радуга +4». Кладите карту того же цвета или того же значения,
+// «радужную» можно всегда. Нечем ходить: берёте карту, подошла — можно сразу сыграть. Первый без карт победил.
+// Осталась одна карта: нажмите «Последняя!», иначе за 3 секунды соперник может поймать, и вы берёте 2.
+const RB_MS = +process.env.RB_TURN_MS || 30000, RB_MAX = 6, RB_CATCH = 3000, RB_HAND = 7;
+const RB_BOTN = ['Ириска', 'Пиксель', 'Бублик', 'Карамель', 'Шнурок', 'Ватрушка'];
+const rbShuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function rbDeck() {
+  const d = []; let id = 0;
+  for (let c = 0; c < 4; c++) {
+    d.push({ id: id++, c, v: 0 });
+    for (let k = 0; k < 2; k++) { for (let v = 1; v <= 9; v++) d.push({ id: id++, c, v }); for (const v of ['S', 'R', 'D']) d.push({ id: id++, c, v }); }
+  }
+  for (let k = 0; k < 4; k++) { d.push({ id: id++, c: 4, v: 'W' }); d.push({ id: id++, c: 4, v: 'F' }); }
+  return rbShuffle(d);
+}
+const RB_ORD = { S: 10, R: 11, D: 12, W: 13, F: 14 }, rbVal = k => (typeof k.v === 'number' ? k.v : RB_ORD[k.v]);
+const rbOk = (rb, k) => k.c === 4 || k.c === rb.color || k.v === rb.top.v;
+function rbStep(R, from, n) { const P = R.players, rb = R.rb; let i = from; for (let s = 0, g = 0; s < n && g < 50; g++) { i = (i + rb.dir + P.length) % P.length; if (!P[i].left) s++; } return i; }
+function rbRefill(rb) { if (rb.disc.length <= 1) return; const top = rb.disc.pop(); rb.deck = rbShuffle(rb.disc); rb.disc = [top]; }
+function rbTake(R, i, n) {
+  const rb = R.rb, h = R.players[i].hand, got = [];
+  for (let k = 0; k < n; k++) { if (!rb.deck.length) rbRefill(rb); if (!rb.deck.length) break; const c = rb.deck.pop(); h.push(c); got.push(c); }
+  if (h.length > 1) delete rb.said[i];
+  if (rb.catch && rb.catch.i === i) rb.catch = null;
+  return got;
+}
+function rbBestColor(h) { const n = [0, 0, 0, 0]; h.forEach(c => { if (c.c < 4) n[c.c]++; }); return n.indexOf(Math.max(...n)); }
+function rbStart(R) {
+  R.players = R.players.filter(p => p.bot || p.ws);
+  R.players.forEach(p => { p.off = false; p.left = false; clearTimeout(p.tm); p.hand = []; });
+  if (R.players.length < 2) { R.started = false; R.over = false; return; }
+  const deck = rbDeck(); let top = deck.pop();
+  while (typeof top.v !== 'number') { deck.unshift(top); top = deck.pop(); }   // первая открытая карта всегда числовая
+  R.rb = { deck, disc: [top], top, color: top.c, dir: 1, cur: Math.random() * R.players.length | 0, drawn: null, said: {}, catch: null, seq: 0,
+    end: Date.now() + RB_MS + 1500, to: R.players.map(() => 0), wild: R.players.map(() => 0), over: false, winner: null, last: null, botKey: '', botAt: 0 };
+  R.players.forEach(p => { p.hand = deck.splice(deck.length - RB_HAND, RB_HAND); });
+  R.started = true; R.over = false; R.rres = null; R.mv++;
+  sys(R, `🌈 Игра началась. Первым ходит ${R.players[R.rb.cur].name}`);
+}
+function rbNext(R, skip) { const rb = R.rb; rb.cur = rbStep(R, rb.cur, skip ? 2 : 1); rb.drawn = null; rb.end = Date.now() + RB_MS; R.mv++; }
+function rbPlay(R, i, m) {
+  const rb = R.rb, p = R.players[i];
+  if (!rb || rb.over || rb.cur !== i) return;
+  const k = p.hand.findIndex(x => x.id === m.id); if (k < 0) return;
+  const card = p.hand[k];
+  if (rb.drawn != null && card.id !== rb.drawn) return;   // после добора можно сыграть только взятую карту
+  if (!rbOk(rb, card)) return;
+  if (m.last && p.hand.length === 2) rb.said[i] = true;
+  p.hand.splice(k, 1); rb.disc.push(card); rb.top = card; rb.seq++; R.mv++; rb.to[i] = 0;
+  rb.color = card.c < 4 ? card.c : ([0, 1, 2, 3].includes(m.color) ? m.color : rbBestColor(p.hand));
+  if (card.c === 4) rb.wild[i]++;
+  let skip = false, n = 0;
+  if (card.v === 'S') skip = true;
+  else if (card.v === 'R') { if (R.players.filter(q => !q.left).length <= 2) skip = true; else rb.dir *= -1; }
+  else if (card.v === 'D') { n = 2; skip = true; }
+  else if (card.v === 'F') { n = 4; skip = true; }
+  const tgt = rbStep(R, i, 1);
+  rb.last = { seq: rb.seq, by: i, card, color: rb.color, n, tgt: n || card.v === 'S' ? tgt : null, dir: rb.dir };
+  if (n) { rbTake(R, tgt, n); sys(R, `${R.players[tgt].name} берёт ${n} и пропускает ход`); }
+  if (!p.hand.length) return rbEnd(R, i);
+  if (p.hand.length === 1 && !rb.said[i]) {   // забыл сказать «Последняя!»: окно, когда соперник может поймать
+    const bots = R.players.map((_, j) => j).filter(j => j !== i && R.players[j].bot && !R.players[j].left);
+    rb.catch = { i, until: Date.now() + RB_CATCH, bot: bots.length && Math.random() < .55 ? { j: rnd(bots), at: Date.now() + 900 + Math.random() * 1600 } : null };
+  }
+  rbNext(R, skip);
+}
+function rbDraw(R, i) {
+  const rb = R.rb; if (!rb || rb.over || rb.cur !== i || rb.drawn != null) return;
+  const c = rbTake(R, i, 1)[0]; rb.seq++; R.mv++; rb.to[i] = 0;
+  rb.last = { seq: rb.seq, by: i, drew: 1 };
+  if (c && rbOk(rb, c)) { rb.drawn = c.id; rb.end = Date.now() + Math.min(RB_MS, 15000); }   // подошла: можно сыграть её или пропустить ход
+  else rbNext(R, false);
+}
+function rbPass(R, i) { const rb = R.rb; if (!rb || rb.over || rb.cur !== i || rb.drawn == null) return; rb.seq++; rbNext(R, false); }
+function rbSay(R, i) {
+  const rb = R.rb; if (!rb || rb.over || R.players[i].hand.length > 2) return;
+  rb.said[i] = true;
+  if (rb.catch && rb.catch.i === i) { rb.catch = null; rb.seq++; sys(R, `☝️ ${R.players[i].name}: «Последняя!»`); }
+}
+function rbCatch(R, j) {
+  const rb = R.rb, w = rb && rb.catch;
+  if (!w || Date.now() > w.until || w.i === j || R.players[j].left) return;
+  rb.catch = null; rbTake(R, w.i, 2); rb.seq++; R.mv++;
+  rb.last = { seq: rb.seq, by: j, caught: w.i };
+  sys(R, `🫵 ${R.players[j].name} ловит ${R.players[w.i].name}: «Последняя!» не прозвучала, +2 карты`);
+}
+// Рейтинг: каждый с каждым по числу оставшихся карт (меньше лучше), ушедший ниже всех
+function rbEnd(R, w) {
+  const rb = R.rb, P = R.players; if (rb.over) return;
+  rb.over = true; R.over = true; rb.winner = w; rb.catch = null; R.rres = [];
+  const sc = P.map(p => (p.left ? -999 : -p.hand.length)), R0 = P.map(p => rOf(p, 'rainbow'));
+  P.forEach((p, i) => { if (!p.prof || p.bot) return; const f = RT.fieldSE(R0, sc, i); R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, f.S, f.E), i === w ? 'win' : 'loss') }); });
+  if (w >= 0) sys(R, `🏆 ${P[w].name} сбрасывает все карты!`);
+  clubEnd(R, P.map((p, j) => ({ p, res: j === w ? 'win' : 'loss', extra: { wild: rb.wild[j] } })));
+}
+function rbDrop(R, p, why) {
+  if (p.left) return; p.left = true; p.off = false;
+  sys(R, p.name + ' ' + (why || 'покинул игру'));
+  if (!R.started || R.over || !R.rb) return;
+  const rb = R.rb, i = R.players.indexOf(p), rest = R.players.map((_, j) => j).filter(j => !R.players[j].left);
+  rb.deck.unshift(...p.hand); p.hand = [];
+  if (rb.catch && rb.catch.i === i) rb.catch = null;
+  if (!rest.some(j => !R.players[j].bot)) return rbEnd(R, -1);
+  if (rest.length < 2) return rbEnd(R, rest[0]);
+  if (rb.cur === i) { rb.seq++; rbNext(R, false); }
+}
+function rbMsg(R, i, m) {
+  if (!R.started) {
+    if (m.t == 'bot' && R.players.length < RB_MAX) R.players.push(mkBot(R));
+    else if (m.t == 'start' && R.players.length >= 2) rbStart(R);
+    return;
+  }
+  if (R.over) { if (m.t == 'again') rbStart(R); return; }
+  if (m.t == 'play') rbPlay(R, i, { id: +m.id, color: +m.color, last: !!m.last });
+  else if (m.t == 'draw') rbDraw(R, i);
+  else if (m.t == 'pass') rbPass(R, i);
+  else if (m.t == 'last') rbSay(R, i);
+  else if (m.t == 'catch') rbCatch(R, i);
+  else if (m.t == 'resign') rbDrop(R, R.players[i], 'вышел из игры');
+}
+// время хода вышло: берёт карту и пропускает ход, три раза подряд — выбывает. У отключившегося ход проходит сам.
+function rbTick(R) {
+  if (!R.started || R.over || !R.rb) return;
+  const rb = R.rb, now = Date.now();
+  if (rb.catch && now > rb.catch.until) { rb.catch = null; send(R); }
+  const i = rb.cur, p = R.players[i];
+  if (!p || p.bot || p.left || now < rb.end) return;
+  if (!p.off && ++rb.to[i] >= 3) { rbDrop(R, p, 'не ходит и выбывает'); return send(R); }
+  if (!p.off) sys(R, `⏱ ${p.name}: время вышло`);
+  if (rb.drawn == null) rbTake(R, i, 1);
+  rb.seq++; rbNext(R, false); send(R);
+}
+// Компьютер: держит «радужные» на конец, против почти пустой руки соседа бьёт действиями, цвет выбирает по своей руке
+function rbBotMove(R, i) {
+  const rb = R.rb, h = R.players[i].hand;
+  if (rb.drawn != null) { const c = h.find(x => x.id === rb.drawn); return c && rbOk(rb, c) ? rbPlay(R, i, { id: c.id, color: rbBestColor(h.filter(x => x !== c)), last: h.length === 2 }) : rbPass(R, i); }
+  const ok = h.filter(c => rbOk(rb, c)); if (!ok.length) return rbDraw(R, i);
+  const nextN = R.players[rbStep(R, i, 1)].hand.length;
+  const score = c => (c.c === 4 ? (h.length <= 2 || nextN <= 2 ? 40 : -40) : 0) + (typeof c.v !== 'number' ? (nextN <= 3 ? 30 : 6) : c.v) + (c.c === rb.color ? 1 : 0);
+  ok.sort((a, b) => score(b) - score(a));
+  const c = ok[0];
+  rbPlay(R, i, { id: c.id, color: rbBestColor(h.filter(x => x !== c)), last: h.length === 2 && Math.random() < .9 });
+}
+function rbSchedule(R) {
+  const rb = R.rb; if (!R.started || R.over || !rb || rb.over) return;
+  const now = Date.now(), ev = [], p = R.players[rb.cur];
+  if (p && p.bot && !p.left) { const key = rb.seq + ':' + rb.cur; if (rb.botKey !== key) { rb.botKey = key; rb.botAt = now + 900 + Math.random() * 800; } ev.push([rb.botAt, () => rbBotMove(R, rb.cur)]); }
+  const w = rb.catch; if (w && w.bot && now < w.until) ev.push([w.bot.at, () => rbCatch(R, w.bot.j)]);
+  if (!ev.length) return;
+  ev.sort((a, b) => a[0] - b[0]);
+  const [at, f] = ev[0], key = rb.seq;
+  R.tm = setTimeout(() => { if (!R.started || R.over || R.rb !== rb || rb.seq !== key) return; f(); send(R); }, Math.max(30, at - now));
+}
+function rbState(R, i) {
+  const rb = R.rb, now = Date.now(), playing = R.started && !R.over, P = R.players, my = P[i] ? P[i].hand : [];
+  return {
+    game: 'rainbow', room: R.code, you: i, host: true, started: R.started, over: R.over, status: playing ? 'play' : (R.over ? 'over' : 'lobby'),
+    top: rb ? rb.top : null, color: rb ? rb.color : 0, dir: rb ? rb.dir : 1, cur: rb ? rb.cur : 0, deck: rb ? rb.deck.length : 0, pile: rb ? rb.disc.length : 0,
+    hand: rb ? my : [], can: playing && rb.cur === i ? my.filter(c => (rb.drawn == null || c.id === rb.drawn) && rbOk(rb, c)).map(c => c.id) : [],
+    drawn: playing && rb.cur === i ? rb.drawn : null, said: rb ? !!rb.said[i] : false,
+    catch: rb && playing && rb.catch && now < rb.catch.until ? { i: rb.catch.i, ms: rb.catch.until - now } : null,
+    left: playing ? Math.max(0, rb.end - now) : 0, turnMs: RB_MS, last: rb ? rb.last : null, seq: rb ? rb.seq : 0,
+    winner: rb && rb.over ? rb.winner : null, rres: R.rres || null, max: RB_MAX,
+    players: P.map(p => ({
+      name: p.name, n: rb ? p.hand.length : 0, bot: p.bot, photo: p.photo || '', fr: p.fr || '', off: !!p.off, left: !!p.left, offIn: p.off ? Math.max(0, p.offUntil - now) : 0,
+      prof: p.prof ? { rating: p.prof.rating, games: p.prof.games, wins: p.prof.wins, losses: p.prof.losses, streak: p.prof.streak || 0, since: p.prof.since } : null
+    })),
+    log: R.log.slice(-30), logN: R.logN, radio: R.radio || null, now
+  };
+}
+
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
   for (let i = 0; i < R.players.length; i++) {
@@ -1295,6 +1506,7 @@ function stateFor(R, i) {
   if (R.game === 'billiards') return blState(R, i);
   if (R.game === 'bowling') return bwState(R, i);
   if (R.game === 'eye') return eyState(R, i);
+  if (R.game === 'rainbow') return rbState(R, i);
   return {
     game: 'durak', room: R.code, you: i, host: true, started: R.started, over: R.over, loser: R.loser,
     tc: R.tc, deck: R.deck.length, att: R.att, def: R.def, table: R.table,
@@ -1307,7 +1519,8 @@ function stateFor(R, i) {
   };
 }
 function send(R) {
-  R.players.forEach(p => p.hand.sort((a, b) => w(R, a) - w(R, b) || a.s - b.s));
+  if (R.game === 'rainbow') R.players.forEach(p => p.hand.sort((a, b) => a.c - b.c || rbVal(a) - rbVal(b)));   // рука по цветам
+  else if (R.game === 'durak') R.players.forEach(p => p.hand.sort((a, b) => w(R, a) - w(R, b) || a.s - b.s));
   R.players.forEach((p, i) => { if (p.ws && p.ws.readyState == 1) p.ws.send(JSON.stringify(stateFor(R, i))); });
   clearTimeout(R.tm);
   if (R.game === 'chess') return chSchedule(R);
@@ -1315,6 +1528,7 @@ function send(R) {
   if (R.game === 'billiards') return blSchedule(R);
   if (R.game === 'bowling') return bwSchedule(R);
   if (R.game === 'eye') return eySchedule(R);
+  if (R.game === 'rainbow') return rbSchedule(R);
   if (R.started && !R.over && R.players.some(p => p.bot))
     R.tm = setTimeout(() => { if (botStep(R)) send(R); }, 900);
 }
@@ -1342,14 +1556,15 @@ function mkBot(R) {
   if (R.game === 'mafia') return { name: MF_BOTN[n % MF_BOTN.length], hand: [], bot: true, ws: null };
   if (R.game === 'bowling') return bwBot(R);
   if (R.game === 'eye') return { name: EY_BOTN[n % EY_BOTN.length], hand: [], bot: true, ws: null };
+  if (R.game === 'rainbow') return { name: RB_BOTN[n % RB_BOTN.length], hand: [], bot: true, ws: null };
   return { name: BOTN[n % BOTN.length], hand: [], bot: true, ws: null };
 }
 // ================= БЫСТРАЯ ИГРА =================
 // Очередь по каждой игре. Подбираем людей с близким рейтингом (окно растёт с ожиданием). Если за MM_BOT
 // никого нет, за стол садится компьютер. Мафия собирает всех, кто ищет, и добирает ботов до 7 игроков.
 const MM_BOT = +process.env.MM_BOT_MS || 20000;
-const MM = { durak: { max: 4, fill: 3 }, chess: { max: 2, fill: 2 }, billiards: { max: 2, fill: 2 }, bowling: { max: 4, fill: 2 }, mafia: { max: 12, fill: 7 }, eye: { max: 6, fill: 3 } };
-const MMQ = { durak: [], chess: [], mafia: [], billiards: [], bowling: [], eye: [] };
+const MM = { durak: { max: 4, fill: 3 }, chess: { max: 2, fill: 2 }, billiards: { max: 2, fill: 2 }, bowling: { max: 4, fill: 2 }, mafia: { max: 12, fill: 7 }, eye: { max: 6, fill: 3 }, rainbow: { max: 4, fill: 4 } };
+const MMQ = { durak: [], chess: [], mafia: [], billiards: [], bowling: [], eye: [], rainbow: [] };
 function mmLeave(ws) { const Q = MMQ[ws.q]; if (Q) { const k = Q.findIndex(e => e.ws === ws); if (k >= 0) Q.splice(k, 1); } ws.q = null; }
 async function mmJoin(ws, m) {
   if (ws.R || ws.q) return;
@@ -1394,7 +1609,7 @@ function mmLaunch(g, grp) {
   for (const e of grp) { e.ws.q = null; addPlayer(e.ws, e.A, e.name, R); }
   while (R.players.length < MM[g].fill) R.players.push(mkBot(R));
   const bots = R.players.some(p => p.bot);
-  if (g === 'durak') start(R); else if (g === 'chess') chStart(R, 5); else if (g === 'mafia') mfStart(R); else if (g === 'billiards') blStart(R); else if (g === 'eye') eyStart(R); else bwStart(R);
+  if (g === 'durak') start(R); else if (g === 'chess') chStart(R, 5); else if (g === 'mafia') mfStart(R); else if (g === 'billiards') blStart(R); else if (g === 'eye') eyStart(R); else if (g === 'rainbow') rbStart(R); else bwStart(R);
   (g === 'mafia' ? mfSys : sys)(R, !bots ? '⚡ Быстрая игра: соперники найдены' : grp.length > 1 ? '⚡ Быстрая игра: соперники найдены, свободные места заняли боты' : '⚡ Быстрая игра: живых соперников сейчас нет, играет компьютер');
   CL.stat('quick'); if (bots) CL.stat('quickbot');
   for (const e of grp) e.ws.send(JSON.stringify({ ev: 'matched', room: code }));
@@ -1450,7 +1665,7 @@ async function onMessage(ws, raw) {
       }
       if (R.started && R.over) toLobby(R);
       if (R.started) return err(ws, 'Игра уже идет');
-      if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : R.game == 'eye' ? EY_MAX : 6)) return err(ws, 'Комната заполнена');
+      if (R.players.length >= (R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : R.game == 'eye' ? EY_MAX : R.game == 'rainbow' ? RB_MAX : 6)) return err(ws, 'Комната заполнена');
       if (ws.q) mmLeave(ws);
       addPlayer(ws, A, m.name, R);
       return send(R);
@@ -1484,6 +1699,7 @@ async function onMessage(ws, raw) {
     if (R.game === 'billiards') { blMsg(R, i, m); return send(R); }
     if (R.game === 'bowling') { bwMsg(R, i, m); return send(R); }
     if (R.game === 'eye') { eyMsg(R, i, m); return send(R); }
+    if (R.game === 'rainbow') { rbMsg(R, i, m); return send(R); }
     if (m.t == 'bot' && !R.started && R.players.length < 6)
       R.players.push({ name: BOTN[R.players.length % BOTN.length], hand: [], bot: true, ws: null });
     else if (m.t == 'start' && !R.started && R.players.length >= 2) start(R);
@@ -1541,9 +1757,9 @@ srv.listen(process.env.PORT || 3000, () => {
       if (r.result.username) BOT = r.result.username;
       if (!r.result.supports_inline_queries) console.log('Подсказка: включите инлайн-режим в @BotFather (/setinline), тогда друзей можно звать через @' + BOT + ' в любом чате');
     });
-    tg('setMyCommands', { scope: { type: 'all_group_chats' }, commands: [{ command: 'play', description: 'Выбрать игру для чата' }, { command: 'durak', description: 'Стол для дурака' }, { command: 'chess', description: 'Партия в шахматы' }, { command: 'mafia', description: 'Город для мафии' }, { command: 'billiards', description: 'Стол для бильярда' }, { command: 'bowling', description: 'Дорожка для боулинга' }, { command: 'eye', description: 'Стол для «Зоркого глаза»' }] });
-    tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'bowling', description: 'Боулинг' }, { command: 'eye', description: 'Зоркий глаз: найди пару' }, { command: 'rules', description: 'Правила игр' }] });
-    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия, бильярд, боулинг и «Зоркий глаз» онлайн
+    tg('setMyCommands', { scope: { type: 'all_group_chats' }, commands: [{ command: 'play', description: 'Выбрать игру для чата' }, { command: 'durak', description: 'Стол для дурака' }, { command: 'chess', description: 'Партия в шахматы' }, { command: 'mafia', description: 'Город для мафии' }, { command: 'billiards', description: 'Стол для бильярда' }, { command: 'bowling', description: 'Дорожка для боулинга' }, { command: 'eye', description: 'Стол для «Зоркого глаза»' }, { command: 'rainbow', description: 'Стол для «Радуги»' }] });
+    tg('setMyCommands', { commands: [{ command: 'start', description: 'Меню игр' }, { command: 'durak', description: 'Подкидной дурак' }, { command: 'chess', description: 'Шахматы' }, { command: 'mafia', description: 'Мафия' }, { command: 'billiards', description: 'Бильярд' }, { command: 'bowling', description: 'Боулинг' }, { command: 'eye', description: 'Зоркий глаз: найди пару' }, { command: 'rainbow', description: 'Радуга: карты на сброс' }, { command: 'rules', description: 'Правила игр' }] });
+    tg('setMyDescription', { description: `♠️ Игровой клуб: подкидной дурак, шахматы, мафия, бильярд, боулинг, «Зоркий глаз» и «Радуга» онлайн
 
 Играйте с друзьями или ботами прямо в Telegram: быстрый подбор соперника, задания дня, недельный турнир, коллекция украшений, чат и радио за столом, рейтинг с рангами в каждой игре.
 
@@ -1552,7 +1768,7 @@ srv.listen(process.env.PORT || 3000, () => {
 Нажмите Start и выберите игру.
 
 ⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.` });
-    tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия, бильярд, боулинг и «Зоркий глаз»: друзья, боты, рейтинг. Первый вход до 60 сек ⏳' });
+    tg('setMyShortDescription', { short_description: 'Дурак, шахматы, мафия, бильярд, боулинг, «Зоркий глаз», «Радуга»: друзья, боты, рейтинг ⏳' });
     tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Играть', web_app: { url: APP_URL + '/club' } } });   // кнопка «Играть» в чате открывает экран клуба
   }
 });

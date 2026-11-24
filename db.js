@@ -4,7 +4,7 @@ const fs = require('fs'), crypto = require('crypto');
 // Рейтинг начинается с 0. Профили со старой шкалой (старт 800) переводятся: из рейтинга вычитается 800,
 // то есть каждый сохраняет то, что заработал сверх старта. Отметка rv: 2 значит «уже переведён»,
 // а прежнее значение остаётся в поле rating_old на случай отката.
-const START = 0, OLD_START = 800, RV = 2, COLS = { durak: 'players', chess: 'chess_players', mafia: 'mafia_players', billiards: 'billiards_players', bowling: 'bowling_players', eye: 'eye_players' };
+const START = 0, OLD_START = 800, RV = 2, COLS = { durak: 'players', chess: 'chess_players', mafia: 'mafia_players', billiards: 'billiards_players', bowling: 'bowling_players', eye: 'eye_players', rainbow: 'rainbow_players' };
 let cols = null, mem = {}, fsx = null, FV = null;
 const FILE = process.env.DATA_FILE || 'data.json';
 
