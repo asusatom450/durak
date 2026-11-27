@@ -694,6 +694,24 @@ body.rainbow{--gold:#ffd166;color:#f4f1ff;background:radial-gradient(ellipse 90%
 .rbhero{position:relative;width:240px;height:130px;margin:0 auto;--rw:72px}
 .rbhero .rc{position:absolute;left:50%;bottom:0;margin-left:-36px;transform-origin:50% 120%;animation:fan 1s calc(var(--i)*.08s) cubic-bezier(.2,1.2,.3,1) backwards}
 .rbhero .rc:nth-child(1){transform:rotate(-24deg) translateY(9px)}.rbhero .rc:nth-child(2){transform:rotate(-8deg) translateY(2px)}.rbhero .rc:nth-child(3){transform:rotate(8deg) translateY(2px)}.rbhero .rc:nth-child(4){transform:rotate(24deg) translateY(9px)}
+/* ===== лиги, друзья, турнир, задача дня, медали ===== */
+.cb{position:relative}.cbn{position:absolute;top:-6px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#ff4d4d;color:#fff;font:800 10px/17px Manrope;text-align:center;font-style:normal;padding:0 4px}
+.dbn{display:flex;flex-direction:column;gap:7px;width:100%;max-width:520px;margin:4px auto}.dbn:empty{display:none}
+.bnr{display:flex;align-items:center;gap:10px;width:100%;border:1px solid #ffffff2a;border-radius:16px;padding:9px 12px;background:linear-gradient(90deg,#ffffff1c,#ffffff08);color:inherit;text-align:left;cursor:pointer;font:600 13px Manrope,sans-serif}
+.bnr>b{font-size:24px;flex:none}.bnr span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.bnr small{font-size:11px;opacity:.7}.bnr em{font-style:normal;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bnr i{font-style:normal;flex:none;font-weight:800;font-size:12px;padding:6px 10px;border-radius:999px;background:var(--gold);color:#111}
+.bnr.dly{background:linear-gradient(90deg,#6d5dfc33,#ffffff08)}.bnr.arn.live{background:linear-gradient(90deg,#ff4d4d44,#ffffff08);box-shadow:0 0 0 1px #ff6b6b88;animation:pulse 1s infinite alternate}
+.erow.e3{display:grid;grid-template-columns:repeat(3,1fr)}.erow.e3 .btn{font-size:12px;padding:9px 2px}
+.achg{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.achi{display:flex;align-items:center;gap:10px;background:#0000003a;border-radius:14px;padding:8px 10px;opacity:.75}.achi.on{opacity:1;box-shadow:inset 0 0 0 1px var(--gold)}
+.achi>b{font-size:26px;width:34px;text-align:center;flex:none;filter:grayscale(.8)}.achi.on>b{filter:none}
+.achi .at{flex:1;min-width:0}.achi .an{font-weight:800;font-size:13.5px}.achi small{display:block;font-size:11px;opacity:.7}.achi em{font-style:normal;font-weight:800;font-size:12px;color:var(--gold);flex:none}
+.frr span{display:flex;flex-direction:column}.frr small{font-size:11px;opacity:.7}.frr.on small{color:#7dffb0;opacity:1}
+.top10 .r.up{box-shadow:inset 3px 0 0 #3ddc84}.top10 .r.dn{box-shadow:inset 3px 0 0 #ff5a5a}.top10 .r small{opacity:.65;font-size:11px}
+.lgh{text-align:center;font:800 18px Manrope,sans-serif;margin:2px 0}
+.arst{text-align:center;margin:6px 0 10px;font-size:13.5px}.arst.live{color:#ff9b9b}
+.dlyt{background:#0000003a;border-radius:14px;padding:10px 12px;margin:8px 0;text-align:center}.dlyt b{display:block;font-size:16px}.dlyt small{opacity:.75;font-size:12px}
+.dlyr{text-align:center;margin:6px 0 10px;font-size:14px}.dlyr b{color:var(--gold)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -1635,23 +1653,25 @@ function entry(){
   if(HUB)return hubView();
   const a=$('#app');a.classList.add('ent');homeShow();
   a.innerHTML=`${sndBtn()}<button class="homeb" onclick="goHub()">🏠 Клуб</button>${chGame=='chess'?`<div class="hero" style="align-items:center;gap:6px">${[['w','n'],['b','q'],['w','k']].map(([c,t],i)=>`<span style="display:block;width:${i==1?96:78}px;height:${i==1?96:78}px;animation:fan 1s ${i*.1}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 12px #000b)">${pcSVG(c,t,'pch')}</span>`).join('')}</div>`:chGame=='billiards'?`<div class="hero" style="align-items:center;gap:14px">${[[1,'#f4c20d'],[8,'#1a1a1a'],[3,'#d62d20']].map(([n,c],i)=>`<span class="hb" style="--c:${c};animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards"><b>${n}</b></span>`).join('')}</div>`:chGame=='bowling'?`<div class="hero" style="align-items:flex-end;height:128px">${bwHero()}</div>`:chGame=='eye'?`<div class="hero" style="height:132px">${eyHero()}</div>`:chGame=='rainbow'?`<div class="hero" style="height:134px">${rbHero()}</div>`:chGame=='mafia'?`<div class="hero" style="align-items:flex-end;gap:4px;height:128px">${['sheriff','mafia','doctor'].map((r,i)=>`<span style="display:block;width:${i==1?104:78}px;height:${i==1?122:92}px;animation:fan 1s ${i*.12}s cubic-bezier(.2,1.2,.3,1) backwards;filter:drop-shadow(0 8px 16px #000c)">${mfArt(r)}</span>`).join('')}</div>`:`<div class="hero">${face({r:14,s:0},'')}${face({r:14,s:1},'')}${face({r:13,s:2},'')}</div>`}
-  <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div><div class="clubbar" id="clubbar"></div>
+  <h1>${GT[chGame][0]}</h1><p class="sub">${GT[chGame][1]}</p><div id="me"></div><div class="clubbar" id="clubbar"></div><div id="dbn" class="dbn"></div>
   <button class="btn qbtn" onclick="quickGo()"><b>⚡ Быстрая игра</b><small>подберём соперника по силе</small></button><div class="onl" id="onl">Если живых соперников нет, через 20 секунд за стол сядет компьютер</div>
   <form onsubmit="return go(event)" class="ef">${U?'':'<input id="nm" maxlength="12" placeholder="Ваше имя">'}<div class="rmr"><input id="rm" maxlength="8" placeholder="Код комнаты" value="${esc(SP_ROOM)}" autocomplete="off"><button class="btn ghost" type="submit">Войти</button></div><button class="btn ghost" type="button" onclick="$('#rm').value=Math.random().toString(36).slice(2,6);go()">＋ Своя комната для друзей</button></form>
-  <div class="erow e4"><button class="btn ghost" onclick="showRules()">📖 Правила</button><button class="btn ghost" onclick="showTop()">🏆 Рейтинг</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl()">🎨 Коллекция</button></div>`;
+  <div class="erow e3"><button class="btn ghost" onclick="showRules()">📖 Правила</button><button class="btn ghost" onclick="showTop('rating')">🏆 Рейтинг</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl()">🎨 Коллекция</button><button class="btn ghost" onclick="showFriends()">👥 Друзья</button><button class="btn ghost" onclick="showAch()">🏅 Медали</button></div>`;
   loadMe();loadClub();onlTick();
   if(SP_ROOM&&U&&!ssGet('sp:'+SP)){ssSet('sp:'+SP,'1');setTimeout(go,60)}   // открыли по приглашению: сразу за стол (один раз)
   else if(ssGet('qk')==chGame){ssSet('qk','');setTimeout(quickGo,60)}     // «Новый соперник» после партии
+  else if(ssGet('daily')==chGame){ssSet('daily','');setTimeout(dlyStart,60)}   // задача дня из клуба
+  else if(ssGet('join')){const r=ssGet('join');ssSet('join','');$('#rm').value=r;setTimeout(go,60)}   // сесть за стол к другу
 }
 function go(e){if(e)e.preventDefault();const room=$('#rm').value.trim();if(!room){alert('Введите код комнаты');return false}
   cur={room,name:myName(),game:chGame};conn();return false}
 function conn(){
   ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
-  ws.onopen=()=>{$('#net').hidden=true;const id={name:cur.name,game:cur.game,uid,initData:(tg&&tg.initData)||''};send(cur.room?{t:'join',room:cur.room,...id}:{t:'quick',since:Date.now()-cur.t0,...id})};
+  ws.onopen=()=>{$('#net').hidden=true;const id={name:cur.name,game:cur.game,uid,initData:(tg&&tg.initData)||''};send(cur.room?{t:'join',room:cur.room,...id}:cur.daily?{t:'daily',...id}:{t:'quick',since:Date.now()-cur.t0,...id})};
   ws.onmessage=e=>{const m=JSON.parse(e.data);
     if(m.err){alert(m.err);cur=null;ws.close();if($('#mmv'))entry();return}
     if(m.ev=='stations'){stations=m.list.filter(x=>x.url);return}if(m.ev=='mm')return mmView(m);if(m.ev=='matched'){cur={room:m.room,name:cur.name,game:cur.game};mmDone();return}if(m.ev=='club')return clubEv(m);if(m.ev=='callres')return callRes(m);if(m.ev=='react')return float(m);
-    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='eycatch')return eyOnCatch(m);if(m.ev=='eymiss')return eyOnMiss(m);if(m.ev=='afk')return afkEv(m);$('#app').classList.remove('ent');homeHide();chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio()};
+    if(m.ev=='shot')return blOnShot(m);if(m.ev=='roll')return bwOnRoll(m);if(m.ev=='eycatch')return eyOnCatch(m);if(m.ev=='eymiss')return eyOnMiss(m);if(m.ev=='afk')return afkEv(m);$('#app').classList.remove('ent');homeHide();chAt=Date.now();selT=null;st=m;idleAt=st.idle?Date.now()-st.idle.ms:0;draw();chatRender();syncRadio();if(radioOpen)renderRadio();if(st.daily&&st.daily.res&&!dlyShown){dlyShown=true;const dd=st.daily;setTimeout(()=>dlyResPop(dd),1800)}};
   ws.onclose=()=>{if(cur){$('#net').hidden=false;setTimeout(conn,1500)}};
 }
 function lobby(a){
@@ -1923,7 +1943,7 @@ function eyQuit(){const v=eyV;if(!v||v.status!='play')return;const q='Выйти
 // ===== экран клуба (/club): все игры карточками, правила, задания. Карточки вырезаны из menu.jpg:
 // панели там 1036×290 с шагом 310 px от y=126, поэтому смещение каждой: (126 + 310·k) / (1988 − 290) =====
 const HUBG=['durak','chess','mafia','billiards','bowling','eye','rainbow'],MENU_H=2298;
-function hubView(){const a=$('#app');a.classList.add('ent');
+function hubViewOld(){const a=$('#app');a.classList.add('ent');
   a.innerHTML=`<h1>Игровой клуб</h1><p class="sub">Нажмите на игру · 📖 правила</p><div class="clubbar" id="clubbar"></div><div class="onl" id="onl"></div>
   <div class="hubg">${HUBG.map((g,k)=>`<div class="hcard" role="button" tabindex="0" aria-label="${GT[g][0]}" style="background-position:50% ${((126+310*k)/(MENU_H-290)*100).toFixed(3)}%;animation-delay:${k*.05}s" onclick="hubGo('${g}')"><button class="hrule" onclick="event.stopPropagation();showRules('${g}')" aria-label="Правила: ${GT[g][0]}">📖</button><span class="hon" id="hon-${g}"></span></div>`).join('')}</div>
   <div class="erow"><button class="btn ghost" onclick="showTop('week')">🏆 Турнир</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl('frame')">🎨 Коллекция</button></div>`;
@@ -1960,14 +1980,14 @@ const CLOTHS={cloth_blue:{t:'#1767a3',f:'#0c3f68',c:'#17629d',e:'170,215,255',l1
 let BLC=CLOTHS.cloth_blue,CLUB=null,CAT=[],WEEK=null,backCur='';
 const bwBalls=()=>{const own=new Set((CLUB&&CLUB.own)||[]);return BWL.BALLS.map((b,i)=>[b,i]).filter(([b,i])=>i<(BWL.BASE||6)||own.has('ball_'+i))};
 const clubPost=b=>fetch('/api/club',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({d:(tg&&tg.initData)||'',uid,name:myName(),...b})}).then(r=>r.json());
-async function loadClub(){try{const r=await clubPost({a:'get',sp:SP});if(!r||r.err||!r.me)return;CAT=r.cat||[];WEEK=r.week;setClub(r.me);if(r.onl)onlShow({all:r.onl});
-  if(r.daily)dailyPop(r.daily);else wresPop()}catch(e){}}
+async function loadClub(){try{const r=await clubPost({a:'get',sp:SP});if(!r||r.err||!r.me)return;CAT=r.cat||[];WEEK=r.week;ACHL=r.ach||[];DLY=r.dly||null;ARENA=r.arena||null;setClub(r.me);if(r.onl)onlShow({all:r.onl});
+  if(r.daily)dailyPop(r.daily);else wresPop();(r.daily&&r.daily.ach||[]).forEach(t=>ctoast(t.t,t.chips))}catch(e){}}
 function setClub(me){if(!me)return;CLUB=me;applySkins();clubBar();const a=$('#me .av');if(a)a.className='av'+(me.eq.frame?' fr-'+me.eq.frame:'')}
 function setBack(id){id=BACKS[id]?id:'back_red';if(id==backCur)return;backCur=id;let el=$('#cbk');if(!el){el=document.createElement('style');el.id='cbk';document.head.appendChild(el)}
   el.textContent=`.cback{background-image:url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(backSVG(BACKS[id]))}")}`}
 function applySkins(){const e=(CLUB&&CLUB.eq)||{};setBack(e.back);const B=BOARDS[e.board]||BOARDS.board_ice;document.body.style.setProperty('--sql',B[0]);document.body.style.setProperty('--sqd',B[1]);
   const c=CLOTHS[e.cloth]||CLOTHS.cloth_blue;if(c!==BLC){BLC=c;try{blDirty=1}catch(x){}}}
-function clubBar(){const el=$('#clubbar');if(!el||!CLUB)return;const q=CLUB.q.list,dn=q.filter(x=>x.done).length,w=WEEK&&WEEK.me;
+function clubBarOld(){const el=$('#clubbar');if(!el||!CLUB)return;const q=CLUB.q.list,dn=q.filter(x=>x.done).length,w=WEEK&&WEEK.me;
   el.innerHTML=`<button class="cb" onclick="showColl()" aria-label="Фишки и коллекция">${CHIP}<b>${CLUB.chips}</b></button><button class="cb" onclick="showQuests()" aria-label="Серия входов">🔥<b>${CLUB.streak}</b><small>${plur(CLUB.streak,'день','дня','дней')}</small></button><button class="cb" onclick="showQuests()" aria-label="Задания дня">📋<b>${dn}/${q.length}</b></button><button class="cb" onclick="showTop('week')" aria-label="Турнир недели">🏆<b>${w?w.place:'–'}</b><small>${w?'место':'неделя'}</small></button>`;
   const qd=$('#qdot');if(qd)qd.hidden=dn==q.length}
 const clubNA=()=>toast(U?'Клуб загружается, попробуйте через пару секунд':'Задания, турнир и коллекция доступны, когда игра открыта в Telegram');
@@ -2006,7 +2026,7 @@ function dailyPop(d){const C=CLUB;
   ${d.r?`${stk(C)}<div class="dgain">+${d.r} 🪙</div><div class="msub">Завтра: +${C.streakR[C.streak%7]} 🪙. Пропустите день, и серия начнётся заново.</div>`:''}
   ${d.welcome?`<div class="dgain">+${d.welcome} 🪙</div><div class="msub">Подарок от клуба: вас позвал(а) ${esc(d.by||'друг')}</div>`:''}
   <button class="btn" onclick="$('#pm').hidden=true;hap('medium')">Забрать</button></div>`;$('#pm').hidden=false;snd('win',.1,.6)}
-function wresPop(){const w=CLUB&&CLUB.wres;if(!w||lsGet('wres')==w.wk)return;lsSet('wres',w.wk);
+function wresPopOld(){const w=CLUB&&CLUB.wres;if(!w||lsGet('wres')==w.wk)return;lsSet('wres',w.wk);
   $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">${w.place<=3?['🥇','🥈','🥉'][w.place-1]:'🏆'}</div><h3>Итоги недели</h3><div class="msub" style="font-size:14px;opacity:.9">Вы на <b>${w.place} месте</b> из ${w.of}: ${w.p} ${plur(w.p,'очко','очка','очков')}</div>
   ${w.prize?`<div class="dgain">+${w.prize} 🪙</div>`:''}${w.place<=3?'<div class="msub">👑 Значок «Чемпион недели» и рамка с короной теперь ваши</div>':''}<div class="msub">Новая неделя уже идёт, очки обнулились</div><button class="btn" onclick="$('#pm').hidden=true">Отлично</button></div>`;$('#pm').hidden=false}
 // ---- задания дня ----
@@ -2051,7 +2071,7 @@ async function cEquip(id,kind){try{const r=await clubPost({a:'equip',id,kind});i
   showColl()}catch(e){toast('Сервер не ответил')}}
 // ---- турнир недели и рейтинг ----
 let topTab='';
-async function showTop(t){topTab=t||topTab||(CLUB?'week':'rating');if(!CLUB)topTab='rating';
+async function showTopOld(t){topTab=t||topTab||(CLUB?'week':'rating');if(!CLUB)topTab='rating';
   const tabs=`<div class="tabs">${CLUB?`<button class="${topTab=='week'?'on':''}" onclick="showTop('week')">Турнир недели</button>`:''}<button class="${topTab=='rating'?'on':''}" onclick="showTop('rating')">Рейтинг в игре</button></div>`;
   if(topTab=='rating')return showRating(tabs);
   try{const r=await clubPost({a:'week'});if(r.week)WEEK=r.week;clubBar()}catch(e){}
@@ -2061,7 +2081,7 @@ async function showTop(t){topTab=t||topTab||(CLUB?'week':'rating');if(!CLUB)topT
    <div class="wkpr"><span>🥇 ${W.prize[0]} 🪙</span><span>🥈 ${W.prize[1]} 🪙</span><span>🥉 ${W.prize[2]} 🪙</span><span>4–10 место: ${W.top10} 🪙</span></div>
    <div class="top10">${W.top.length?W.top.map((u,i)=>row(u,i+1)).join(''):'<p style="text-align:center;opacity:.7">На этой неделе ещё никто не играл. Будьте первым!</p>'}${W.me&&W.me.place>W.top.length?row({n:myName(),p:W.me.p,me:1,fr:CLUB.eq.frame},W.me.place):''}</div>
    <div class="msub" style="margin-top:10px">${W.me?`Вы на <b>${W.me.place}</b> месте из ${W.of}. `:'Сыграйте партию, чтобы попасть в таблицу. '}Очки за партию: победа ${W.pts.win}, ничья ${W.pts.draw}, поражение ${W.pts.loss}. Тройка получает значок «Чемпион недели» и рамку с короной</div></div>`;$('#pm').hidden=false}
-function clubLine(){const C=CLUB;return`<div class="grid" style="margin-top:8px"><div><b>${C.chips}</b>фишек</div><div><b>${C.best}</b>лучшая серия</div><div><b>${C.crowns?'👑'+C.crowns:0}</b>${C.crowns?'чемпион недели':'побед в неделе'}</div></div>`}
+function clubLine(){const C=CLUB;return`<div class="grid" style="margin-top:8px"><div><b>🏅${(C.achd||[]).length}</b>медалей</div><div><b>🏆${C.trophies||0}</b>кубков</div><div><b>${(LEAGUES_C[C.lg||0]||{}).i||''}</b>${((LEAGUES_C[C.lg||0]||{}).n||'').toLowerCase()} лига</div></div><div class="grid" style="margin-top:8px"><div><b>${C.chips}</b>фишек</div><div><b>${C.best}</b>лучшая серия</div><div><b>${C.crowns?'👑'+C.crowns:0}</b>${C.crowns?'чемпион недели':'побед в неделе'}</div></div>`}
 // ---- позвать в комнату ----
 const INVT={durak:'Сыграем в дурака?',chess:'Сыграем в шахматы?',mafia:'Сыграем в мафию?',billiards:'Сыграем в бильярд?',bowling:'Сыграем в боулинг?',eye:'Сыграем в «Зоркий глаз»? Кто быстрее найдёт пару?',rainbow:'Сыграем в «Радугу»? Цвет к цвету, число к числу!'};
 function openShare(url,text){const l='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text);tg&&tg.openTelegramLink?tg.openTelegramLink(l):window.open(l,'_blank')}
@@ -2175,6 +2195,94 @@ async function shareSend(){const D=cardData(),m=$('#shmsg');
 async function shareStory(){const m=$('#shmsg');if(m)m.textContent='Готовим картинку…';
   try{const r=await shareUpload();if(r&&r.url){tg.shareToStory(r.url,{text:cardData().big+' · сыграем в клубе?'});if(m)m.textContent='';return}}catch(e){}
   if(m)m.textContent='Не получилось, попробуйте ещё раз'}
+/*MORE*/
+// ===== лиги недели, друзья, турнир выходных, задача дня, достижения =====
+let ACHL=[],DLY=null,ARENA=null,dlyShown=false;
+const LEAGUES_C=[{n:'Бронзовая',i:'🥉'},{n:'Серебряная',i:'🥈'},{n:'Золотая',i:'🥇'},{n:'Сапфировая',i:'🔷'},{n:'Рубиновая',i:'♦️'},{n:'Алмазная',i:'💎'}];
+const DLY_I={eye:'👀',chess:'♞',bowling:'🎳',billiards:'🎱'},DLY_GN={eye:'Зоркий глаз',chess:'Шахматы',bowling:'Боулинг',billiards:'Бильярд'};
+const sec1=ms=>(ms/1000).toFixed(1).replace('.',',');
+function dlyRes(type,m){if(!m)return'';if(m.quit)return'не закончено';
+  if(type=='eye')return sec1(m.ms)+' с'+(m.miss?` · ошибок ${m.miss}`:'');
+  if(type=='chess')return m.ok?'решено за '+sec1(m.ms)+' с':'не решено';
+  if(type=='bowling')return m.pts+' '+plur(m.pts,'очко','очка','очков');
+  if(type=='billiards')return'забито '+m.pots+' из 6';return''}
+const fmtLeft=ms=>{ms=Math.max(0,ms);const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),mi=Math.floor(ms%36e5/6e4);return d?`${d} дн. ${h} ч`:h?`${h} ч ${mi} мин`:`${Math.max(1,mi)} мин`};
+const mskT=t=>new Date(t).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Moscow'});
+function ago(t){const m=Math.floor((Date.now()-t)/6e4);return m<60?Math.max(1,m)+' мин назад':m<1440?Math.floor(m/60)+' ч назад':Math.floor(m/1440)+' дн. назад'}
+function clubBar(){const el=$('#clubbar');if(!el||!CLUB)return;const q=CLUB.q.list,dn=q.filter(x=>x.done).length,w=WEEK,L=w&&w.league;
+  el.innerHTML=`<button class="cb" onclick="showColl()" aria-label="Фишки и коллекция">${CHIP}<b>${CLUB.chips}</b></button><button class="cb" onclick="showQuests()" aria-label="Серия входов">🔥<b>${CLUB.streak}</b></button><button class="cb" onclick="showQuests()" aria-label="Задания дня">📋<b>${dn}/${q.length}</b></button><button class="cb" onclick="showTop('week')" aria-label="Лига недели">${L?L.i:'🏆'}<b>${w&&w.place?w.place:'–'}</b><small>место</small></button><button class="cb" onclick="showFriends()" aria-label="Друзья">👥<b>${CLUB.frn||0}</b>${CLUB.frq?`<i class="cbn">${CLUB.frq}</i>`:''}</button><button class="cb" onclick="showAch()" aria-label="Достижения">🏅<b>${(CLUB.achd||[]).length}</b><small>/${ACHL.length||23}</small></button>`;
+  const qd=$('#qdot');if(qd)qd.hidden=dn==q.length;dlyBanners()}
+// баннеры задачи дня и турнира: в клубе всегда, в игре — если они про эту игру
+function dlyBanners(){const el=$('#dbn');if(!el)return;let h='';const now=Date.now();
+  if(DLY&&(HUB||DLY.type==chGame)){const d=DLY.done;h+=`<button class="bnr dly" onclick="showDaily()"><b>🧩</b><span><small>Задача дня · ${DLY_GN[DLY.type]}</small><em>${esc(DLY.t)}</em></span><i>${d?'✓ '+(d.place?d.place+' место':'пройдено'):'Решить'}</i></button>`}
+  if(ARENA&&(HUB||ARENA.g==chGame)){const A=ARENA,live=now>=A.start&&now<A.end,soon=now<A.start;
+    h+=`<button class="bnr arn ${live?'live':''}" onclick="showArena()"><b>🏟</b><span><small>Турнир выходных · ${esc(A.gn)}</small><em>${live?'Идёт! До конца '+fmtLeft(A.end-now):soon?'Суббота '+mskT(A.start)+' · через '+fmtLeft(A.start-now):'Итоги: '+(A.me?A.me.place+' место':'смотреть')}</em></span><i>${live?'Играть':soon?(A.reg?'✓ Вы в списке':'Записаться'):'Итоги'}</i></button>`}
+  el.innerHTML=h}
+function hubView(){hubViewOld();const a=$('#app');a.querySelector('.hubg').insertAdjacentHTML('beforebegin','<div id="dbn" class="dbn"></div>');
+  const er=a.querySelector('.erow');er.className='erow e3';er.innerHTML=`<button class="btn ghost" onclick="showTop('week')">🏆 Лига</button><button class="btn ghost" onclick="showQuests()">📋 Задания<i class="qdot" id="qdot" hidden></i></button><button class="btn ghost" onclick="showColl('frame')">🎨 Коллекция</button><button class="btn ghost" onclick="showFriends()">👥 Друзья</button><button class="btn ghost" onclick="showAch()">🏅 Медали</button><button class="btn ghost" onclick="showArena()">🏟 Турнир</button>`;dlyBanners()}
+// ---- достижения ----
+function showAch(){if(!CLUB)return clubNA();const A=ACHL,done=new Set(CLUB.achd||[]),pr=CLUB.ach||{};
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Достижения</h3><div class="msub">Открыто ${done.size} из ${A.length}. За каждую медаль фишки${CLUB.trophies?` · 🏆 кубков турнира: ${CLUB.trophies}`:''}</div><div class="achg">${A.slice().sort((x,y)=>done.has(y.id)-done.has(x.id)).map(x=>{const d=done.has(x.id),n=pr[x.id]||0;
+    return`<div class="achi ${d?'on':''}"><b>${x.i}</b><div class="at"><div class="an">${esc(x.n)}</div><small>${esc(x.d)}</small>${!d&&x.need>1&&n?`<div class="pbar"><i style="width:${n/x.need*100}%"></i></div><small>${n} из ${x.need}</small>`:''}</div><em>${d?'✓':'+'+x.r+' 🪙'}</em></div>`}).join('')}</div></div>`;$('#pm').hidden=false}
+// ---- друзья ----
+async function showFriends(){if(!CLUB)return clubNA();$('#pm').innerHTML='<div class="pc clubm" onclick="event.stopPropagation()"><h3>Друзья</h3><p class="msub">Загружаем…</p></div>';$('#pm').hidden=false;
+  let F=null;try{F=await clubPost({a:'friends'})}catch(e){}if(!F||F.err||!F.list){const m=$('#pm .msub');if(m)m.textContent='Не удалось загрузить, попробуйте ещё раз';return}
+  const stt=f=>f.at?(f.at.q?`🔎 ищет соперника · ${GT[f.at.g][0]}`:f.at.daily?'🧩 решает задачу дня':`🎮 ${GT[f.at.g][0]}${f.at.lobby?' · ждёт за столом':' · играет'}`):f.club?'🟢 в клубе':f.ls?'был(а) '+ago(f.ls):'';
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Друзья</h3>
+   ${F.req.length?`<h4>Хотят дружить</h4><div class="top10">${F.req.map(r=>`<div class="r"><span>${esc(r.n)}</span><button class="btn sm" onclick="frAns('${r.u}',1)">Принять</button><button class="btn ghost sm" onclick="frAns('${r.u}',0)" aria-label="Отклонить">✕</button></div>`).join('')}</div>`:''}
+   <div class="top10">${F.list.length?F.list.map(f=>`<div class="r frr ${f.at||f.club?'on':''}">${av({name:f.n,photo:f.ph,n:'',fr:f.fr})}<span><b>${esc(f.n)}</b><small>${stt(f)}</small></span>${f.at&&f.at.free?`<button class="btn sm" onclick="joinFriend('${f.at.g}','${f.at.room}')">За стол</button>`:''}</div>`).join(''):'<p class="msub">Пока никого. Добавьте тех, с кем играли: будет видно, кто сейчас в клубе, и можно сесть к ним за стол</p>'}</div>
+   ${F.recent.length?`<h4>Недавние соперники</h4><div class="top10">${F.recent.map(r=>`<div class="r"><span>${CGI[r.g]||''} ${esc(r.n)}</span><button class="btn ghost sm" id="fa-${r.u}" onclick="frAdd('${r.u}')">+ В друзья</button></div>`).join('')}</div>`:''}</div>`}
+async function frAdd(u){const b=$('#fa-'+u);if(b){b.disabled=true;b.textContent='…'}
+  try{const r=await clubPost({a:'fr_add',to:u});if(r.err){toast(r.err);if(b){b.disabled=false;b.textContent='+ В друзья'}return}if(r.me)setClub(r.me);if(b)b.textContent=r.sent?'✓ Заявка отправлена':'✓ Теперь друзья';hap('light')}catch(e){toast('Сервер не ответил')}}
+async function frAns(u,ok){try{const r=await clubPost({a:ok?'fr_ok':'fr_no',u});if(r.err)toast(r.err);if(r.me)setClub(r.me);(r.toasts||[]).forEach(t=>ctoast(t.t,t.chips));showFriends()}catch(e){toast('Сервер не ответил')}}
+function joinFriend(g,room){if(!/^[A-Z0-9]+$/.test(room))return;$('#pm').hidden=true;if(g==chGame&&!HUB&&!st){$('#rm').value=room;go();return}ssSet('join',room);location.href=CGPATH[g]}
+// ---- турнир выходных ----
+async function showArena(){if(!CLUB)return clubNA();try{const r=await clubPost({a:'arena'});if(r.arena)ARENA=r.arena}catch(e){}const A=ARENA;if(!A)return;
+  const now=Date.now(),live=now>=A.start&&now<A.end,soon=now<A.start;
+  const row=(u,i)=>`<div class="r ${u.me?'me':''}"><b class="pos">${i}</b>${av({name:u.n,photo:'',n:'',fr:u.fr})}<span>${esc(u.n)}${u.st>1?' 🔥'+u.st:''}</span><small>${u.w}/${u.gp}</small><b>${u.p}</b></div>`;
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>🏟 Турнир выходных</h3><div class="msub">${esc(A.gn)} · суббота ${mskT(A.start)}–${mskT(A.end)} по Москве</div>
+   <div class="arst ${live?'live':''}">${live?`Идёт! До конца <b>${fmtLeft(A.end-now)}</b>`:soon?`Начало через <b>${fmtLeft(A.start-now)}</b> · в списке ${A.regs}`:'Турнир этой недели окончен'}</div>
+   <div class="wkpr"><span>🥇 ${A.prize[0]} 🪙</span><span>🥈 ${A.prize[1]} 🪙</span><span>🥉 ${A.prize[2]} 🪙</span><span>4–10: ${A.top10} 🪙</span></div>
+   <div class="top10">${A.top.length?A.top.map((u,i)=>row(u,i+1)).join(''):'<p class="msub">Пока никто не набрал очков</p>'}${A.me&&A.me.place>A.top.length?row({...A.me,n:myName(),me:1,fr:CLUB.eq.frame},A.me.place):''}</div>
+   <div class="msub">Целый час каждая доигранная партия приносит очки: победа над людьми 3, над компьютером 2, ничья 1, и +1 за каждую победу подряд. Тройка получает кубок в профиль, бот пришлёт итоги</div>
+   <div class="row">${live?'<button class="btn" onclick="arenaPlay()">⚡ Играть</button>':soon?(A.reg?'<button class="btn ghost" disabled>✓ Вы в списке, бот напомнит</button>':'<button class="btn" onclick="arenaRegGo()">Записаться</button>'):''}</div></div>`;$('#pm').hidden=false}
+async function arenaRegGo(){try{const r=await clubPost({a:'arena_reg'});if(r.err){toast(r.err);return}const v=await clubPost({a:'arena'});if(v.arena)ARENA=v.arena;hap('medium');toast('🏟 Вы в списке! Бот напомнит за полчаса');showArena();dlyBanners()}catch(e){toast('Сервер не ответил')}}
+function arenaPlay(){const g=ARENA.g;$('#pm').hidden=true;if(g==chGame&&!HUB&&!st){quickGo();return}ssSet('qk',g);location.href=CGPATH[g]}
+// ---- задача дня ----
+async function showDaily(){if(!CLUB)return clubNA();try{const r=await clubPost({a:'daily'});if(r.dly)DLY=r.dly}catch(e){}const D=DLY;if(!D)return;const d=D.done;
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>🧩 Задача дня</h3><div class="msub">${DLY_I[D.type]} ${DLY_GN[D.type]} · новая через ${fmtLeft(D.ends-Date.now())}</div>
+   <div class="dlyt"><b>${esc(D.t)}</b><small>${esc(D.d)}</small></div>
+   ${d?`<div class="dlyr">Ваш результат: <b>${dlyRes(D.type,d.m)}</b>${d.place?` · ${d.place} место из ${D.of}`:''}</div>`:`<div class="msub">Одна попытка в день, задача одна на весь клуб. За прохождение +${D.reward} 🪙, лучшим трём в конце дня ещё ${D.prize.join(' / ')} 🪙</div>`}
+   <div class="top10">${D.top.length?D.top.map((u,i)=>`<div class="r ${u.me?'me':''}"><b class="pos">${i+1}</b><span>${esc(u.n)}</span><b>${dlyRes(D.type,u.m)}</b></div>`).join(''):'<p class="msub">Сегодня ещё никто не решал. Будьте первым!</p>'}</div>
+   <div class="row">${d?'<button class="btn ghost" onclick="dlyShare()">📤 Поделиться</button>':'<button class="btn" onclick="dlyGo()">Начать</button>'}</div></div>`;$('#pm').hidden=false}
+function dlyGo(){$('#pm').hidden=true;const g=DLY.type;if(g==chGame&&!HUB&&!st){dlyStart();return}ssSet('daily',g);location.href=CGPATH[g]}
+function dlyStart(){hap('medium');dlyShown=false;cur={daily:true,name:myName(),game:chGame,t0:Date.now()};const a=$('#app');a.classList.add('ent');a.innerHTML=`${sndBtn()}<div class="mmv" id="mmv"><div class="radar"><i></i><i></i><i></i><b>🧩</b></div><h2>Задача дня</h2><p class="sub">${esc((DLY&&DLY.t)||'Готовим задачу…')}</p></div>`;conn()}
+function dlyShare(){const D=DLY,d=D&&D.done;if(!d)return;const dd=D.day.split('-').reverse().slice(0,2).join('.');
+  openShare(INVITES[D.type]+(U?'?startapp=-u'+U.id:''),`🧩 Задача дня ${dd} · ${DLY_GN[D.type]}: ${dlyRes(D.type,d.m)}${d.place?`, ${d.place} место из ${D.of}`:''}. Сможешь лучше?`)}
+// результат пришёл с сервера: показываем после того, как игра доиграет свою анимацию
+async function dlyResPop(dd){try{const r=await clubPost({a:'daily'});if(r.dly)DLY=r.dly}catch(e){}const D=DLY,res=dd.res||{},m=res.m||(D&&D.done&&D.done.m);
+  $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">🧩</div><h3>Задача дня</h3><div class="dlyr">${esc(DLY_GN[dd.type]||'')}: <b>${dlyRes(dd.type,m)}</b></div>${res.place?`<div class="dgain">${res.place} место</div><div class="msub">из ${res.of} сегодня</div>`:''}
+   <div class="row" style="margin-top:12px"><button class="btn" onclick="showDaily()">Таблица дня</button><button class="btn ghost" onclick="dlyShare()">📤 Поделиться</button></div><button class="btn ghost" style="margin-top:8px" onclick="location.href='/club'">🏠 В клуб</button></div>`;$('#pm').hidden=false}
+// ---- итоги недели (лиги) и турнира ----
+function wresPop(){const w=CLUB&&CLUB.wres,ar=CLUB&&CLUB.ares;
+  if(w&&w.lg!=null&&lsGet('wres')!=w.wk){lsSet('wres',w.wk);const L=LEAGUES_C[w.lg],N=LEAGUES_C[w.to];
+    $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">${w.move>0?'⬆️':w.move<0?'⬇️':w.place==1?'👑':L.i}</div><h3>Итоги недели</h3><div class="msub" style="font-size:14px;opacity:.9">${L.i} ${L.n} лига: <b>${w.place} место</b> из ${w.of}, ${w.p} ${plur(w.p,'очко','очка','очков')}</div>${w.prize?`<div class="dgain">+${w.prize} 🪙</div>`:''}<div class="msub">${w.move>0?`Вы поднимаетесь: ${N.i} ${N.n} лига!`:w.move<0?`Эту неделю вы играете в лиге «${N.n}». Отыграйтесь!`:`Вы остаётесь в лиге «${L.n}»`}</div>${w.place==1?'<div class="msub">👑 Первое место в группе: корона и рамка чемпиона ваши</div>':''}<button class="btn" onclick="$('#pm').hidden=true">Отлично</button></div>`;$('#pm').hidden=false;return}
+  if(ar&&lsGet('ares')!=ar.id){lsSet('ares',ar.id);
+    $('#pm').innerHTML=`<div class="pc clubm daily" onclick="event.stopPropagation()"><div class="dbig">${ar.place<=3?['🥇','🥈','🥉'][ar.place-1]:'🏟'}</div><h3>Турнир выходных</h3><div class="msub" style="font-size:14px;opacity:.9">${esc((ARENA&&ARENA.gn)||'')} · <b>${ar.place} место</b> из ${ar.of}, ${ar.p} ${plur(ar.p,'очко','очка','очков')}</div>${ar.prize?`<div class="dgain">+${ar.prize} 🪙</div>`:''}${ar.place<=3?'<div class="msub">🏆 Кубок турнира теперь в вашем профиле</div>':''}<button class="btn" onclick="$('#pm').hidden=true">Отлично</button></div>`;$('#pm').hidden=false;return}
+  wresPopOld()}
+// ---- лига недели ----
+async function showTop(t){topTab=t||topTab||(CLUB?'week':'rating');if(!CLUB)topTab='rating';
+  const tabs=`<div class="tabs">${CLUB?`<button class="${topTab=='week'?'on':''}" onclick="showTop('week')">Лига недели</button><button class="${topTab=='club'?'on':''}" onclick="showTop('club')">Весь клуб</button>`:''}<button class="${topTab=='rating'?'on':''}" onclick="showTop('rating')">Рейтинг в игре</button></div>`;
+  if(topTab=='rating')return showRating(tabs);
+  try{const r=await clubPost({a:'week'});if(r.week)WEEK=r.week;clubBar()}catch(e){}
+  const W=WEEK;if(!W||!W.league)return;const row=(u,i,cls)=>`<div class="r ${u.me?'me':''} ${cls||''}"><b class="pos">${i}</b>${av({name:u.n,photo:'',n:'',fr:u.fr})}<span>${esc(u.n)}</span><b>${u.p}</b></div>`;let body;
+  if(topTab=='club')body=`<div class="msub">Все игроки клуба по очкам этой недели. Призы и повышение разыгрываются внутри лиг</div><div class="top10">${W.global.length?W.global.map((u,i)=>row(u,i+1)).join(''):'<p class="msub">На этой неделе ещё никто не играл</p>'}</div>${W.gplace?`<div class="msub" style="margin-top:8px">Вы на ${W.gplace} месте из ${W.gof}</div>`:''}`;
+  else{const n=W.group.length;body=`<div class="lgh">${W.league.i} <b>${W.league.n} лига</b></div><div class="msub">До конца недели ${fmtLeft(W.ends-Date.now())} · ${W.up?`первые ${W.up} поднимаются${W.next?' в лигу «'+W.next.n+'»':''}`:'высшая лига клуба'}${W.down?`, последние ${W.down} опускаются`:''}</div>
+    <div class="wkpr"><span>🥇 ${W.prize[0]} 🪙</span><span>🥈 ${W.prize[1]} 🪙</span><span>🥉 ${W.prize[2]} 🪙</span><span>4–10: ${W.top10} 🪙</span></div>
+    <div class="top10">${n?W.group.map((u,i)=>row(u,i+1,i<W.up?'up':W.down&&i>=n-W.down?'dn':'')).join(''):'<p class="msub">Сыграйте партию в любой игре: вы попадёте в группу своей лиги, до 25 игроков близкого уровня</p>'}</div>
+    <div class="msub" style="margin-top:8px">Очки за партию: победа ${W.pts.win}, ничья ${W.pts.draw}, поражение ${W.pts.loss}. Первый в группе получает корону «Чемпион недели»</div>`}
+  $('#pm').innerHTML=`<div class="pc clubm" onclick="event.stopPropagation()"><h3>Неделя</h3>${tabs}${body}</div>`;$('#pm').hidden=false}
+/*ENDMORE*/
 /*ENDCLUB*/
 entry();
 </script>

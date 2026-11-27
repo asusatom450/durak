@@ -93,12 +93,13 @@ let O = { tg: null, push: () => {}, appUrl: '', link: () => '' };   // зада�
 const fresh = (uid, info) => ({
   uid, name: info.name || 'Игрок', photo: info.photo || '', chips: START_CHIPS, streak: 0, best: 0, last: '', seen: '',
   q: null, own: [], eq: { ...DEF }, gp: 0, at: Date.now(), ref: '', refOk: false, refs: 0, crowns: 0, champ: null, wres: null,
-  recent: [], calls: null, inc: null, pm: true, mute: false, push: '', rk: 0
+  recent: [], calls: null, inc: null, pm: true, mute: false, push: '', rk: 0,
+  lg: 0, ach: {}, achd: [], gs: [], fr: [], frq: [], trophies: 0, ls: 0, dly: null, ares: null, dres: null
 });
 const C = new Map(), loading = new Map(), dirty = new Set(), active = new Map();
 let flushT = null;
 function adopt(raw) {   // документ из базы → профиль в памяти (новые поля получают значения по умолчанию)
-  const c = { ...fresh(raw.uid, {}), ...raw }; c.eq = { ...DEF, ...(raw.eq || {}) }; c.own = raw.own || []; c.recent = raw.recent || [];
+  const c = { ...fresh(raw.uid, {}), ...raw }; c.eq = { ...DEF, ...(raw.eq || {}) }; c.own = raw.own || []; c.recent = raw.recent || []; c.ach = raw.ach || {}; c.achd = raw.achd || []; c.fr = raw.fr || []; c.frq = raw.frq || []; c.gs = raw.gs || [];
   C.set(c.uid, { c, t: Date.now() }); return c;
 }
 // info ({ name, photo }) передают при входе игрока: тогда профиль создаётся, если его ещё нет
@@ -142,7 +143,8 @@ function view(c) {
   return {
     uid: c.uid, name: c.name, chips: c.chips, streak: c.last === d || c.last === dayAdd(d, -1) ? c.streak : 0, best: c.best, today: d, dayEnd: dayMs(dayAdd(d, 1)),
     q: c.q, qb: QUEST_BONUS, own: CAT.filter(x => has(c, x.id)).map(x => x.id), eq: c.eq, refs: c.refs, refR: REF_BONUS, crowns: c.crowns, champ: c.champ, wres: c.wres,
-    mute: c.mute, recent: c.recent.slice(0, 10), streakR: STREAK
+    mute: c.mute, recent: c.recent.slice(0, 10), streakR: STREAK,
+    lg: c.lg || 0, ach: c.ach || {}, achd: c.achd || [], frn: (c.fr || []).length, frq: (c.frq || []).length, trophies: c.trophies || 0, ares: c.ares || null, dres: c.dres || null
   };
 }
 // Вход в клуб (экран игры открылся): серия входов, награда дня, приглашение
@@ -155,8 +157,10 @@ async function visit(uid, info, ref) {
     c.streak = c.last === dayAdd(d, -1) ? c.streak + 1 : 1; c.last = d; c.best = Math.max(c.best, c.streak);
     const r = STREAK[(c.streak - 1) % 7]; c.chips += r; daily = { day: c.streak, r };
     if (c.streak >= 7) unlock(c, 'frame_streak');
+    const out = []; achSet(c, 'streak_30', c.streak, 'max', out); if (out.length) daily.ach = out;
     save(c);
   }
+  c.ls = Date.now();
   // приглашение засчитывается, только если человек новый: профиль клуба только что создан и раньше он не играл
   if (ref && /^tg\d+$/.test(ref) && ref !== uid && !c.ref && c.gp === 0 && Date.now() - c.at < 30 * 60e3) {
     const inv = await get(ref);
@@ -197,7 +201,7 @@ function progress(c, g, add, out) {
   for (const q of c.q.list) {
     if (q.done || q.g !== g || !add[q.k]) continue;
     q.n = q.max ? Math.max(q.n, add[q.k]) : q.n + add[q.k]; ch = true;
-    if (q.n >= q.need) { q.n = q.need; q.done = true; c.chips += q.r; stat('quest'); out.push({ t: '✅ Задание выполнено: ' + q.t, chips: q.r }); }
+    if (q.n >= q.need) { q.n = q.need; q.done = true; c.chips += q.r; stat('quest'); out.push({ t: '✅ Задание выполнено: ' + q.t, chips: q.r }); achSet(c, 'quests_30', 1, 'add', out); }
   }
   if (ch && !c.q.bonus && c.q.list.every(q => q.done)) { c.q.bonus = true; c.chips += QUEST_BONUS; out.push({ t: '🎁 Все задания дня выполнены', chips: QUEST_BONUS }); }
   return ch;
@@ -215,6 +219,17 @@ async function game(uid, g, r, others) {
   const out = [], pts = PTS[r.res] || 1;
   progress(c, g, { play: 1, win: r.res === 'win' ? 1 : 0, ...(r.extra || {}) }, out);
   addWeek(c, pts);
+  const win = r.res === 'win', x = r.extra || {};
+  achSet(c, 'games_50', 1, 'add', out);
+  if (win) { achSet(c, 'first_win', 1, 'add', out); achSet(c, 'wins_10', 1, 'add', out); achSet(c, 'wins_100', 1, 'add', out); achSet(c, g + '_10', 1, 'add', out); }
+  if (!c.gs.includes(g)) c.gs.push(g); achSet(c, 'all_games', c.gs.length, 'max', out);
+  if (win && x.mate && x.mate <= 10) achSet(c, 'chess_fast', 1, 'add', out);
+  if (win && x.role === 'sheriff') achSet(c, 'mafia_sheriff', 1, 'add', out);
+  if (x.score >= 200) achSet(c, 'bowling_200', 1, 'add', out);
+  if (x.fast && x.fast < 1000) achSet(c, 'eye_flash', 1, 'add', out);
+  if (x.catches) achSet(c, 'rainbow_catch', x.catches, 'add', out);
+  const ap = arenaGame(c, g, r.res, (others || []).length); if (ap) out.push({ t: `🏟 +${ap} ${plural(ap, 'очко', 'очка', 'очков')} в турнире выходных` });
+  c.ls = Date.now();
   if (c.ref && !c.refOk) { c.refOk = true; rewardRef(c).catch(e => console.error('ref:', e.message)); }
   for (const o of others || []) if (o.uid && o.uid !== uid) c.recent = [{ u: o.uid, n: o.name, g, t: Date.now() }, ...c.recent.filter(x => x.u !== o.uid)].slice(0, 12);
   if (r.rating != null) for (const it of CAT) if (it.rank && it.game === g && r.rating >= it.rank && unlock(c, it.id)) out.push({ t: `🎁 За ранг открыт предмет: ${KIND_N[it.kind]} «${it.n}»` });
@@ -242,38 +257,292 @@ function addWeek(c, n) {
   weekCheck();
   const e = WK.pts[c.uid] = WK.pts[c.uid] || { n: c.name, p: 0 };
   e.p += n; e.n = c.name; wkDirty = true;
+  lgJoin(c);
 }
-function weekView(uid) {
-  weekCheck();
-  const l = Object.entries(WK.pts).filter(([, e]) => e.p > 0).sort((a, b) => b[1].p - a[1].p), i = l.findIndex(([u]) => u === uid);
-  return {
-    id: WK.id, ends: weekEnd(), prize: WEEK_PRIZE, top10: WEEK_TOP10, pts: PTS, of: l.length,
-    top: l.slice(0, 20).map(([u, e]) => ({ n: e.n, p: e.p, me: u === uid, fr: (cached(u) || { eq: {} }).eq.frame || '' })),
-    me: i >= 0 ? { place: i + 1, p: l[i][1].p } : null
-  };
-}
-// итоги недели: награды тройке и десятке, значок чемпиона, сообщение каждому участнику
+const weekView = lgView;
+// итоги недели по группам лиг: призы тройке и десятке, пятёрка поднимается, пятёрка опускается, первый в группе получает корону
 async function finalize(W) {
   if (!W || W.done) return;
   W.done = true; await db.dset('weeks', W.id, W);   // сначала отметка, чтобы награды не выдались дважды
-  const l = Object.entries(W.pts).filter(([, e]) => e.p > 0).sort((a, b) => b[1].p - a[1].p);
+  if (!W.groups) { W.groups = { 0: [Object.keys(W.pts)] }; Object.values(W.pts).forEach(e => { e.lg = 0; e.gr = 0; }); }   // неделя до появления лиг
+  let total = 0;
+  for (const [t, gs] of Object.entries(W.groups)) for (const grp of gs) {
+    const tier = +t, l = grp.filter(u => W.pts[u] && W.pts[u].p > 0).sort((x, y) => W.pts[y].p - W.pts[x].p), n = l.length, m = lgMult(tier);
+    if (!n) continue; total += n;
+    const head = l.slice(0, 3).map((u, i) => `${['🥇', '🥈', '🥉'][i]} ${esc(W.pts[u].n)}: ${W.pts[u].p}`).join('\n');
+    for (let i = 0; i < n; i++) {
+      const uid = l[i], e = W.pts[uid]; let c = null;
+      try { c = await get(uid); } catch {}
+      if (!c) continue;
+      const prize = i < 3 ? Math.round(LG_PRIZE[i] * m) : i < 10 ? Math.round(LG_TOP10 * m) : 0, out = [];
+      const move = i < LG_UP && tier < LEAGUES.length - 1 ? 1 : tier > 0 && n >= 10 && i >= n - LG_DOWN ? -1 : 0;
+      c.lg = tier + move; c.chips += prize;
+      if (move > 0 && c.lg === LEAGUES.length - 1) achSet(c, 'league_top', 1, 'add', out);
+      if (i === 0) { c.crowns++; c.champ = { wk: W.id, place: 1, lg: tier }; unlock(c, 'frame_champ'); }
+      c.wres = { wk: W.id, place: i + 1, of: n, p: e.p, prize, lg: tier, to: c.lg, move };
+      save(c);
+      const L = LEAGUES[tier], N = LEAGUES[c.lg];
+      const text = `🏆 <b>Итоги недели · ${L.i} ${L.n} лига</b>\n\nВы на <b>${i + 1} месте</b> из ${n} в своей группе: ${e.p} ${plural(e.p, 'очко', 'очка', 'очков')}.` +
+        (prize ? `\nНаграда <b>+${prize} 🪙</b> уже на вашем счёте.` : '') +
+        (move > 0 ? `\n⬆️ Вы поднимаетесь в ${N.i} ${N.n} лигу!` : move < 0 ? `\n⬇️ На этой неделе вы в ${N.i} ${N.n} лиге. Отыграйтесь!` : `\nВы остаётесь в ${L.i} ${L.n} лиге.`) +
+        (i === 0 ? '\n👑 Первое место в группе: значок «Чемпион недели» и рамка с короной ваши.' : '') +
+        `\n\n${head}\n\nНовая неделя началась, очки обнулились. Удачи!`;
+      if (await notifyAuto(c, text)) await sleep(50);
+    }
+  }
+  console.log(`Неделя ${W.id}: итоги лиг подведены, участников ${total}`);
+}
+
+// =====================================================================================
+// ДОСТИЖЕНИЯ: медали за долгие цели, за каждую фишки
+// =====================================================================================
+const ACH = [
+  { id: 'first_win', i: '🎉', n: 'Первая победа', d: 'Победите в любой игре', need: 1, r: 20 },
+  { id: 'wins_10', i: '🏅', n: 'Победитель', d: '10 побед в любых играх', need: 10, r: 50 },
+  { id: 'wins_100', i: '🏆', n: 'Легенда клуба', d: '100 побед в любых играх', need: 100, r: 300 },
+  { id: 'games_50', i: '🎲', n: 'Завсегдатай', d: 'Сыграйте 50 партий', need: 50, r: 100 },
+  { id: 'all_games', i: '🌍', n: 'Мастер на все руки', d: 'Сыграйте во все 7 игр клуба', need: 7, r: 100 },
+  { id: 'durak_10', i: '🃏', n: 'Не дурак', d: '10 побед в дураке', need: 10, r: 60 },
+  { id: 'chess_10', i: '♛', n: 'Гроссмейстер клуба', d: '10 побед в шахматах', need: 10, r: 60 },
+  { id: 'chess_fast', i: '♞', n: 'Блиц-мат', d: 'Поставьте мат за 10 ходов или быстрее', need: 1, r: 80 },
+  { id: 'mafia_10', i: '🔪', n: 'Крёстный отец', d: '10 побед в мафии', need: 10, r: 60 },
+  { id: 'mafia_sheriff', i: '🕵️', n: 'Комиссар', d: 'Победите, играя комиссаром', need: 1, r: 50 },
+  { id: 'billiards_10', i: '🎱', n: 'Король стола', d: '10 побед в бильярде', need: 10, r: 60 },
+  { id: 'bowling_turkey', i: '🦃', n: 'Индейка', d: 'Три страйка подряд в боулинге', need: 1, r: 60 },
+  { id: 'bowling_200', i: '🎳', n: 'Двести', d: 'Наберите 200 очков в боулинге', need: 1, r: 100 },
+  { id: 'eye_10', i: '👀', n: 'Орлиный глаз', d: '10 побед в «Зорком глазе»', need: 10, r: 60 },
+  { id: 'eye_flash', i: '⚡', n: 'Молния', d: 'Найдите пару быстрее чем за секунду', need: 1, r: 50 },
+  { id: 'rainbow_10', i: '🌈', n: 'Радужный', d: '10 побед в «Радуге»', need: 10, r: 60 },
+  { id: 'rainbow_catch', i: '🫵', n: 'Поймал!', d: 'Поймайте 5 забывчивых в «Радуге»', need: 5, r: 50 },
+  { id: 'streak_30', i: '📅', n: 'Месяц подряд', d: 'Заходите в клуб 30 дней подряд', need: 30, r: 300 },
+  { id: 'quests_30', i: '📋', n: 'Исполнитель', d: 'Выполните 30 заданий дня', need: 30, r: 150 },
+  { id: 'friends_3', i: '🤝', n: 'Компанейский', d: 'Добавьте трёх друзей', need: 3, r: 50 },
+  { id: 'daily_10', i: '🧩', n: 'Решатель', d: 'Пройдите 10 задач дня', need: 10, r: 100 },
+  { id: 'arena_top', i: '🏟', n: 'Призёр турнира', d: 'Войдите в тройку турнира выходных', need: 1, r: 150 },
+  { id: 'league_top', i: '💎', n: 'Алмазная лига', d: 'Поднимитесь в Алмазную лигу', need: 1, r: 200 }
+];
+// mode: 'add' прибавить, 'max' — прогресс равен значению (серия, число друзей)
+function achSet(c, id, v, mode, out) {
+  const a = ACH.find(x => x.id === id); if (!a || !v) return;
+  c.ach = c.ach || {}; c.achd = c.achd || [];
+  if (c.achd.includes(id)) return;
+  const cur = c.ach[id] || 0, n = Math.min(a.need, mode === 'max' ? Math.max(cur, v) : cur + v);
+  if (n === cur) return;
+  c.ach[id] = n; save(c);
+  if (n >= a.need) { c.achd.push(id); c.chips += a.r; stat('ach'); if (out) out.push({ t: `🏅 Достижение «${a.n}»`, chips: a.r }); }
+}
+// событие из игры (три страйка подряд): сразу показать в приложении
+async function achEv(uid, id, v = 1) {
+  const c = cached(uid) || await get(uid); if (!c) return;
+  const out = []; achSet(c, id, v, 'add', out);
+  if (out.length) O.push(uid, { ev: 'club', toasts: out, me: view(c) });
+}
+
+// =====================================================================================
+// ЛИГИ НЕДЕЛИ: группы до 25 игроков одной лиги. Пятёрка лучших поднимается, пятёрка худших опускается.
+// =====================================================================================
+const LEAGUES = [{ n: 'Бронзовая', i: '🥉' }, { n: 'Серебряная', i: '🥈' }, { n: 'Золотая', i: '🥇' }, { n: 'Сапфировая', i: '🔷' }, { n: 'Рубиновая', i: '♦️' }, { n: 'Алмазная', i: '💎' }];
+const LG_SIZE = 25, LG_UP = 5, LG_DOWN = 5, LG_PRIZE = [200, 120, 80], LG_TOP10 = 30;
+const lgMult = t => 1 + t * .25;   // в лиге выше и призы выше
+function lgJoin(c) {   // первые очки недели: место в группе своей лиги
+  WK.groups = WK.groups || {};
+  const e = WK.pts[c.uid]; if (e.lg != null) return;
+  const t = Math.max(0, Math.min(LEAGUES.length - 1, c.lg || 0)), gs = WK.groups[t] = WK.groups[t] || [];
+  let gi = gs.findIndex(g => g.length < LG_SIZE); if (gi < 0) { gs.push([]); gi = gs.length - 1; }
+  gs[gi].push(c.uid); e.lg = t; e.gr = gi;
+}
+function lgGroup(W, e) { return ((W.groups || {})[e.lg] || [])[e.gr] || []; }
+function lgView(uid) {
+  weekCheck();
+  const e = WK.pts[uid], c = cached(uid), tier = e && e.lg != null ? e.lg : (c ? c.lg || 0 : 0);
+  const row = u => { const x = WK.pts[u] || { n: '?', p: 0 }; return { n: x.n, p: x.p, me: u === uid, fr: (cached(u) || { eq: {} }).eq.frame || '' }; };
+  const grp = e && e.lg != null ? lgGroup(WK, e).slice().sort((a, b) => (WK.pts[b] || {}).p - (WK.pts[a] || {}).p) : [];
+  const all = Object.entries(WK.pts).filter(([, x]) => x.p > 0).sort((a, b) => b[1].p - a[1].p);
+  const m = lgMult(tier);
+  return {
+    id: WK.id, ends: weekEnd(), pts: PTS, tier, league: LEAGUES[tier], next: LEAGUES[tier + 1] || null, prev: LEAGUES[tier - 1] || null,
+    group: grp.map(row), place: grp.indexOf(uid) + 1 || null, of: grp.length,
+    up: tier < LEAGUES.length - 1 ? LG_UP : 0, down: tier > 0 && grp.length >= 10 ? LG_DOWN : 0,
+    prize: LG_PRIZE.map(p => Math.round(p * m)), top10: Math.round(LG_TOP10 * m),
+    global: all.slice(0, 10).map(([u]) => row(u)), gplace: all.findIndex(([u]) => u === uid) + 1 || null, gof: all.length,
+    me: e ? { p: e.p } : null
+  };
+}
+
+// =====================================================================================
+// ДРУЗЬЯ: заявка тому, с кем уже играли; видно, кто где, и можно сесть за его стол
+// =====================================================================================
+const FR_MAX = 100, FR_DAY = 20;
+async function friendAdd(uid, to) {
+  const c = await get(uid); if (!c) return { err: 'Профиль не найден' };
+  c.fr = c.fr || []; c.frq = c.frq || [];
+  if (to === uid) return { err: 'Это вы' };
+  if (c.fr.includes(to)) return { ok: true, already: true };
+  if (c.frq.some(x => x.u === to)) return friendAnswer(uid, to, true);   // он уже звал вас: просто дружим
+  if (!c.recent.some(r => r.u === to)) return { err: 'Добавить можно тех, с кем вы уже играли' };
+  const d = dayOf(); if (!c.frd || c.frd.d !== d) c.frd = { d, n: 0 };
+  if (c.frd.n >= FR_DAY) return { err: 'На сегодня заявок достаточно' };
+  const f = await get(to); if (!f) return { err: 'Игрок не найден' };
+  f.frq = f.frq || []; f.fr = f.fr || [];
+  if (f.fr.length >= FR_MAX || c.fr.length >= FR_MAX) return { err: 'Список друзей заполнен' };
+  if (!f.frq.some(x => x.u === uid)) { f.frq.unshift({ u: uid, n: c.name, t: Date.now() }); f.frq = f.frq.slice(0, 30); }
+  c.frd.n++; save(c); save(f); stat('frreq');
+  O.push(to, { ev: 'club', toasts: [{ t: `👥 ${c.name} хочет добавить вас в друзья` }], me: view(f) });
+  if (!f.mute) sendPM(f, `👥 <b>${esc(c.name)}</b> хочет добавить вас в друзья в игровом клубе. Принять заявку можно в разделе «Друзья».`, kbOpen()).catch(() => {});
+  return { ok: true, sent: true };
+}
+async function friendAnswer(uid, from, ok) {
+  const c = await get(uid); if (!c) return { err: 'Профиль не найден' };
+  c.frq = c.frq || []; c.fr = c.fr || [];
+  const k = c.frq.findIndex(x => x.u === from); if (k < 0) return { err: 'Заявка не найдена' };
+  c.frq.splice(k, 1); save(c);
+  if (!ok) return { ok: true };
+  const f = await get(from); if (!f) return { err: 'Игрок не найден' };
+  f.fr = f.fr || [];
+  if (!c.fr.includes(from)) c.fr.push(from);
+  if (!f.fr.includes(uid)) f.fr.push(uid);
+  const out1 = [], out2 = [];
+  achSet(c, 'friends_3', c.fr.length, 'max', out1); achSet(f, 'friends_3', f.fr.length, 'max', out2);
+  save(c); save(f); stat('friend');
+  O.push(from, { ev: 'club', toasts: [{ t: `👥 ${c.name} теперь ваш друг` }, ...out2], me: view(f) });
+  return { ok: true, toasts: out1 };
+}
+async function friendDel(uid, f) {
+  const c = await get(uid), x = await get(f); if (!c) return { err: 'Профиль не найден' };
+  c.fr = (c.fr || []).filter(u => u !== f); save(c);
+  if (x) { x.fr = (x.fr || []).filter(u => u !== uid); save(x); }
+  return { ok: true };
+}
+async function friendsView(uid) {
+  const c = await get(uid); if (!c) return { list: [], req: [] };
+  const now = Date.now(), list = [];
+  for (const f of c.fr || []) {
+    let x = null; try { x = await get(f); } catch {}
+    if (!x) continue;
+    const pr = O.presence ? O.presence(f) : null, act = active.get(f);
+    list.push({ u: f, n: x.name, fr: x.eq.frame || '', ph: x.photo || '', at: pr, club: !pr && act && now - act < 5 * 60e3, ls: Math.max(x.ls || 0, act || 0) });
+  }
+  list.sort((a, b) => (!!b.at - !!a.at) || (!!b.club - !!a.club) || b.ls - a.ls);
+  return { list, req: (c.frq || []).slice(0, 30), recent: c.recent.filter(r => !(c.fr || []).includes(r.u)).slice(0, 10) };
+}
+
+// =====================================================================================
+// ТУРНИР ВЫХОДНЫХ (арена): суббота 19:00–20:00 по Москве, игра меняется каждую неделю.
+// Любая доигранная партия этой игры в это время приносит очки: победа над людьми 3, над ботами 2, ничья 1,
+// и +1 за каждую победу подряд после первой. Записаться можно заранее, тогда бот напомнит за полчаса.
+// =====================================================================================
+const AR_GAMES = ['durak', 'rainbow', 'chess', 'eye'], AR_HOUR = 19, AR_LEN = 60 * 60e3, AR_PRIZE = [500, 300, 200], AR_TOP10 = 100;
+const AR_GN = { durak: 'Дурак', rainbow: 'Радуга', chess: 'Шахматы', eye: 'Зоркий глаз' };
+function arenaOf(t = Date.now()) {
+  const id = weekOf(t), n = +id.slice(-2), mon = weekEnd(t) - 7 * 864e5, start = mon + 5 * 864e5 + AR_HOUR * 3600e3;
+  return { id, g: AR_GAMES[n % AR_GAMES.length], start, end: start + AR_LEN };
+}
+let AR = { ...arenaOf(), reg: {}, pts: {}, done: false, remind: false }, arDirty = false;
+function arenaCheck() {
+  const a = arenaOf(); if (AR.id === a.id) return;
+  const old = AR; AR = { ...a, reg: {}, pts: {}, done: false, remind: false }; arDirty = true;
+  arenaFinish(old).catch(e => console.error('arena:', e.message));
+}
+function arenaLive(t = Date.now()) { arenaCheck(); return t >= AR.start && t < AR.end; }
+async function arenaReg(uid) {
+  const c = await get(uid); if (!c) return { err: 'Турнир доступен игрокам из Telegram' };
+  arenaCheck(); if (Date.now() >= AR.end) return { err: 'Турнир этой недели уже прошёл' };
+  AR.reg[uid] = { n: c.name, t: Date.now() }; arDirty = true; stat('arreg');
+  return { ok: true };
+}
+function arenaGame(c, g, res, people) {
+  if (!arenaLive() || AR.g !== g) return 0;
+  const e = AR.pts[c.uid] = AR.pts[c.uid] || { n: c.name, p: 0, gp: 0, w: 0, st: 0 };
+  AR.reg[c.uid] = AR.reg[c.uid] || { n: c.name, t: Date.now() };
+  let p = 0;
+  if (res === 'win') { p = people > 1 ? 3 : 2; if (e.st > 0) p += 1; e.st++; e.w++; } else { if (res === 'draw') p = 1; e.st = 0; }
+  e.p += p; e.gp++; e.n = c.name; arDirty = true;
+  return p;
+}
+function arenaView(uid) {
+  arenaCheck();
+  const now = Date.now(), l = Object.entries(AR.pts).sort((a, b) => b[1].p - a[1].p || b[1].w - a[1].w), i = l.findIndex(([u]) => u === uid);
+  return {
+    id: AR.id, g: AR.g, gn: AR_GN[AR.g], start: AR.start, end: AR.end, now, state: now < AR.start ? 'soon' : now < AR.end ? 'live' : 'over',
+    reg: !!AR.reg[uid], regs: Object.keys(AR.reg).length, prize: AR_PRIZE, top10: AR_TOP10,
+    top: l.slice(0, 20).map(([u, e]) => ({ n: e.n, p: e.p, w: e.w, gp: e.gp, st: e.st, me: u === uid, fr: (cached(u) || { eq: {} }).eq.frame || '' })),
+    me: i >= 0 ? { place: i + 1, ...AR.pts[uid] } : null, of: l.length
+  };
+}
+async function arenaFinish(A) {
+  if (!A || A.done) return;
+  A.done = true; await db.dset('arena', A.id, A);
+  const l = Object.entries(A.pts).filter(([, e]) => e.gp > 0).sort((a, b) => b[1].p - a[1].p || b[1].w - a[1].w);
   if (!l.length) return;
-  console.log(`Неделя ${W.id}: подводим итоги, участников ${l.length}`);
+  console.log(`Турнир ${A.id}: итоги, участников ${l.length}`);
   const medal = ['🥇', '🥈', '🥉'], head = l.slice(0, 3).map(([, e], i) => `${medal[i]} ${esc(e.n)}: ${e.p}`).join('\n');
   for (let i = 0; i < l.length; i++) {
-    const [uid, e] = l[i]; let c = null;
-    try { c = await get(uid); } catch {}
+    const [uid, e] = l[i]; let c = null; try { c = await get(uid); } catch {}
     if (!c) continue;
-    const prize = i < 3 ? WEEK_PRIZE[i] : i < 10 ? WEEK_TOP10 : 0;
-    c.chips += prize;
-    if (i < 3) { c.crowns++; c.champ = { wk: W.id, place: i + 1 }; unlock(c, 'frame_champ'); }
-    c.wres = { wk: W.id, place: i + 1, of: l.length, p: e.p, prize };
-    save(c);
-    const text = `🏆 <b>Итоги недели</b>\n\nВы на <b>${i + 1} месте</b> из ${l.length}: ${e.p} ${plural(e.p, 'очко', 'очка', 'очков')}.` +
-      (prize ? `\nНаграда <b>+${prize} 🪙</b> уже на вашем счёте.` : '') + (i < 3 ? '\n👑 Значок «Чемпион недели» и золотая рамка с короной ваши.' : '') +
-      `\n\n${head}\n\nНовая неделя началась, очки обнулились. Удачи!`;
-    if (await notifyAuto(c, text)) await sleep(50);
+    const prize = i < 3 ? AR_PRIZE[i] : i < 10 ? AR_TOP10 : 0, out = [];
+    c.chips += prize; if (i < 3) { c.trophies = (c.trophies || 0) + 1; achSet(c, 'arena_top', 1, 'add', out); }
+    c.ares = { id: A.id, g: A.g, place: i + 1, of: l.length, p: e.p, prize }; save(c);
+    if (!c.mute) { await sendPM(c, `🏟 <b>Турнир выходных: ${AR_GN[A.g]}</b>\n\nВы на <b>${i + 1} месте</b> из ${l.length}: ${e.p} ${plural(e.p, 'очко', 'очка', 'очков')}, побед ${e.w}.` + (prize ? `\nНаграда <b>+${prize} 🪙</b> на вашем счёте.` : '') + (i < 3 ? '\n🏆 Кубок турнира в вашем профиле.' : '') + `\n\n${head}\n\nСледующий турнир в субботу в ${AR_HOUR}:00 по Москве.`, kbOpen()); await sleep(50); }
   }
+}
+async function arenaJob() {
+  arenaCheck();
+  const now = Date.now();
+  if (!AR.remind && now >= AR.start - 35 * 60e3 && now < AR.start) {   // напоминание записавшимся за полчаса
+    AR.remind = true; arDirty = true;
+    for (const uid of Object.keys(AR.reg)) {
+      const c = await get(uid).catch(() => null); if (!c || c.mute) continue;
+      if (await sendPM(c, `🏟 <b>Турнир выходных через 30 минут!</b>\nИгра: ${AR_GN[AR.g]}. С ${AR_HOUR}:00 до ${AR_HOUR + 1}:00 по Москве каждая победа приносит очки, тройка получает кубок и до ${AR_PRIZE[0]} 🪙.`, kbOpen())) await sleep(50);
+    }
+  }
+  if (!AR.done && now >= AR.end + 60e3) { const A = AR; await arenaFinish(A); arDirty = true; }
+}
+
+// =====================================================================================
+// ЗАДАЧА ДНЯ: одна на весь клуб, одна попытка. По кругу: «Зоркий глаз», шахматы, боулинг, бильярд.
+// =====================================================================================
+const DAILY_T = ['eye', 'chess', 'bowling', 'billiards'], DAILY_R = 30, DAILY_PRIZE = [100, 60, 40];
+const DAILY_TX = {
+  eye: { t: 'Спринт: 15 пар на время', d: 'Найдите 15 пар как можно быстрее. Каждая ошибка добавляет 2 секунды.' },
+  chess: { t: 'Мат в 2 хода', d: 'Найдите ход, после которого мат неизбежен, и поставьте мат вторым ходом. На решение 3 минуты.' },
+  bowling: { t: '3 фрейма на максимум', d: 'Сыграйте три фрейма и наберите как можно больше очков.' },
+  billiards: { t: '5 ударов', d: 'На столе 6 шаров. Забейте как можно больше за 5 ударов.' }
+};
+function dailyOf(d = dayOf()) {   // DAILY_TYPE задаёт вид задачи вручную (для проверки)
+  const n = Math.floor(Date.parse(d + 'T00:00:00Z') / 864e5), type = DAILY_T.includes(process.env.DAILY_TYPE) ? process.env.DAILY_TYPE : DAILY_T[n % DAILY_T.length];
+  return { day: d, n, type, seed: hash('daily|' + d), ...DAILY_TX[type] };
+}
+let DY = { ...dailyOf(), res: {}, done: false }, dyDirty = false;
+function dailyCheck() {
+  const d = dailyOf(); if (DY.day === d.day) return;
+  const old = DY; DY = { ...d, res: {}, done: false }; dyDirty = true;
+  dailyFinish(old).catch(e => console.error('daily:', e.message));
+}
+const dySort = () => Object.entries(DY.res).sort((a, b) => b[1].s - a[1].s || a[1].t - b[1].t);
+async function dailyDoneBy(uid) { dailyCheck(); const c = await get(uid); return !!(DY.res[uid] || (c && c.dly && c.dly.day === DY.day)); }
+// результат попытки: s — чем больше, тем лучше; m — подробности для показа
+async function dailyResult(uid, s, m) {
+  dailyCheck(); const c = await get(uid); if (!c) return null;
+  if (DY.res[uid]) { const l = dySort(); return { place: l.findIndex(([u]) => u === uid) + 1, of: l.length, m: DY.res[uid].m, again: true }; }
+  DY.res[uid] = { n: c.name, s, m, t: Date.now() }; dyDirty = true;
+  const out = []; c.dly = { day: DY.day, s, m }; c.chips += DAILY_R; achSet(c, 'daily_10', 1, 'add', out); save(c); stat('daily');
+  const l = dySort(), place = l.findIndex(([u]) => u === uid) + 1;
+  O.push(uid, { ev: 'club', toasts: [{ t: '🧩 Задача дня пройдена', chips: DAILY_R }, ...out], me: view(c) });
+  return { place, of: l.length, m };
+}
+function dailyView(uid) {
+  dailyCheck();
+  const l = dySort(), i = l.findIndex(([u]) => u === uid), c = cached(uid);
+  return { day: DY.day, type: DY.type, t: DY.t, d: DY.d, ends: dayMs(dayAdd(DY.day, 1)), prize: DY_PRIZE_VIEW, reward: DAILY_R,
+    done: i >= 0 ? { place: i + 1, ...DY.res[uid] } : (c && c.dly && c.dly.day === DY.day ? c.dly : null),
+    top: l.slice(0, 10).map(([u, e]) => ({ n: e.n, m: e.m, me: u === uid })), of: l.length };
+}
+const DY_PRIZE_VIEW = DAILY_PRIZE;
+async function dailyFinish(D) {
+  if (!D || D.done) return;
+  D.done = true; await db.dset('daily', D.day, D);
+  const l = Object.entries(D.res).sort((a, b) => b[1].s - a[1].s || a[1].t - b[1].t).slice(0, 3);
+  for (let i = 0; i < l.length; i++) { const c = await get(l[i][0]).catch(() => null); if (!c) continue; c.chips += DAILY_PRIZE[i]; c.dres = { day: D.day, place: i + 1, prize: DAILY_PRIZE[i] }; save(c); }
 }
 
 // ---------- сообщения от бота ----------
@@ -353,13 +622,14 @@ async function statsText(onl) {
     `\n<b>Сегодня</b>: ${line(S[0])}\n${per(S[0])}\n` +
     `⚡ быстрых игр ${t.quick || 0} (с компьютером ${t.quickbot || 0}) · ✅ заданий ${t.quest || 0} · 📤 поделились ${t.share || 0}\n` +
     `🤝 пришли по приглашению ${t.refnew || 0} · 🎲 позвали в комнату ${t.call || 0} · 🛍 покупок ${t.buy || 0}\n` +
+    `🧩 задачу дня прошли ${t.daily || 0} (начали ${t.dailytry || 0}) · 🏟 записались на турнир ${t.arreg || 0} · 👥 новых дружб ${t.friend || 0} · 🏅 медалей ${t.ach || 0}\n` +
     `\n<b>Вчера</b>: ${line(S[1])}\n${per(S[1])}\n` +
     `\n<b>7 дней</b>: входов ${sum('dau')} (сумма по дням), новых ${sum('new')}, партий ${S.reduce((a, s) => a + games(s), 0)}\n` +
     (total != null ? `\nВсего профилей в клубе: <b>${total}</b>` : '');
 }
 // сколько людей в клубе прямо сейчас (открыли приложение за последние 5 минут)
 function activeNow() { const t = Date.now() - 5 * 60e3; for (const [u, x] of active) if (x < t) active.delete(u); return [...active.keys()]; }
-const touch = uid => { if (uid) active.set(uid, Date.now()); };
+const touch = uid => { if (!uid) return; active.set(uid, Date.now()); const c = cached(uid); if (c) c.ls = Date.now(); };
 
 // ---------- запуск и фоновые задачи ----------
 async function init(opts) {
@@ -370,10 +640,19 @@ async function init(opts) {
     if (cur) { for (const [u, e] of Object.entries(WK.pts)) { const x = cur.pts[u] = cur.pts[u] || { n: e.n, p: 0 }; x.p += e.p; } WK = cur; }
     const prev = await db.dget('weeks', weekOf(Date.now() - 7 * 864e5));
     if (prev && !prev.done) finalize(prev).catch(e => console.error('week:', e.message));
+    if (!WK.groups) { WK.groups = {}; for (const u of Object.keys(WK.pts)) { const c = await get(u).catch(() => null); if (c) lgJoin(c); } wkDirty = true; }   // неделя началась до лиг
+    const ar = await db.dget('arena', AR.id); if (ar) { for (const [u, e] of Object.entries(AR.pts)) if (!ar.pts[u]) ar.pts[u] = e; Object.assign(ar.reg, AR.reg); AR = ar; }
+    const arp = await db.dget('arena', weekOf(Date.now() - 7 * 864e5)); if (arp && !arp.done) arenaFinish(arp).catch(e => console.error('arena:', e.message));
+    const dy = await db.dget('daily', DY.day); if (dy) { Object.assign(dy.res, DY.res); DY = { ...DY, ...dy }; }
+    const dyp = await db.dget('daily', dayAdd(dayOf(), -1)); if (dyp && !dyp.done) dailyFinish(dyp).catch(e => console.error('daily:', e.message));
   } catch (e) { console.error('club init:', e.message); }
   setInterval(() => {
     try { weekCheck(); } catch (e) { console.error('week:', e.message); }
     if (wkDirty) { wkDirty = false; db.dset('weeks', WK.id, WK).catch(e => { wkDirty = true; console.error('week save:', e.message); }); }
+    try { dailyCheck(); } catch (e) { console.error('daily:', e.message); }
+    arenaJob().catch(e => console.error('arena job:', e.message));
+    if (arDirty) { arDirty = false; db.dset('arena', AR.id, AR).catch(e => { arDirty = true; console.error('arena save:', e.message); }); }
+    if (dyDirty) { dyDirty = false; db.dset('daily', DY.day, DY).catch(e => { dyDirty = true; console.error('daily save:', e.message); }); }
     flushStats();
     streakJob().catch(e => console.error('streak job:', e.message));
     const old = Date.now() - 3600e3;   // профили, которые давно не нужны, выгружаем из памяти
@@ -381,9 +660,11 @@ async function init(opts) {
   }, 60e3).unref();
 }
 // перед остановкой сервера (Render усыпляет его) сохраняем всё несохранённое
-async function flushAll() { await Promise.all([flush(), wkDirty ? db.dset('weeks', WK.id, WK).catch(() => {}) : null, flushStats()]); }
+async function flushAll() { await Promise.all([flush(), wkDirty ? db.dset('weeks', WK.id, WK).catch(() => {}) : null, arDirty ? db.dset('arena', AR.id, AR).catch(() => {}) : null, dyDirty ? db.dset('daily', DY.day, DY).catch(() => {}) : null, flushStats()]); }
 
 module.exports = {
   init, get, cached, visit, view, buy, equip, setMute, markPM, ev, game, call, weekView, statsText, stat, activeNow, touch, flushAll, has,
-  CAT, DEF, dayOf, weekOf, _t: { finalize, streakJob, dailyQuests, weekEnd, get WK() { return WK; }, set WK(v) { WK = v; }, jobs: () => jobs }
+  ACH, LEAGUES, achEv, friendAdd, friendAnswer, friendDel, friendsView, arenaReg, arenaView, arenaLive, dailyOf, dailyView, dailyResult, dailyDoneBy, AR_GN,
+  get DY() { return DY; },
+  CAT, DEF, dayOf, weekOf, _t: { finalize, streakJob, dailyQuests, weekEnd, get WK() { return WK; }, set WK(v) { WK = v; }, jobs: () => jobs, arenaFinish, arenaJob, get AR() { return AR; }, set AR(v) { AR = v; }, dailyFinish, get DYv() { return DY; }, set DYv(v) { DY = v; } }
 };

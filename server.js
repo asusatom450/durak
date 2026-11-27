@@ -247,7 +247,7 @@ const RULES_BY = { durak: RULES, chess: RULES_C, mafia: RULES_M, billiards: RULE
 const menuCap = () => `<b>ИГРОВОЙ КЛУБ</b>
 Нажмите <b>🎮 Открыть клуб</b>: все игры карточками, правила, задания и турнир недели на одном экране. Или сразу выберите игру кнопкой ниже, 📖 коротко покажет правила.
 
-⚡ Внутри каждой игры: быстрый подбор соперника, задания дня с фишками и турнир недели.
+⚡ В клубе: быстрый подбор соперника, задача дня, лиги недели, турнир выходных по субботам, друзья, медали и задания с фишками.
 🤝 Зовите друзей: напишите @${BOT} в любом чате или добавьте бота в группу.
 
 <i>⏳ Первый вход может занять 30–60 секунд: сервер просыпается. Просто подождите, и игра откроется.</i>`;
@@ -382,13 +382,20 @@ async function clubApi(b) {
   if (a == 'get') {
     const ref = (/-u(\d{3,15})$/.exec(String(b.sp || '')) || [])[1];
     const { c, daily } = await CL.visit(me.uid, info, ref ? 'tg' + ref : '');
-    return { me: CL.view(c), daily, cat: CL.CAT, week: CL.weekView(me.uid), onl: online().all };
+    return { me: CL.view(c), daily, cat: CL.CAT, week: CL.weekView(me.uid), onl: online().all, ach: CL.ACH, dly: CL.dailyView(me.uid), arena: CL.arenaView(me.uid) };
   }
   let res;
   if (a == 'buy') res = await CL.buy(me.uid, String(b.id || ''));
   else if (a == 'equip') res = await CL.equip(me.uid, String(b.id || ''), String(b.kind || ''));
   else if (a == 'mute') res = await CL.setMute(me.uid, !!b.on);
   else if (a == 'week') return { week: CL.weekView(me.uid) };
+  else if (a == 'friends') return await CL.friendsView(me.uid);
+  else if (a == 'fr_add') res = await CL.friendAdd(me.uid, String(b.to || ''));
+  else if (a == 'fr_ok' || a == 'fr_no') res = await CL.friendAnswer(me.uid, String(b.u || ''), a == 'fr_ok');
+  else if (a == 'fr_del') res = await CL.friendDel(me.uid, String(b.u || ''));
+  else if (a == 'arena') return { arena: CL.arenaView(me.uid) };
+  else if (a == 'arena_reg') res = await CL.arenaReg(me.uid);
+  else if (a == 'daily') return { dly: CL.dailyView(me.uid) };
   else return { err: 'Неизвестное действие' };
   const c = await CL.get(me.uid, info);
   return { ...res, me: c ? CL.view(c) : null };
@@ -639,6 +646,7 @@ function chStart(R, tc) {
 }
 // Шахматы: обычное Эло, партия с компьютером тоже идёт в зачёт. Партии короче 4 полуходов не считаются.
 function chElo(R) {
+  if (R.daily) { const ok = !!R.result && R.result.winner === R.col[0] && R.result.reason === 'mate', ms = Date.now() - R.daily.t0; return dailyDone(R, ok ? 1e7 - ms : -ms, { ok, ms }); }
   const [a, b] = R.players;
   if (R.ch.history().length < 4) return;
   const sa = !R.result.winner ? .5 : (R.col[0] == R.result.winner ? 1 : 0), ra = rOf(a, 'chess'), rb = rOf(b, 'chess');
@@ -647,7 +655,8 @@ function chElo(R) {
     if (!p.prof || p.bot) return;
     R.rres.push({ i, ...rate(p.prof, RT.duel(p.prof.games, r1, r2, sc), sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw') });
   });
-  clubEnd(R, [[a, sa], [b, 1 - sa]].map(([p, sc]) => ({ p, res: sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw' })));
+  const mate = R.result && R.result.reason === 'mate' ? Math.ceil(R.ch.history().length / 2) : 0;
+  clubEnd(R, [[a, sa], [b, 1 - sa]].map(([p, sc]) => ({ p, res: sc === 1 ? 'win' : sc === 0 ? 'loss' : 'draw', extra: mate ? { mate } : {} })));
 }
 function chEnd(R, res) { if (R.over) return; R.over = true; R.result = res; R.draw = null; chElo(R); }
 function chMove(R, i, m) {
@@ -664,6 +673,7 @@ function chMove(R, i, m) {
   else if (R.ch.isThreefoldRepetition()) chEnd(R, { winner: null, reason: 'repetition' });
   else if (R.ch.isInsufficientMaterial()) chEnd(R, { winner: null, reason: 'insufficient' });
   else if (R.ch.isDraw()) chEnd(R, { winner: null, reason: 'fifty' });
+  if (R.daily && i === 0 && ++R.daily.mv >= 2 && !R.over) chEnd(R, { winner: chOther(c), reason: 'puzzle' });   // задача дня: два хода, и мат не поставлен
 }
 function chDrop(R, p) {
   if (p.left) return; p.left = true; p.off = false;
@@ -679,7 +689,7 @@ function chMsg(R, i, m) {
   const playing = R.started && !R.over, c = R.col && R.col[i];
   if (m.t == 'bot') { if (!R.started && R.players.length < 2) R.players.push({ name: 'Компьютер', hand: [], bot: true, ws: null }); }
   else if (m.t == 'start') { if (!R.started && R.players.length >= 2) chStart(R, +m.tc); }
-  else if (m.t == 'again') { if (R.over) chStart(R, R.tc); }
+  else if (m.t == 'again') { if (R.over && !R.daily) chStart(R, R.tc); }
   else if (m.t == 'move') { if (playing) chMove(R, i, m); }
   else if (m.t == 'resign') { if (playing) chEnd(R, { winner: chOther(c), reason: 'resign' }); }
   else if (m.t == 'draw') {
@@ -907,7 +917,7 @@ function mfSettle(R) {
     const win = !p.left && side(i) == mf.won, E = side(i) == 'mafia' ? RT.teamE(rm, rt) : RT.teamE(rt, rm);
     R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, win ? 1 : 0, E), win ? 'win' : 'loss') });
   });
-  clubEnd(R, P.map((p, i) => ({ p, res: side(i) == mf.won ? 'win' : 'loss' })));
+  clubEnd(R, P.map((p, i) => ({ p, res: side(i) == mf.won ? 'win' : 'loss', extra: { role: mf.roles[i] } })));
 }
 function mfChat(R, i, m) {
   const tx = String(m.text || '').trim().slice(0, 120); if (!tx) return;
@@ -975,6 +985,7 @@ function blStart(R) {
 }
 function blEnd(R) {
   const bl = R.bl; R.over = true; bl.over = true; R.rres = null;
+  if (R.daily) { R.rres = []; return dailyDone(R, bl.daily.pots * 100 + bl.daily.left, { pots: bl.daily.pots, shots: bl.shots }); }
   // Бильярд: обычное Эло, партия с компьютером тоже идёт в зачёт
   const [a, b] = R.players, ra = rOf(a, 'billiards'), rb = rOf(b, 'billiards');
   R.rres = [];
@@ -990,6 +1001,7 @@ function blShot(R, i, a, p) {
   if (!bl || bl.over || bl.turn !== i || !Number.isFinite(a) || !Number.isFinite(p) || !bl.balls[0].on) return false;
   if (Date.now() < (R.animUntil || 0) - 400) return false;
   p = Math.max(.03, Math.min(1, p));
+  if (R.daily) return blDailyShot(R, i, a, p);
   const sim = BL.simulate(bl.balls, a, p, true), out = BL.judge(bl, sim);
   BL.apply(bl, sim, out);
   bl.to[i] = 0; bl.seq++; R.mv++; bl.last.seq = bl.seq;
@@ -1009,7 +1021,7 @@ function blMsg(R, i, m) {
     else if (m.t == 'start' && R.players.length >= 2) blStart(R);
     return;
   }
-  if (R.over) { if (m.t == 'again') blStart(R); return; }
+  if (R.over) { if (m.t == 'again' && !R.daily) blStart(R); return; }
   const bl = R.bl;
   if (m.t == 'shot') blShot(R, i, +m.a, +m.p);
   else if (m.t == 'place') {
@@ -1017,7 +1029,7 @@ function blMsg(R, i, m) {
   } else if (m.t == 'resign') { bl.winner = 1 - i; bl.reason = R.players[i].name + ' сдался'; blEnd(R); }
 }
 function blTick(R) {
-  if (!R.started || R.over || !R.bl) return;
+  if (!R.started || R.over || !R.bl || R.daily) return;
   const bl = R.bl, now = Date.now(), i = bl.turn, p = R.players[i];
   if (!p || p.bot || p.off || p.left || now < bl.end) return;
   bl.to[i]++;
@@ -1082,7 +1094,7 @@ function bwNext(R) {   // следующий игрок; после послед
   bw.pins = BW.fullRack();
   for (let j = bw.cur + 1; j < n; j++) if (ok(j)) { bw.cur = j; return; }
   bw.frame++;
-  if (bw.frame < 10) for (let j = 0; j < n; j++) if (ok(j)) { bw.cur = j; return; }
+  if (bw.frame < (R.daily ? 3 : 10)) for (let j = 0; j < n; j++) if (ok(j)) { bw.cur = j; return; }   // в задаче дня три фрейма
   bw.over = true;
 }
 // бросок игрока i; th = null значит «время вышло»: бросок не засчитан, кегли стоят
@@ -1111,6 +1123,7 @@ function bwRoll(R, i, th) {
   rolls.push(n);
   bw.streak[i] = kind === 'strike' ? bw.streak[i] + 1 : 0;
   if (kind === 'strike' && p.prof && !p.bot) CL.ev(p.uid, 'bowling', { strike: 1 }).catch(() => {});   // задание «выбейте страйки»
+  if (kind === 'strike' && bw.streak[i] === 3 && p.prof && !p.bot) CL.achEv(p.uid, 'bowling_turkey').catch(() => {});   // медаль «Индейка»
   bw.seq++; R.mv++;
   bw.last = { seq: bw.seq, by: i, n, kind, streak: bw.streak[i], left: standing.map(q => q.id), frame: f, roll: rolls.length, v: res ? bw.v : 0 };
   bw.pins = standing;
@@ -1123,6 +1136,7 @@ function bwRoll(R, i, th) {
 }
 function bwEnd(R) {
   const bw = R.bw, P = R.players; bw.over = true; R.over = true; R.rres = [];
+  if (R.daily) { const tot = BW.total(bw.fr[0]); bw.tot = [tot]; bw.win = [0]; sys(R, `🧩 Задача дня: ${tot} очков за 3 фрейма`); return dailyDone(R, P[0].left ? -1 : tot, { pts: tot }); }
   const tot = P.map((_, j) => BW.total(bw.fr[j])), alive = P.map((_, j) => j).filter(j => !P[j].left);
   const top = alive.length ? Math.max(...alive.map(j => tot[j])) : -1;
   bw.tot = tot; bw.win = alive.filter(j => tot[j] === top);
@@ -1160,7 +1174,7 @@ function bwMsg(R, i, m) {
     else if (m.t == 'start' && R.players.length >= 1) bwStart(R);
     return;
   }
-  if (R.over) { if (m.t == 'again') bwStart(R); return; }
+  if (R.over) { if (m.t == 'again' && !R.daily) bwStart(R); return; }
   if (m.t == 'roll') bwRoll(R, i, m);
   else if (m.t == 'resign') bwDrop(R, p, R.players.length > 1 ? 'вышел из игры' : 'закончил тренировку');
 }
@@ -1234,7 +1248,7 @@ function eyTap(R, i, s) {
 }
 function eyCatch(R, i, s) {
   const ey = R.ey, now = Date.now(), t = now - ey.readyAt;
-  ey.cnt[i]++; if (!ey.fast[i] || t < ey.fast[i]) ey.fast[i] = t;
+  ey.cnt[i]++; if (!ey.fast[i] || t < ey.fast[i]) ey.fast[i] = t; ey.sum = (ey.sum || 0) + t;
   ey.seq++; R.mv++;
   ey.last = { seq: ey.seq, by: i, sym: s, card: ey.center, ms: t };
   ey.top[i] = ey.center;
@@ -1246,6 +1260,7 @@ function eyCatch(R, i, s) {
 function eyEnd(R) {
   const ey = R.ey, P = R.players; if (ey.over) return;
   ey.over = true; R.over = true; R.rres = [];
+  if (R.daily) { ey.win = [0]; const ms = ey.sum + ey.miss[0] * 2000; return P[0].left ? dailyDone(R, -9e9, { quit: 1 }) : dailyDone(R, -ms, { ms, miss: ey.miss[0] }); }
   const alive = P.map((_, j) => j).filter(j => !P[j].left), top = alive.length ? Math.max(...alive.map(j => ey.cnt[j])) : -1;
   ey.win = alive.filter(j => ey.cnt[j] === top);
   const res = j => (ey.win.includes(j) ? (ey.win.length > 1 ? 'draw' : 'win') : 'loss');
@@ -1256,7 +1271,7 @@ function eyEnd(R) {
     R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, f.S, f.E), res(i)) });
   });
   if (ey.win.length) sys(R, `🏆 ${ey.win.map(j => P[j].name).join(', ')}: ${top} ${top % 10 == 1 && top % 100 != 11 ? 'карточка' : top % 10 >= 2 && top % 10 <= 4 && (top % 100 < 10 || top % 100 >= 20) ? 'карточки' : 'карточек'}`);
-  clubEnd(R, P.map((p, j) => ({ p, res: res(j), extra: { catch: ey.cnt[j] } })));
+  clubEnd(R, P.map((p, j) => ({ p, res: res(j), extra: { catch: ey.cnt[j], fast: ey.fast[j] } })));
 }
 function eyDrop(R, p) {
   if (p.left) return; p.left = true; p.off = false;
@@ -1271,7 +1286,7 @@ function eyMsg(R, i, m) {
     else if (m.t == 'start' && R.players.length >= 2) eyStart(R);
     return;
   }
-  if (R.over) { if (m.t == 'again') eyStart(R); return; }
+  if (R.over) { if (m.t == 'again' && !R.daily) eyStart(R); return; }
   if (m.t == 'tap') eyTap(R, i, m.s);
   else if (m.t == 'resign') eyDrop(R, R.players[i]);
 }
@@ -1343,7 +1358,7 @@ function rbStart(R) {
   const deck = rbDeck(); let top = deck.pop();
   while (typeof top.v !== 'number') { deck.unshift(top); top = deck.pop(); }   // первая открытая карта всегда числовая
   R.rb = { deck, disc: [top], top, color: top.c, dir: 1, cur: Math.random() * R.players.length | 0, drawn: null, said: {}, catch: null, seq: 0,
-    end: Date.now() + RB_MS + 1500, to: R.players.map(() => 0), wild: R.players.map(() => 0), over: false, winner: null, last: null, botKey: '', botAt: 0 };
+    end: Date.now() + RB_MS + 1500, to: R.players.map(() => 0), wild: R.players.map(() => 0), catches: R.players.map(() => 0), over: false, winner: null, last: null, botKey: '', botAt: 0 };
   R.players.forEach(p => { p.hand = deck.splice(deck.length - RB_HAND, RB_HAND); });
   R.started = true; R.over = false; R.rres = null; R.mv++;
   sys(R, `🌈 Игра началась. Первым ходит ${R.players[R.rb.cur].name}`);
@@ -1391,7 +1406,7 @@ function rbSay(R, i) {
 function rbCatch(R, j) {
   const rb = R.rb, w = rb && rb.catch;
   if (!w || Date.now() > w.until || w.i === j || R.players[j].left) return;
-  rb.catch = null; rbTake(R, w.i, 2); rb.seq++; R.mv++;
+  rb.catch = null; rbTake(R, w.i, 2); rb.seq++; R.mv++; rb.catches[j]++;
   rb.last = { seq: rb.seq, by: j, caught: w.i };
   sys(R, `🫵 ${R.players[j].name} ловит ${R.players[w.i].name}: «Последняя!» не прозвучала, +2 карты`);
 }
@@ -1402,7 +1417,7 @@ function rbEnd(R, w) {
   const sc = P.map(p => (p.left ? -999 : -p.hand.length)), R0 = P.map(p => rOf(p, 'rainbow'));
   P.forEach((p, i) => { if (!p.prof || p.bot) return; const f = RT.fieldSE(R0, sc, i); R.rres.push({ i, ...rate(p.prof, RT.delta(p.prof.games, f.S, f.E), i === w ? 'win' : 'loss') }); });
   if (w >= 0) sys(R, `🏆 ${P[w].name} сбрасывает все карты!`);
-  clubEnd(R, P.map((p, j) => ({ p, res: j === w ? 'win' : 'loss', extra: { wild: rb.wild[j] } })));
+  clubEnd(R, P.map((p, j) => ({ p, res: j === w ? 'win' : 'loss', extra: { wild: rb.wild[j], catches: rb.catches[j] } })));
 }
 function rbDrop(R, p, why) {
   if (p.left) return; p.left = true; p.off = false;
@@ -1480,6 +1495,93 @@ function rbState(R, i) {
   };
 }
 
+// ================= ЗАДАЧА ДНЯ =================
+// Одна на весь клуб на день, одна попытка. Комната на одного: «Зоркий глаз» (15 пар на время), шахматы (мат в 2),
+// боулинг (3 фрейма), бильярд (6 шаров, 5 ударов). Раскладка зависит от даты, поэтому у всех одинаковая.
+const PUZZLES = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'chess_puzzles.json'))); } catch { return []; } })();
+const seeded = seed => { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const EY_DAILY = 15, BL_DAILY = { balls: 6, shots: 5 };
+async function dailyJoin(ws, m) {
+  if (ws.R || ws.q) return;
+  const g = gameOf(m), D = CL.dailyOf();
+  if (D.type !== g) return err(ws, 'Сегодня задача дня в другой игре');
+  let A; try { A = await auth(m, g); } catch (e) { return err(ws, 'Не удалось войти, попробуйте ещё раз'); }
+  if (!A.prof) return err(ws, 'Задача дня доступна игрокам из Telegram');
+  if (ws.readyState !== 1 || ws.R) return;
+  const R0 = Object.values(rooms).find(R => R.daily && R.daily.uid === A.uid && !R.over);   // перезагрузили страницу посреди задачи
+  if (R0) return ws.send(JSON.stringify({ ev: 'matched', room: R0.code }));
+  if (await CL.dailyDoneBy(A.uid)) return err(ws, 'Вы уже прошли задачу дня. Новая будет завтра!');
+  A.cl = await CL.get(A.uid, { name: A.prof.name, photo: A.prof.photo }).catch(() => null);
+  const code = rcode(5), R = rooms[code] = { code, players: [], started: false, over: false, table: [], deck: [], loser: -1, log: [], logN: 0, mv: 0, game: g,
+    daily: { type: g, day: D.day, seed: D.seed, n: D.n, uid: A.uid, t0: Date.now(), mv: 0 } };
+  addPlayer(ws, A, m.name, R);
+  if (g === 'eye') eyDailyStart(R); else if (g === 'chess') chDailyStart(R); else if (g === 'bowling') bwStart(R); else blDailyStart(R);
+  sys(R, '🧩 Задача дня: ' + D.t + '. ' + D.d);
+  CL.stat('dailytry');
+  ws.send(JSON.stringify({ ev: 'matched', room: code }));
+  send(R);
+}
+async function dailyDone(R, sc, m) {
+  if (!R.daily || R.daily.fin) return; R.daily.fin = true;
+  const res = await CL.dailyResult(R.daily.uid, sc, m).catch(e => { console.error('daily:', e.message); return null; });
+  R.dres = res || { m }; send(R);
+}
+function eyDailyStart(R) {
+  const rn = seeded(R.daily.seed), ids = EY_CARDS.map((_, k) => k);
+  for (let k = ids.length - 1; k > 0; k--) { const j = rn() * (k + 1) | 0; [ids[k], ids[j]] = [ids[j], ids[k]]; }
+  const deck = ids.slice(1, 1 + EY_DAILY);
+  R.ey = { deck, center: deck.pop(), top: [ids[0]], cnt: [0], frz: [0], miss: [0], fast: [0], round: 1, total: EY_DAILY, seq: 0, sum: 0,
+    readyAt: Date.now() + EY_START, last: null, over: false, win: null, botAt: null };
+  R.started = true; R.over = false; R.rres = null; R.mv++;
+}
+function chDailyStart(R) {
+  const P = PUZZLES.length ? PUZZLES[Math.floor(R.daily.n / 4) % PUZZLES.length] : { fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4' };
+  R.players.push({ name: 'Задача дня', hand: [], bot: true, ws: null });
+  R.ch = new Chess(P.fen); const side = R.ch.turn();
+  R.col = [side, chOther(side)];
+  R.tc = 3; R.cl = { w: 180000, b: 180000, since: Date.now() };
+  R.started = true; R.over = false; R.result = null; R.rres = null; R.draw = null; R.last = null; R.mv++;
+}
+function blDailyStart(R) {
+  R.players.push({ name: 'Задача дня', hand: [], bot: true, ws: null });
+  const rn = seeded(R.daily.seed), T = BL.T, balls = [], ids = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
+  for (let k = ids.length - 1; k > 0; k--) { const j = rn() * (k + 1) | 0; [ids[k], ids[j]] = [ids[j], ids[k]]; }
+  for (let id = 0; id < 16; id++) balls.push({ id, x: -100, y: -100, on: false });
+  balls[0] = { id: 0, x: T.W / 2, y: T.L * .75, on: true };
+  for (const id of ids.slice(0, BL_DAILY.balls)) for (let k = 0; k < 300; k++) {
+    const x = 50 + rn() * (T.W - 100), y = 60 + rn() * (T.L * .6);
+    if (BL.canPlace({ balls }, x, y) && Math.hypot(x - balls[0].x, y - balls[0].y) > 90 && T.PK.every(([px, py, pr]) => Math.hypot(px - x, py - y) > pr + 30)) { balls[id] = { id, x, y, on: true }; break; }
+  }
+  R.bl = { balls, turn: 0, breaker: 0, groups: [null, null], open: true, hand: false, shots: 0, over: false, winner: null, reason: '', to: [0, 0], end: Date.now() + BL_MS, seq: 0,
+    msg: `Задача дня: ${BL_DAILY.shots} ударов, забейте как можно больше`, daily: { left: BL_DAILY.shots, pots: 0 } };
+  R.started = true; R.over = false; R.rres = null; R.animUntil = 0; R.mv++;
+}
+function blDailyShot(R, i, a, p) {
+  const bl = R.bl, sim = BL.simulate(bl.balls, a, p, true), pots = sim.pocketed.filter(id => id !== 0);
+  bl.balls = sim.balls; bl.shots++; bl.daily.left--; bl.daily.pots += pots.length; bl.seq++; R.mv++;
+  if (sim.cuePocketed) {   // биток упал: ставим обратно в «дом», рядом, если место занято
+    const c = bl.balls[0], T = BL.T; c.on = true;
+    for (let k = 0; k < 40; k++) { const x = T.W / 2 + ((k % 7) - 3) * 40, y = T.L * .75 + Math.floor(k / 7) * 36; if (BL.canPlace(bl, x, y)) { c.x = x; c.y = y; break; } }
+  }
+  bl.last = { by: i, pots, cue: !!sim.cuePocketed, foul: sim.cuePocketed ? 'биток упал в лузу' : null, assign: null, cont: pots.length > 0, rerack: false, end: false, seq: bl.seq };
+  const left = bl.balls.filter(o => o.on && o.id).length;
+  bl.msg = `Удар ${bl.shots} из ${BL_DAILY.shots} · забито ${bl.daily.pots}`;
+  R.animUntil = Date.now() + sim.dur * 1000 + 700; bl.end = R.animUntil + BL_MS;
+  bcast(R, { ev: 'shot', seq: bl.seq, frames: sim.frames, events: sim.events, by: i });
+  if (!bl.daily.left || !left) { bl.winner = 0; bl.reason = `Забито ${bl.daily.pots} из ${BL_DAILY.balls}`; blEnd(R); }
+  return true;
+}
+// ---------- друзья: кто где сейчас ----------
+function roomMax(R) { return R.game == 'chess' || R.game == 'billiards' ? 2 : R.game == 'mafia' ? 12 : R.game == 'bowling' ? BW_MAX : R.game == 'eye' ? EY_MAX : R.game == 'rainbow' ? RB_MAX : 6; }
+function presence(uid) {
+  for (const R of Object.values(rooms)) {
+    const p = R.players.find(q => q.uid === uid && !q.bot && !q.left && q.ws && q.ws.readyState === 1);
+    if (p) return { g: R.game, room: R.code, lobby: !R.started || R.over, free: (!R.started || R.over) && !R.daily && R.players.length < roomMax(R), daily: !!R.daily };
+  }
+  for (const [g, Q] of Object.entries(MMQ)) if (Q.some(e => e.uid === uid && e.ws.readyState === 1)) return { g, q: 1 };
+  return null;
+}
+
 // ---------- бот (обычный алгоритм) ----------
 function botStep(R) {
   for (let i = 0; i < R.players.length; i++) {
@@ -1501,6 +1603,11 @@ function botStep(R) {
 
 // ---------- сеть ----------
 function stateFor(R, i) {
+  const st = stateFor0(R, i);
+  if (R.daily) st.daily = { type: R.daily.type, res: R.dres || null };
+  return st;
+}
+function stateFor0(R, i) {
   if (R.game === 'chess') return chState(R, i);
   if (R.game === 'mafia') return mfState(R, i);
   if (R.game === 'billiards') return blState(R, i);
@@ -1671,6 +1778,7 @@ async function onMessage(ws, raw) {
       return send(R);
     }
     if (m.t == 'quick') return mmJoin(ws, m);   // быстрая игра: подбор соперника
+    if (m.t == 'daily') return dailyJoin(ws, m);   // задача дня
     if (m.t == 'unquick') { mmLeave(ws); return; }
     const R = ws.R; if (!R) return;
     const i = R.players.indexOf(ws.p); if (i < 0) return;
@@ -1748,7 +1856,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => {
 });
 srv.listen(process.env.PORT || 3000, () => {
   db.migrate().catch(e => console.error('migrate:', e.message));   // старые профили на новую шкалу рейтинга
-  CL.init({ tg: TOKEN ? tgJ : null, push: pushUser, appUrl: APP_URL || '', link: appLink });
+  CL.init({ tg: TOKEN ? tgJ : null, push: pushUser, appUrl: APP_URL || '', link: appLink, presence });
   console.log('Дурак запущен на порту', process.env.PORT || 3000);
   if (TOKEN && APP_URL) {
     tg('setWebhook', { url: APP_URL + '/tg/' + TOKEN, allowed_updates: ['message', 'callback_query', 'inline_query', 'my_chat_member'] });
